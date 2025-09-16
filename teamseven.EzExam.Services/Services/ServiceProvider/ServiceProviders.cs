@@ -13,6 +13,10 @@ using teamseven.EzExam.Services.Services.TextBookService;
 using teamseven.EzExam.Services.Services.UserService;
 using teamseven.EzExam.Services.Services.UserSocialProviderService;
 using teamseven.EzExam.Services.Services.UserSubscriptionService;
+using teamseven.EzExam.Services.Services.SubscriptionTypeService;
+using teamseven.EzExam.Services.Services.UsageTrackingService;
+using teamseven.EzExam.Services.Services.BalanceService;
+using teamseven.EzExam.Services.Services.JwtHelperService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -36,6 +40,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         private readonly IQuestionReportService _questionReportService;
         private readonly ITextBookService _textBookService;
         private readonly IPayOSService _payOSService;
+        private readonly ISubscriptionTypeService _subscriptionTypeService;
+        private readonly IUsageTrackingService _usageTrackingService;
+        private readonly IBalanceService _balanceService;
+        private readonly IJwtHelperService _jwtHelperService;
+        private readonly ISubscriptionService _subscriptionService;
         public ServiceProviders(
             IAuthService authService,
             ILoginService loginService,
@@ -54,7 +63,12 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             IExamService examService,
             IQuestionReportService questionReportService,
             ITextBookService textBookService,
-            IPayOSService payOSService)
+            IPayOSService payOSService,
+            ISubscriptionTypeService subscriptionTypeService,
+            IUsageTrackingService usageTrackingService,
+            IBalanceService balanceService,
+            IJwtHelperService jwtHelperService,
+            ISubscriptionService subscriptionService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -74,6 +88,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             _questionReportService = questionReportService ?? throw new ArgumentNullException(nameof(questionReportService));
             _textBookService = textBookService ?? throw new ArgumentNullException(nameof(textBookService));
             _payOSService = payOSService ?? throw new ArgumentNullException(nameof(payOSService));
+            _subscriptionTypeService = subscriptionTypeService ?? throw new ArgumentNullException(nameof(subscriptionTypeService));
+            _usageTrackingService = usageTrackingService ?? throw new ArgumentNullException(nameof(usageTrackingService));
+            _balanceService = balanceService ?? throw new ArgumentNullException(nameof(balanceService));
+            _jwtHelperService = jwtHelperService ?? throw new ArgumentNullException(nameof(jwtHelperService));
+            _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
         }
       
 
@@ -98,5 +117,15 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         public ITextBookService TextBookService => _textBookService;
 
         public IPayOSService PayOSService => _payOSService;
+
+        public ISubscriptionTypeService SubscriptionTypeService => _subscriptionTypeService;
+
+        public IUsageTrackingService UsageTrackingService => _usageTrackingService;
+
+        public IBalanceService BalanceService => _balanceService;
+
+        public IJwtHelperService JwtHelperService => _jwtHelperService;
+
+        public ISubscriptionService SubscriptionService => _subscriptionService;
     }
 }

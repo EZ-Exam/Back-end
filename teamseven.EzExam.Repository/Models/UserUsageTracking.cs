@@ -44,3 +44,4 @@ namespace teamseven.EzExam.Repository.Models
         public virtual SubscriptionType SubscriptionType { get; set; } = null!;
     }
 }
+

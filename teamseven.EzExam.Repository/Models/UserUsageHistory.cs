@@ -38,3 +38,4 @@ namespace teamseven.EzExam.Repository.Models
         public virtual User User { get; set; } = null!;
     }
 }
+

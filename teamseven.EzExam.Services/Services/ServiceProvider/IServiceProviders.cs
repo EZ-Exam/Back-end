@@ -14,6 +14,10 @@ using teamseven.EzExam.Services.Services.UserSubscriptionService;
 using teamseven.EzExam.Services.Services.ExamService;
 using teamseven.EzExam.Services.Services.QuestionReportService;
 using teamseven.EzExam.Services.Services.TextBookService;
+using teamseven.EzExam.Services.Services.UsageTrackingService;
+using teamseven.EzExam.Services.Services.BalanceService;
+using teamseven.EzExam.Services.Services.JwtHelperService;
+using teamseven.EzExam.Services.Services.SubscriptionService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -43,5 +47,15 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         ITextBookService TextBookService { get; }
 
         IPayOSService PayOSService { get; }
+
+        ISubscriptionTypeService SubscriptionTypeService { get; }
+
+        IUsageTrackingService UsageTrackingService { get; }
+
+        IBalanceService BalanceService { get; }
+
+        IJwtHelperService JwtHelperService { get; }
+
+        ISubscriptionService SubscriptionService { get; }
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,7 @@ namespace teamseven.EzExam.API.Controllers
     [ApiController]
     [Route("api/grok-3")]
     [Produces("application/json")]
+    [Authorize] // Require authentication for AI access
     public class Grok3Controller : ControllerBase
     {
         private readonly HttpClient _httpClient;

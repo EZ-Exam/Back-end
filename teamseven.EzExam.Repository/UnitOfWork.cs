@@ -26,6 +26,8 @@ namespace teamseven.EzExam.Repository
         UserSocialProviderRepository UserSocialProviderRepository { get; }
         QuestionReportRepository QuestionReportRepository { get; }
         TextBookRepository TextBookRepository { get; }
+        UserUsageTrackingRepository UserUsageTrackingRepository { get; }
+        UserUsageHistoryRepository UserUsageHistoryRepository { get; }
 
         int SaveChangesWithTransaction();
         Task<int> SaveChangesWithTransactionAsync();
@@ -52,6 +54,8 @@ namespace teamseven.EzExam.Repository
         private UserSocialProviderRepository _userSocialProvider;
         private QuestionReportRepository _questionReportRepository;
         private TextBookRepository _textBookRepository;
+        private UserUsageTrackingRepository _userUsageTrackingRepository;
+        private UserUsageHistoryRepository _userUsageHistoryRepository;
 
         private bool _disposed = false;
 
@@ -77,6 +81,8 @@ namespace teamseven.EzExam.Repository
         public UserSocialProviderRepository UserSocialProviderRepository => _userSocialProvider ??= new UserSocialProviderRepository(_context);
         public QuestionReportRepository QuestionReportRepository => _questionReportRepository ??= new QuestionReportRepository(_context);
         public TextBookRepository TextBookRepository => _textBookRepository ??= new TextBookRepository(_context);
+        public UserUsageTrackingRepository UserUsageTrackingRepository => _userUsageTrackingRepository ??= new UserUsageTrackingRepository(_context);
+        public UserUsageHistoryRepository UserUsageHistoryRepository => _userUsageHistoryRepository ??= new UserUsageHistoryRepository(_context);
 
         public int SaveChangesWithTransaction()
         {

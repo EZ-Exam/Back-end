@@ -22,6 +22,7 @@ namespace teamseven.EzExam.API.Controllers
     [ApiController]
     [Route("api/deepseek")]
     [Produces("application/json")]
+    [Authorize] // Require authentication for AI access
     public class DeepSeekController : ControllerBase
     {
         private readonly HttpClient _httpClient;

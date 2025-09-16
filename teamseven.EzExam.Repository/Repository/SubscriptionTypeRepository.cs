@@ -1,26 +1,38 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using teamseven.EzExam.Repository.Basic;
+using Microsoft.EntityFrameworkCore;
 using teamseven.EzExam.Repository.Models;
-using teamseven.EzExam.Repository.Context;
 
 namespace teamseven.EzExam.Repository.Repository
 {
-    public class SubscriptionTypeRepository: GenericRepository<SubscriptionType>
+    public class SubscriptionTypeRepository : GenericRepository<SubscriptionType>, ISubscriptionTypeRepository
     {
-        private readonly teamsevenezexamdbContext _context;
-
-        public SubscriptionTypeRepository(teamsevenezexamdbContext context)
+        public SubscriptionTypeRepository(teamsevenezexamdbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public async Task<int> CreateSubcritionTypeAsync(SubscriptionType subcritionType)
+        public async Task<SubscriptionType?> GetBySubscriptionCodeAsync(string subscriptionCode)
         {
-            return await CreateAsync(subcritionType);
+            return await _context.SubscriptionTypes
+                .FirstOrDefaultAsync(st => st.SubscriptionCode == subscriptionCode);
+        }
+
+        public async Task<IEnumerable<SubscriptionType>> GetActiveSubscriptionTypesAsync()
+        {
+            return await _context.SubscriptionTypes
+                .Where(st => st.IsActive)
+                .OrderBy(st => st.SubscriptionPrice)
+                .ToListAsync();
+        }
+
+        public async Task<bool> IsSubscriptionCodeExistsAsync(string subscriptionCode, int? excludeId = null)
+        {
+            var query = _context.SubscriptionTypes.Where(st => st.SubscriptionCode == subscriptionCode);
+            
+            if (excludeId.HasValue)
+            {
+                query = query.Where(st => st.Id != excludeId.Value);
+            }
+
+            return await query.AnyAsync();
         }
     }
 }
