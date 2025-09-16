@@ -1,0 +1,76 @@
+### Test Subscription API Endpoints
+### Make sure to replace {token} with actual JWT token
+
+@baseUrl = https://localhost:7000/api
+@token = your_jwt_token_here
+
+### 1. Get all subscription types (public endpoint)
+GET {{baseUrl}}/subscription-types
+Content-Type: application/json
+
+### 2. Get active subscription types (public endpoint)
+GET {{baseUrl}}/subscription-types/active
+Content-Type: application/json
+
+### 3. Get subscription type by ID (public endpoint)
+GET {{baseUrl}}/subscription-types/1
+Content-Type: application/json
+
+### 4. Get subscription type by code (public endpoint)
+GET {{baseUrl}}/subscription-types/code/FREE
+Content-Type: application/json
+
+### 5. Subscribe to a subscription plan (requires authentication)
+POST {{baseUrl}}/subscription/subscribe
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "subscriptionTypeId": 2,
+    "description": "Upgrading to Basic plan"
+}
+
+### 6. Get current subscription (requires authentication)
+GET {{baseUrl}}/subscription/current
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 7. Get subscription history (requires authentication)
+GET {{baseUrl}}/subscription/history
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 8. Cancel current subscription (requires authentication)
+POST {{baseUrl}}/subscription/cancel
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 9. Test AI limit check (requires authentication)
+GET {{baseUrl}}/usage-tracking/status/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 10. Test AI request with limit check (requires authentication)
+POST {{baseUrl}}/ai/gemini-1.5
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "question": "What is the capital of Vietnam?",
+    "subject": "Geography"
+}
+
+### 11. Add balance to user account (requires authentication)
+POST {{baseUrl}}/balance/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "amount": 100000,
+    "description": "Adding balance for testing"
+}
+
+### 12. Get user balance (requires authentication)
+GET {{baseUrl}}/balance
+Content-Type: application/json
+Authorization: Bearer {{token}}

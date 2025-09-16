@@ -8,7 +8,7 @@ using teamseven.EzExam.Repository.Context;
 
 namespace teamseven.EzExam.Repository.Repository
 {
-    public class UserSocialProviderRepository : GenericRepository<UserSocialProvider>
+    public class UserSocialProviderRepository : GenericRepository<UserSocialProvider>, IUserSocialProviderRepository
     {
         private readonly teamsevenezexamdbContext _context;
 

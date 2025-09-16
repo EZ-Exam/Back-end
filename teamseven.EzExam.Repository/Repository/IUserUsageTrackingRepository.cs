@@ -1,11 +1,10 @@
+using teamseven.EzExam.Repository.Basic;
 using teamseven.EzExam.Repository.Models;
 
-namespace teamseven.EzExam.Repository.Repository.Interfaces
+namespace teamseven.EzExam.Repository.Repository
 {
     public interface IUserUsageTrackingRepository : IGenericRepository<UserUsageTracking>
     {
-        Task<IEnumerable<UserUsageTracking>> GetUserUsageByDateAsync(int userId, DateTime date);
-        Task<UserUsageTracking?> GetUserUsageByTypeAndDateAsync(int userId, string usageType, DateTime date);
-        Task<IEnumerable<UserUsageTracking>> GetExpiredUsageTrackingsAsync();
+        Task<UserUsageTracking?> GetUserUsageTrackingAsync(int userId, int subscriptionTypeId, string usageType, DateTime resetDate);
     }
 }

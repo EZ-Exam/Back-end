@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using teamseven.EzExam.Repository;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using teamseven.EzExam.Repository.Models;
@@ -10,7 +11,7 @@ using teamseven.EzExam.Repository.Context;
 
 namespace teamseven.EzExam.Repository.Basic
 {
-    public class GenericRepository<T> where T : class
+    public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         protected teamsevenezexamdbContext _context;
 
@@ -193,5 +194,27 @@ namespace teamseven.EzExam.Repository.Basic
         }
 
         #endregion Separating asign entity and save operators
+
+        // Additional methods required by interface
+        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _context.Set<T>().Where(predicate).ToListAsync();
+        }
+
+        public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _context.Set<T>().FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task DeleteAsync(T entity)
+        {
+            _context.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddAsync(T entity)
+        {
+            await _context.Set<T>().AddAsync(entity);
+        }
     }
 }

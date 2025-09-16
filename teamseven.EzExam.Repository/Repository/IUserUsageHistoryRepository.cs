@@ -1,11 +1,10 @@
+using teamseven.EzExam.Repository.Basic;
 using teamseven.EzExam.Repository.Models;
 
-namespace teamseven.EzExam.Repository.Repository.Interfaces
+namespace teamseven.EzExam.Repository.Repository
 {
     public interface IUserUsageHistoryRepository : IGenericRepository<UserUsageHistory>
     {
-        Task<IEnumerable<UserUsageHistory>> GetUserUsageHistoryAsync(int userId, int? limit = null);
-        Task<IEnumerable<UserUsageHistory>> GetUsageHistoryByTypeAsync(int userId, string usageType, int? limit = null);
-        Task<IEnumerable<UserUsageHistory>> GetUsageHistoryByDateRangeAsync(int userId, DateTime startDate, DateTime endDate);
+        Task<IEnumerable<UserUsageHistory>> GetUserUsageHistoryAsync(int userId, string? usageType = null, int? limit = null);
     }
 }

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using teamseven.EzExam.Repository.Basic;
+using teamseven.EzExam.Repository.Context;
 using teamseven.EzExam.Repository.Models;
 
 namespace teamseven.EzExam.Repository.Repository
@@ -9,42 +11,23 @@ namespace teamseven.EzExam.Repository.Repository
         {
         }
 
-        public async Task<IEnumerable<UserUsageHistory>> GetUserUsageHistoryAsync(int userId, int? limit = null)
+        public async Task<IEnumerable<UserUsageHistory>> GetUserUsageHistoryAsync(int userId, string? usageType = null, int? limit = null)
         {
-            var query = _context.UserUsageHistories
-                .Where(uh => uh.UserId == userId)
-                .OrderByDescending(uh => uh.CreatedAt);
+            IQueryable<UserUsageHistory> query = _context.UserUsageHistories
+                .Where(h => h.UserId == userId)
+                .OrderByDescending(h => h.CreatedAt);
 
-            if (limit.HasValue)
+            if (!string.IsNullOrEmpty(usageType))
+            {
+                query = query.Where(h => h.UsageType == usageType);
+            }
+
+            if (limit.HasValue && limit > 0)
             {
                 query = query.Take(limit.Value);
             }
 
             return await query.ToListAsync();
-        }
-
-        public async Task<IEnumerable<UserUsageHistory>> GetUsageHistoryByTypeAsync(int userId, string usageType, int? limit = null)
-        {
-            var query = _context.UserUsageHistories
-                .Where(uh => uh.UserId == userId && uh.UsageType == usageType)
-                .OrderByDescending(uh => uh.CreatedAt);
-
-            if (limit.HasValue)
-            {
-                query = query.Take(limit.Value);
-            }
-
-            return await query.ToListAsync();
-        }
-
-        public async Task<IEnumerable<UserUsageHistory>> GetUsageHistoryByDateRangeAsync(int userId, DateTime startDate, DateTime endDate)
-        {
-            return await _context.UserUsageHistories
-                .Where(uh => uh.UserId == userId && 
-                            uh.CreatedAt >= startDate && 
-                            uh.CreatedAt <= endDate)
-                .OrderByDescending(uh => uh.CreatedAt)
-                .ToListAsync();
         }
     }
 }
