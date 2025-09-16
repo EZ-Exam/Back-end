@@ -12,3 +12,4 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
         Task<List<SubscribeResponse>> GetUserSubscriptionHistoryAsync(int userId);
     }
 }
+

@@ -15,3 +15,4 @@ namespace teamseven.EzExam.Services.Object.Responses
         public string Message { get; set; } = string.Empty;
     }
 }
+
