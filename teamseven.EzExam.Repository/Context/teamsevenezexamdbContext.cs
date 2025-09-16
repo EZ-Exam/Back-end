@@ -54,6 +54,8 @@ namespace teamseven.EzExam.Repository.Context
         // Subscription system tables
         public virtual DbSet<SubscriptionType> SubscriptionTypes { get; set; }
         public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public virtual DbSet<UserUsageTracking> UserUsageTrackings { get; set; }
+        public virtual DbSet<UserUsageHistory> UserUsageHistories { get; set; }
 
         public static string GetConnectionString(string connectionStringName)
         {
@@ -571,6 +573,11 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.SubscriptionName).HasColumnName("SubscriptionName").IsRequired().HasMaxLength(255);
                 entity.Property(e => e.SubscriptionPrice).HasColumnName("SubscriptionPrice").HasColumnType("decimal(18,2)").IsRequired(false);
                 entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(500);
+                entity.Property(e => e.MaxSolutionViews).HasColumnName("MaxSolutionViews").HasDefaultValue(0);
+                entity.Property(e => e.MaxAIRequests).HasColumnName("MaxAIRequests").HasDefaultValue(0);
+                entity.Property(e => e.IsAIEnabled).HasColumnName("IsAIEnabled").HasDefaultValue(false);
+                entity.Property(e => e.Features).HasColumnName("Features").HasMaxLength(2000);
+                entity.Property(e => e.IsActive).HasColumnName("IsActive").HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedBy).HasColumnName("UpdatedBy");
@@ -604,6 +611,51 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.SubscriptionType).WithMany(p => p.UserSubscriptions)
                     .HasForeignKey(d => d.SubscriptionTypeId)
                     .HasConstraintName("fk_user_subscriptions_subscription_type_id");
+            });
+
+            // User Usage Tracking
+            modelBuilder.Entity<UserUsageTracking>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_user_usage_tracking");
+                entity.ToTable("user_usage_tracking", "public");
+                entity.HasIndex(e => e.UserId, "ix_user_usage_tracking_user_id");
+                entity.HasIndex(e => e.SubscriptionTypeId, "ix_user_usage_tracking_subscription_type_id");
+                entity.HasIndex(e => e.UsageType, "ix_user_usage_tracking_usage_type");
+                entity.HasIndex(e => e.ResetDate, "ix_user_usage_tracking_reset_date");
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.UserId).HasColumnName("UserId");
+                entity.Property(e => e.SubscriptionTypeId).HasColumnName("SubscriptionTypeId");
+                entity.Property(e => e.UsageType).HasColumnName("UsageType").IsRequired().HasMaxLength(50);
+                entity.Property(e => e.UsageCount).HasColumnName("UsageCount").HasDefaultValue(0);
+                entity.Property(e => e.ResetDate).HasColumnName("ResetDate");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasOne(d => d.User).WithMany(p => p.UserUsageTrackings)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("fk_user_usage_tracking_user_id");
+                entity.HasOne(d => d.SubscriptionType).WithMany(p => p.UserUsageTrackings)
+                    .HasForeignKey(d => d.SubscriptionTypeId)
+                    .HasConstraintName("fk_user_usage_tracking_subscription_type_id");
+            });
+
+            // User Usage History
+            modelBuilder.Entity<UserUsageHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_user_usage_history");
+                entity.ToTable("user_usage_history", "public");
+                entity.HasIndex(e => e.UserId, "ix_user_usage_history_user_id");
+                entity.HasIndex(e => e.UsageType, "ix_user_usage_history_usage_type");
+                entity.HasIndex(e => e.CreatedAt, "ix_user_usage_history_created_at");
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.UserId).HasColumnName("UserId");
+                entity.Property(e => e.UsageType).HasColumnName("UsageType").IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ResourceId).HasColumnName("ResourceId");
+                entity.Property(e => e.ResourceType).HasColumnName("ResourceType").HasMaxLength(50);
+                entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasOne(d => d.User).WithMany(p => p.UserUsageHistories)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("fk_user_usage_history_user_id");
             });
 
             OnModelCreatingPartial(modelBuilder);

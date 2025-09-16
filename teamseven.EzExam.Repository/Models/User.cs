@@ -76,6 +76,8 @@ namespace teamseven.EzExam.Repository.Models
         public virtual ICollection<Chatbot> Chatbots { get; set; } = new List<Chatbot>();
         public virtual ICollection<UserSocialProvider> UserSocialProviders { get; set; } = new List<UserSocialProvider>();
         public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
+        public virtual ICollection<UserUsageTracking> UserUsageTrackings { get; set; } = new List<UserUsageTracking>();
+        public virtual ICollection<UserUsageHistory> UserUsageHistories { get; set; } = new List<UserUsageHistory>();
         public virtual ICollection<ExamHistory> ExamHistories { get; set; } = new List<ExamHistory>();
     }
 }

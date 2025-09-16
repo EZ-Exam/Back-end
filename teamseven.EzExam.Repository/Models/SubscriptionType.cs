@@ -36,10 +36,26 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedBy")]
         public int? UpdatedBy { get; set; }
 
+        [Column("MaxSolutionViews")]
+        public int MaxSolutionViews { get; set; } = 0; // -1 = unlimited
+
+        [Column("MaxAIRequests")]
+        public int MaxAIRequests { get; set; } = 0; // -1 = unlimited
+
+        [Column("IsAIEnabled")]
+        public bool IsAIEnabled { get; set; } = false;
+
+        [Column("Features")]
+        public string? Features { get; set; } // JSON string for additional features
+
+        [Column("IsActive")]
+        public bool IsActive { get; set; } = true;
+
         // Navigation properties
         [ForeignKey("UpdatedBy")]
         public virtual User? UpdatedByNavigation { get; set; }
 
         public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
+        public virtual ICollection<UserUsageTracking> UserUsageTrackings { get; set; } = new List<UserUsageTracking>();
     }
 }
