@@ -1,13 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Net.payOS.Types;
 using teamseven.EzExam.Controllers;
-using teamseven.EzExam.Repository.Dtos;
-using teamseven.EzExam.Repository.Models;
-using teamseven.EzExam.Repository.Repository;
-using teamseven.EzExam.Repository.Repository.Interfaces;
 using teamseven.EzExam.Services.Object.Requests;
-using teamseven.EzExam.Services.Services;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 
 namespace teamseven.EzExam.API.Controllers

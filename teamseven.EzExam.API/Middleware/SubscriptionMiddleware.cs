@@ -69,7 +69,7 @@ namespace teamseven.EzExam.API.Middleware
                 }
 
                 // Log AI usage
-                await usageTrackingService.TrackUsageAsync(userId.Value, "AI_REQUEST", null, "AI_CHAT", 
+                await usageTrackingService.CheckAndIncrementAIRequestAsync(userId.Value, 
                     $"AI request to {context.Request.Path}");
 
                 _logger.LogInformation("User {UserId} successfully accessed AI endpoint: {Path}", 
