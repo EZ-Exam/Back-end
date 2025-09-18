@@ -27,7 +27,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<User?> GetByEmailAsync(string email) 
         { 
             return await _context.Users
-                .AsNoTracking() // Tối ưu performance cho read-only query
+                .AsNoTracking() // Optimize performance for read-only query
                 .FirstOrDefaultAsync(u => u.Email == email); 
         }
 
@@ -58,7 +58,6 @@ namespace teamseven.EzExam.Repository.Repository
             _context.Questions.Add(question);
             await _context.SaveChangesAsync();
         }
-        //public async Task DeleteUserAsync(int id) { var user = await _context.Users.FindAsync(id); if (user != null) { _context.Users.Remove(user); await _context.SaveChangesAsync(); } }
 
         public async Task<User> SoftDeleteUserAsync(int id)
         {
@@ -97,20 +96,20 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<(bool IsSuccess, string ResultOrError)> ChangeUserRoleAsync(int userId, string role)
         {
-            // check hop le
+            // Check validity
             if (string.IsNullOrEmpty(role) || !ValidRoles.ContainsKey(role.ToLower()))
             {
                 return (false, $"Invalid role. Role must be one of: {string.Join(", ", ValidRoles.Keys)}");
             }
 
-            // get user
+            // Get user
             var user = await GetByIdAsync(userId);
             if (user == null)
             {
                 return (false, $"User with ID {userId} not found");
             }
 
-            // check user role
+            // Check user role
             int newRoleId = ValidRoles[role.ToLower()];
             if (user.RoleId == newRoleId)
             {

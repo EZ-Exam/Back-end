@@ -27,14 +27,14 @@ namespace teamseven.EzExam.Services.Services.Authentication
 
         public async Task<(bool IsSuccess, string ResultOrError)> RegisterUserAsync(RegisterRequest request)
         {
-            // Ki?m tra email tr�ng l?p
+            // Check for duplicate email
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 return (false, "Email already in use");
             }
 
-            // T?o user m?i
+            // Create new user
             var user = new User
             {
                 Email = request.Email,
@@ -42,7 +42,7 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 FullName = request.Name,
                 CreatedAt = DateTime.UtcNow,
                 RoleId = 1,
-                IsActive = true, 
+                IsActive = true,
                 AvatarUrl = null,
                 PhoneNumber = null,
                 EmailVerifiedAt = null,
@@ -50,20 +50,16 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 UpdatedAt = DateTime.UtcNow,
                 UpdatedBy = null
             };
-            Console.WriteLine($"[DEBUG] Assigned RoleId = {user.RoleId}");
 
-            // Luu v�o database
+            // Save to database
             await _userRepository.AddUserAsync(user);
-
-            // G?i email ch�o m?ng
-            //SendWelcomeMail(user);
 
             return (true, "User registered successfully");
         }
 
         public async Task<(bool IsSuccess, string ResultOrError)> ChangeUserRoleAsync(int userId, string roleName, string providedSecretKey)
         {
-            // Ki?m tra secret key
+            // Check secret key
             var expectedSecretKey = _configuration["Security:SuperSecretKey"]
                                     ?? Environment.GetEnvironmentVariable("SUPER_SECRET_KEY");
             if (string.IsNullOrEmpty(expectedSecretKey) || providedSecretKey != expectedSecretKey)
@@ -71,14 +67,13 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 return (false, "Invalid secret key");
             }
 
-            //-> update
             return await _userRepository.ChangeUserRoleAsync(userId, roleName);
         }
 
         private void SendWelcomeMail(User user)
         {
             string subject = "Welcome to EzExam";
-            string body = $"Hello {user.Email},\n\nlorem ipsum";
+            string body = $"Hello {user.Email},\n\nWelcome to EzExam platform!";
             _emailService.SendEmail(user.Email, subject, body);
         }
     }

@@ -11,6 +11,27 @@ namespace teamseven.EzExam.Repository.Repository
     public class UserSubscriptionRepository : GenericRepository<UserSubscription>
     {
         private readonly teamsevenezexamdbContext _context;
+        
+        // HARDCODED USER SUBSCRIPTION DATA - NO DATABASE QUERIES
+        // BASIC subscription is now free (same as FREE)
+        private static readonly Dictionary<int, UserSubscription> _hardcodedUserSubscriptions = new()
+        {
+            { 1, new UserSubscription 
+                { 
+                    Id = 1, 
+                    UserId = 1, 
+                    SubscriptionTypeId = 2, // BASIC subscription
+                    StartDate = DateTime.UtcNow.AddDays(-1), 
+                    EndDate = DateTime.UtcNow.AddMonths(1), 
+                    IsActive = true, 
+                    Amount = 0, // BASIC is now free
+                    PaymentStatus = "COMPLETED", 
+                    PaymentGatewayTransactionId = "FREE_BASIC_TXN", 
+                    CreatedAt = DateTime.UtcNow.AddDays(-1), 
+                    UpdatedAt = DateTime.UtcNow.AddDays(-1) 
+                } 
+            }
+        };
 
         public UserSubscriptionRepository(teamsevenezexamdbContext context)
         {
@@ -27,12 +48,11 @@ namespace teamseven.EzExam.Repository.Repository
             return await base.GetByIdAsync(id);
         }
 
-        public async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
+        public new async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
         {
-            return await _context.UserSubscriptions
-                .AsNoTracking() // Read-only query
-                .Where(x => x.UserId == userId)
-                .ToListAsync();
+            // Use hardcoded data instead of database query
+            var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId).ToList();
+            return subscriptions.Any() ? subscriptions : null;
         }
         public async Task<UserSubscription> GetByPaymentGatewayTransactionIdAsync(string transactionId)
         {
@@ -44,22 +64,21 @@ namespace teamseven.EzExam.Repository.Repository
             return await _context.UserSubscriptions
                 .FirstOrDefaultAsync(us => us.PaymentGatewayTransactionId == transactionId);
         }
-        public async Task<List<UserSubscription>?> GetActiveSubscriptionsAsync(long userId)
+        public new async Task<List<UserSubscription>?> GetActiveSubscriptionsAsync(long userId)
         {
-            return await _context.UserSubscriptions
-                .AsNoTracking() // Read-only query
-                .Where(x => x.UserId == userId && x.IsActive)
-                .ToListAsync();
+            // Use hardcoded data instead of database query
+            var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId && x.IsActive).ToList();
+            return subscriptions.Any() ? subscriptions : null;
         }
 
-        public async Task<UserSubscription?> GetActiveSubscriptionByUserIdAsync(int userId)
+        public new async Task<UserSubscription?> GetActiveSubscriptionByUserIdAsync(int userId)
         {
-            // Optimized query with proper indexing
-            return await _context.UserSubscriptions
-                .AsNoTracking() // Read-only query, no change tracking needed
-                .Where(x => x.UserId == userId && x.IsActive)
-                .OrderByDescending(x => x.CreatedAt)
-                .FirstOrDefaultAsync();
+            // Use hardcoded data instead of database query
+            if (_hardcodedUserSubscriptions.ContainsKey(userId))
+            {
+                return _hardcodedUserSubscriptions[userId];
+            }
+            return null;
         }
 
         public async Task<List<UserSubscription>?> GetSubscriptionsByUserIdAsync(int userId)

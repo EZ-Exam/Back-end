@@ -28,25 +28,25 @@ namespace teamseven.EzExam.Repository.Basic
         {
             try
             {
-                // Kiểm tra entity null
+                // Check entity null
                 if (entity == null)
                     throw new ArgumentNullException(nameof(entity));
 
-                // Thêm entity vào DbSet
+                // Add entity to DbSet
                 await _context.Set<T>().AddAsync(entity);
 
-                // Lưu thay đổi vào database
+                // Save changes to database
                 await _context.SaveChangesAsync();
 
-                // Lấy metadata của khóa chính
+                // Get primary key metadata
                 var keyProperty = _context.Entry(entity).Metadata.FindPrimaryKey()?.Properties[0];
                 if (keyProperty == null)
                     throw new InvalidOperationException($"Entity {typeof(T).Name} does not have a primary key defined.");
 
-                // Lấy giá trị khóa chính
+                // Get primary key value
                 var keyValue = _context.Entry(entity).Property(keyProperty.Name).CurrentValue;
 
-                // Ép kiểu về TKey
+                // Cast to TKey
                 return (TKey)Convert.ChangeType(keyValue, typeof(TKey));
             }
             catch (Exception ex)

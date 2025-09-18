@@ -25,10 +25,6 @@ namespace teamseven.EzExam.Services.Services.Authentication
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public AuthService()
-        {
-        }
-
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -41,6 +37,7 @@ namespace teamseven.EzExam.Services.Services.Authentication
             var identity = new ClaimsIdentity(jsonToken?.Claims, "jwt");
             return new ClaimsPrincipal(identity);
         }
+
         public bool IsUserInRole(string authHeader, string role)
         {
             try
@@ -58,47 +55,12 @@ namespace teamseven.EzExam.Services.Services.Authentication
             }
         }
 
-        //public IActionResult ValidateAuthorizationHeader(Microsoft.AspNetCore.Http.IHeaderDictionary headers)
-        //{
-        //    if (!headers.TryGetValue("Authorization", out var authHeader) ||
-        //        string.IsNullOrWhiteSpace(authHeader) ||
-        //        !authHeader.ToString().StartsWith("Bearer "))
-        //    {
-        //        return new UnauthorizedObjectResult(new { message = "Missing or invalid Authorization header." });
-        //    }
-
-        //    if (!IsUserInRole(authHeader, "admin"))
-        //    {
-        //        return new ForbidResult();
-        //    }
-
-        //    return null;
-        //}
-        //public bool IsUserInRole(string token, string role)
-        //{
-        //    try
-        //    {
-        //        var principal = GetPrincipalFromExpiredToken(token);
-        //        var roleClaim = principal?.FindFirst(ClaimTypes.Role);
-        //        if (roleClaim != null && roleClaim.Value == role)
-        //        {
-        //            return true;
-        //        }
-
-        //        return false;
-        //    }
-        //    catch (Exception)
-        //    {
-        //        return false;
-        //    }
-        //}
-
         public bool IsUserInPlan(string token, string plan)
         {
             try
             {
                 var principal = GetPrincipalFromExpiredToken(token);
-                var planClaim = principal?.FindFirst("AccountType"); // L?y claim 
+                var planClaim = principal?.FindFirst("AccountType");
 
                 if (planClaim != null && planClaim.Value == plan)
                 {
@@ -112,6 +74,7 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 return false;
             }
         }
+
         public string GenerateJwtToken(User user)
         {
             if (user == null) throw new ArgumentNullException(nameof(user), "User cannot be null when generating token.");
@@ -135,47 +98,48 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(120), // Expiration reduced to a reasonable 2 hour
+                expires: DateTime.UtcNow.AddMinutes(120),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
         public async Task<string> GoogleLoginAsync(string idToken)
         {
             try
             {
-                // Xác th?c token v?i Google
+                // Authenticate token with Google
                 var settings = new GoogleJsonWebSignature.ValidationSettings
                 {
                     Audience = new[] { _configuration["Authentication:Google:ClientId"] }
                 };
                 var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
 
-                // Ki?m tra UserSocialProvider
+                // Check UserSocialProvider
                 var socialProvider = await _unitOfWork.UserSocialProviderRepository.GetByProviderAsync("Google", payload.Subject);
                 User user;
 
                 if (socialProvider == null)
                 {
-                    // Ki?m tra ngu?i dùng b?ng email
+                    // Check user by email
                     user = await _unitOfWork.UserRepository.GetByEmailAsync(payload.Email);
                     if (user == null)
                     {
-                        // T?o ngu?i dùng m?i
+                        // Create new user
                         user = new User
                         {
                             Email = payload.Email,
                             FullName = payload.Name,
                             AvatarUrl = payload.Picture,
-                            RoleId = 1, // Gi? s? RoleId m?c d?nh
+                            RoleId = 1, // Default RoleId
                             IsActive = true,
                             CreatedAt = DateTime.UtcNow
                         };
                         await _unitOfWork.UserRepository.AddUserAsync(user);
                     }
 
-                    // T?o UserSocialProvider
+                    // Create UserSocialProvider
                     var userSocialProvider = new UserSocialProvider
                     {
                         UserId = user.Id,
@@ -187,12 +151,12 @@ namespace teamseven.EzExam.Services.Services.Authentication
                     };
                     await _unitOfWork.UserSocialProviderRepository.AddAsync(userSocialProvider);
 
-                    // Luu thay d?i v?i giao d?ch
+                    // Save changes with transaction
                     await _unitOfWork.SaveChangesWithTransactionAsync();
                 }
                 else
                 {
-                    // Ngu?i dùng hi?n có
+                    // Existing user
                     user = await _unitOfWork.UserRepository.GetByEmailAsync(payload.Email);
                     if (user == null)
                     {
@@ -203,12 +167,12 @@ namespace teamseven.EzExam.Services.Services.Authentication
                     await _unitOfWork.SaveChangesWithTransactionAsync();
                 }
 
-                // T?o JWT
+                // Generate JWT
                 return GenerateJwtToken(user);
             }
             catch (Exception ex)
             {
-                throw new Exception("L?i xác th?c Google.", ex);
+                throw new Exception("Google authentication error.", ex);
             }
         }
     }

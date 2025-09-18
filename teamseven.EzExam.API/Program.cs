@@ -54,7 +54,7 @@ builder.Services.AddDbContext<teamsevenezexamdbContext>(options =>
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorCodesToAdd: null);
-        npgsqlOptions.CommandTimeout(30);
+        npgsqlOptions.CommandTimeout(3);
     }));
 
 // ================= CẤU HÌNH AUTHENTICATION =================

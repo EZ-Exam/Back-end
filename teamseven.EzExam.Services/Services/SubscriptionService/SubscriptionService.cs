@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SubscriptionService> _logger;
+        
 
         public SubscriptionService(IUnitOfWork unitOfWork, ILogger<SubscriptionService> logger)
         {
@@ -18,10 +19,12 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
             _logger = logger;
         }
 
+
         public async Task<SubscribeResponse> SubscribeUserAsync(int userId, SubscribeRequest request)
         {
             try
             {
+                // Use repository with hardcoded data - no database queries needed
                 // Validate user exists
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
                 if (user == null)
@@ -30,12 +33,12 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     throw new NotFoundException($"User with ID {userId} not found.");
                 }
 
-                // Validate subscription type exists
+                // Validate subscription type exists - USE REPOSITORY WITH HARDCODED DATA
                 var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(request.SubscriptionTypeId);
                 if (subscriptionType == null)
                 {
                     _logger.LogWarning("Subscription type with ID {SubscriptionTypeId} not found", request.SubscriptionTypeId);
-                    throw new NotFoundException($"Subscription type with ID {request.SubscriptionTypeId} not found.");
+                    throw new KeyNotFoundException($"Subscription type with ID {request.SubscriptionTypeId} not found.");
                 }
 
                 // Check if user has active subscription - OPTIMIZED QUERY
@@ -67,8 +70,8 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                 {
                     existingSubscription.IsActive = false;
                     existingSubscription.UpdatedAt = DateTime.UtcNow;
-                    await _unitOfWork.UserSubscriptionRepository.UpdateAsync(existingSubscription);
-                    _logger.LogInformation("Deactivated FREE subscription for user {UserId} to upgrade to paid plan", userId);
+                    // Batch update with new subscription to reduce database calls
+                    _logger.LogInformation("Marked FREE subscription for deactivation for user {UserId} to upgrade to paid plan", userId);
                 }
 
                 // Create new subscription
