@@ -1,13 +1,19 @@
+using Azure.Storage.Blobs;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Basic;
+using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Repository.Context;
 using teamseven.EzExam.Repository.Repository;
 using teamseven.EzExam.Services.Extensions;
@@ -30,9 +36,15 @@ using teamseven.EzExam.Services.Services.TextBookService;
 using teamseven.EzExam.Services.Services.UserService;
 using teamseven.EzExam.Services.Services.UserSocialProviderService;
 using teamseven.EzExam.Services.Services.UserSubscriptionService;
+using teamseven.EzExam.Services.Services.UsageTrackingService;
+using teamseven.EzExam.Services.Services.BalanceService;
+using teamseven.EzExam.Services.Services.JwtHelperService;
+using teamseven.EzExam.Services.Services.SubscriptionService;
+using teamseven.EzExam.API.Middleware;
+using teamseven.EzExam.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
-// ================= C?U H�NH DB =================
+// ================= CẤU HÌNH DB =================
 //builder.Services.AddDbContext<teamsevenEzExamdbContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<teamsevenezexamdbContext>(options =>
@@ -42,10 +54,10 @@ builder.Services.AddDbContext<teamsevenezexamdbContext>(options =>
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorCodesToAdd: null);
-        npgsqlOptions.CommandTimeout(60);
+        npgsqlOptions.CommandTimeout(30);
     }));
 
-// ================= C?U H�NH AUTHENTICATION =================
+// ================= CẤU HÌNH AUTHENTICATION =================
 ConfigureAuthentication(builder.Services, builder.Configuration);
 
 try
@@ -57,31 +69,31 @@ try
         {
             Credential = GoogleCredential.FromFile(jsonPath)
         });
-        Console.WriteLine("FirebaseApp kh?i t?o th�nh c�ng.");
+        Console.WriteLine("FirebaseApp khởi tạo thành công.");
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"L?i khi kh?i t?o Firebase: {ex.Message}");
+    Console.WriteLine($"Lỗi khi khởi tạo Firebase: {ex.Message}");
     throw;
 }
 
 
-// ================= �ANG K� REPOSITORY & SERVICE =================
-// �ang k� d?ch v? v?i DI container
+// ================= ĐĂNG KÝ REPOSITORY & SERVICE =================
+// Đăng ký dịch vụ với DI container
 
-// GHI CH�: �ang k� Scoped v� c�c lifetime trong ASP.NET Core
-// 1. Scoped: M?t instance m?i HTTP request, d�ng cho DbContext, repository, service li�n quan d?n request
-//    - V� d?: DbContext, GenericRepository<Image>, ImageService
-//    - L� do: �?m b?o nh?t qu�n trong request, an to�n v?i nhi?u request d?ng th?i
+// GHI CHÚ: Đăng ký Scoped và các lifetime trong ASP.NET Core
+// 1. Scoped: Một instance mỗi HTTP request, dùng cho DbContext, repository, service liên quan đến request
+//    - Ví dụ: DbContext, GenericRepository<Image>, ImageService
+//    - Lý do: Đảm bảo nhất quán trong request, an toàn với nhiều request đồng thời
 
 
-// ================= �ANG K� REPOSITORY & SERVICE =================
-// ?? Repository Layer (Scoped)
+// ================= ĐĂNG KÝ REPOSITORY & SERVICE =================
+// 📌 Repository Layer (Scoped)
 builder.Services.AddScoped(typeof(GenericRepository<>));
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-// ?? Service Layer (Scoped)
+// 📌 Service Layer (Scoped)
 builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 builder.Services.AddScoped<ISolutionService, SolutionService>();
@@ -96,39 +108,48 @@ builder.Services.AddScoped<IChapterService, ChapterService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
 builder.Services.AddScoped<ISolutionReportService, SolutionReportService>();
 builder.Services.AddScoped<ISubscriptionTypeService, SubscriptionTypeService>();
+builder.Services.AddScoped<IUsageTrackingService, UsageTrackingService>();
+builder.Services.AddScoped<IBalanceService, BalanceService>();
+builder.Services.AddScoped<IJwtHelperService, JwtHelperService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ITextBookService, TextBookService>();
-builder.Services.AddScoped<IPayOSService, PayOSService>(); // �ang k� IPayOSService tru?c
-// builder.Services.AddScoped<IServiceProviders, ServiceProviders>();
+builder.Services.AddScoped<IPayOSService, PayOSService>();
 
-// ?? Utility & Helper Services
+// 📌 Background Services - DISABLED for performance
+// builder.Services.AddHostedService<SubscriptionExpirationService>();
+
+// 📌 Utility & Helper Services
 builder.Services.AddTransient<IEmailService, EmailService>(); // Email service (Transient)
 builder.Services.AddSingleton<IPasswordEncryptionService, PasswordEncryptionService>(); // Encryption (Singleton)
 builder.Services.AddSingleton<IIdObfuscator, IdObfuscator>();
 builder.Services.AddSingleton<NotificationService>();
 
-// 2. Singleton: M?t instance duy nh?t cho c? ?ng d?ng, d�ng cho d?ch v? kh�ng tr?ng th�i
-//    - V� d?: C?u h�nh, logger to�n c?c
-//    - C?n th?n: Kh�ng d�ng cho DbContext/repository v� g�y l?i concurrency
-// V� d?: builder.Services.AddSingleton<SomeConfigService>();
+// 📌 Service Provider (must be registered after all other services)
+builder.Services.AddScoped<IServiceProviders, ServiceProviders>();
 
-// 3. Transient: Instance m?i m?i l?n g?i, d�ng cho d?ch v? nh?, kh�ng luu tr?ng th�i
-//    - V� d?: Email sender, d?ch v? t?m th?i
-// V� d?: builder.Services.AddTransient<SomeLightweightService>();
+// 2. Singleton: Một instance duy nhất cho cả ứng dụng, dùng cho dịch vụ không trạng thái
+//    - Ví dụ: Cấu hình, logger toàn cục
+//    - Cẩn thận: Không dùng cho DbContext/repository vì gây lỗi concurrency
+// Ví dụ: builder.Services.AddSingleton<SomeConfigService>();
 
-//T�M L?I: N�N H?I CON AI COI N�N X�I SCOPE G�???
+// 3. Transient: Instance mới mỗi lần gọi, dùng cho dịch vụ nhẹ, không lưu trạng thái
+//    - Ví dụ: Email sender, dịch vụ tạm thời
+// Ví dụ: builder.Services.AddTransient<SomeLightweightService>();
+
+//TÓM LẠI: NÊN HỎI CON AI COI NÊN XÀI SCOPE GÌ???
 
 
 
 
 
 
-// ================= C?U H�NH BLOB STORAGE =================
+// ================= CẤU HÌNH BLOB STORAGE =================
 ////var blobServiceClient = new BlobServiceClient(builder.Configuration["AzureStorage:ConnectionString"]);
 //builder.Services.AddSingleton(blobServiceClient);
 
-// ================= C?U H�NH CORS =================
+// ================= CẤU HÌNH CORS =================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -138,10 +159,10 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-// ================= THAY �?I �? L?NG NGHE HTTP =================
-builder.WebHost.UseUrls("http://0.0.0.0:5000"); // �� thay d?i t? https sang http
+// ================= THAY ĐỔI ĐỂ LẮNG NGHE HTTP =================
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
-// ================= C?U H�NH SWAGGER =================
+// ================= CẤU HÌNH SWAGGER =================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -150,7 +171,7 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Vui l�ng nh?p Bearer Token (VD: Bearer eyJhbGciOi...)",
+        Description = "Vui lòng nhập Bearer Token (VD: Bearer eyJhbGciOi...)",
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
@@ -173,8 +194,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ================= C?U H�NH AUTOMAPPER =================
-// ================= C?U H�NH CONTROLLERS =================
+// ================= CẤU HÌNH AUTOMAPPER =================
+// ================= CẤU HÌNH CONTROLLERS =================
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
@@ -192,6 +213,10 @@ app.UseDatabaseKeepAlive();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add subscription middleware to check AI access
+app.UseSubscriptionMiddleware();
+
 app.MapControllers();
 app.Run();
 

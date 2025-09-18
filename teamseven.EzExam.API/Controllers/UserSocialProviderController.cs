@@ -25,7 +25,9 @@ namespace teamseven.EzExam.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get all user social providers")]
+        [SwaggerOperation(Summary = "Get all user social providers", Description = "Retrieves a list of all user social providers.")]
+        [SwaggerResponse(200, "User social providers retrieved successfully.", typeof(IEnumerable<UserSocialProviderDataResponse>))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetAll()
         {
             var result = await _serviceProvider.UserSocialProviderService.GetAllAsync();
@@ -34,7 +36,10 @@ namespace teamseven.EzExam.Controllers
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get a user social provider by ID")]
+        [SwaggerOperation(Summary = "Get a user social provider by ID", Description = "Retrieves a specific user social provider by their ID.")]
+        [SwaggerResponse(200, "User social provider retrieved successfully.", typeof(UserSocialProviderDataResponse))]
+        [SwaggerResponse(404, "User social provider not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -51,7 +56,11 @@ namespace teamseven.EzExam.Controllers
 
         [HttpPost]
         [Authorize(Policy = "DeliveringStaffPolicy")]
-        [SwaggerOperation(Summary = "Create a new user social provider")]
+        [SwaggerOperation(Summary = "Create a new user social provider", Description = "Creates a new user social provider. Requires DeliveringStaffPolicy authorization.")]
+        [SwaggerResponse(201, "User social provider created successfully.", typeof(object))]
+        [SwaggerResponse(400, "Invalid request data.", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token or insufficient permissions.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> Create([FromBody] CreateUserSocialProviderRequest request)
         {
             if (!ModelState.IsValid)
@@ -63,7 +72,12 @@ namespace teamseven.EzExam.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Policy = "DeliveringStaffPolicy")]
-        [SwaggerOperation(Summary = "Update an existing user social provider")]
+        [SwaggerOperation(Summary = "Update an existing user social provider", Description = "Updates an existing user social provider. Requires DeliveringStaffPolicy authorization.")]
+        [SwaggerResponse(200, "User social provider updated successfully.", typeof(object))]
+        [SwaggerResponse(400, "Invalid request data or ID mismatch.", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token or insufficient permissions.", typeof(object))]
+        [SwaggerResponse(404, "User social provider not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> Update(int id, [FromBody] UserSocialProviderDataRequest request)
         {
             if (!ModelState.IsValid || id != request.Id)

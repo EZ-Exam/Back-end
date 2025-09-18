@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using teamseven.EzExam.Services.Object.Requests;
-
+using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.UserService;
 using teamseven.EzExam.Services.Services.ServiceProvider;
+using teamseven.EzExam.Services.Services.JwtHelperService;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace teamseven.EzExam.API.Controllers
@@ -13,19 +15,65 @@ namespace teamseven.EzExam.API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly IServiceProviders _serviceProvider;
+        private readonly ILogger<AccountController> _logger;
+        private readonly IJwtHelperService _jwtHelperService;
 
-        public AccountController(IServiceProviders serviceProvider)
+        public AccountController(
+            IServiceProviders serviceProvider,
+            ILogger<AccountController> logger,
+            IJwtHelperService jwtHelperService)
         {
             _serviceProvider = serviceProvider;
+            _logger = logger;
+            _jwtHelperService = jwtHelperService;
         }
 
 
         [HttpGet]
         [Authorize(Policy = "DeliveringStaffPolicy")]
+        [SwaggerOperation(Summary = "Get all users", Description = "Retrieves a list of all users. Requires DeliveringStaffPolicy authorization.")]
+        [SwaggerResponse(200, "Users retrieved successfully.", typeof(IEnumerable<UserResponse>))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token or insufficient permissions.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetAllUser()
         {
             return Ok(await _serviceProvider.UserService.GetUsersAsync());
 
+        }
+
+        [HttpGet("my-profile")]
+        [Authorize] // Require authentication
+        [SwaggerOperation(Summary = "Get current user profile", Description = "Retrieves the profile information of the currently authenticated user.")]
+        [SwaggerResponse(200, "Profile retrieved successfully.", typeof(UserResponse))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
+        [SwaggerResponse(404, "User not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            try
+            {
+                // Get current user ID from JWT token
+                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+                if (currentUserId == null)
+                {
+                    _logger.LogWarning("Could not extract user ID from JWT token.");
+                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
+                }
+
+                var userProfile = await _serviceProvider.UserService.GetMyProfileAsync(currentUserId.Value);
+                return Ok(userProfile);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "User not found: {Message}", ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user profile: {Message}", ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving user profile." });
+            }
         }
 
         [HttpPut("premium/{userId}")]
@@ -57,9 +105,13 @@ namespace teamseven.EzExam.API.Controllers
             }
         }
 
-
         [HttpGet("{id}")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get user by ID", Description = "Retrieves a specific user by their ID.")]
+        [SwaggerResponse(200, "User retrieved successfully.", typeof(UserResponse))]
+        [SwaggerResponse(400, "Invalid user ID.", typeof(object))]
+        [SwaggerResponse(404, "User not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetUserById(int id)
         {
             if (id <= 0)
@@ -82,6 +134,12 @@ namespace teamseven.EzExam.API.Controllers
         }
         [HttpPut("{id}/soft-delete")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Soft delete user", Description = "Performs a soft delete on a user by setting their status to inactive.")]
+        [SwaggerResponse(200, "User soft deleted successfully.", typeof(UserResponse))]
+        [SwaggerResponse(400, "Invalid user ID.", typeof(object))]
+        [SwaggerResponse(404, "User not found.", typeof(object))]
+        [SwaggerResponse(409, "User already deleted.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> SoftDeleteUser(int id)
         {
             if (id <= 0)
@@ -109,6 +167,10 @@ namespace teamseven.EzExam.API.Controllers
         }
         [HttpPut("{id}/profile")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Update user profile", Description = "Updates the profile information of a specific user.")]
+        [SwaggerResponse(200, "Profile updated successfully.", typeof(object))]
+        [SwaggerResponse(400, "Invalid user ID or request data.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> UpdateUserProfile(int id, [FromBody] UpdateUserProfileRequest request)
         {
             if (id <= 0)

@@ -28,6 +28,7 @@ namespace teamseven.EzExam.Controllers
         [HttpGet("status/{userId}")]
         [SwaggerOperation(Summary = "Get user subscription status", Description = "Retrieves the current subscription status and usage limits for a user.")]
         [SwaggerResponse(200, "Subscription status retrieved successfully.", typeof(UserSubscriptionStatusResponse))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetUserSubscriptionStatus(int userId)
         {
@@ -46,6 +47,7 @@ namespace teamseven.EzExam.Controllers
         [HttpGet("tracking/{userId}")]
         [SwaggerOperation(Summary = "Get user usage tracking", Description = "Retrieves the usage tracking data for a user.")]
         [SwaggerResponse(200, "Usage tracking retrieved successfully.", typeof(IEnumerable<UsageTrackingResponse>))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetUserUsageTracking(int userId)
         {
@@ -64,6 +66,7 @@ namespace teamseven.EzExam.Controllers
         [HttpGet("history/{userId}")]
         [SwaggerOperation(Summary = "Get user usage history", Description = "Retrieves the usage history for a user.")]
         [SwaggerResponse(200, "Usage history retrieved successfully.", typeof(IEnumerable<UsageHistoryResponse>))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetUserUsageHistory(int userId, [FromQuery] int? limit = null)
         {
@@ -83,6 +86,7 @@ namespace teamseven.EzExam.Controllers
         [SwaggerOperation(Summary = "Increment usage", Description = "Increments the usage count for a specific action.")]
         [SwaggerResponse(200, "Usage incremented successfully.", typeof(object))]
         [SwaggerResponse(400, "Invalid request data or limit exceeded.", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> IncrementUsage([FromBody] UsageTrackingRequest request)
         {

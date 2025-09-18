@@ -143,5 +143,43 @@ namespace teamseven.EzExam.Controllers
             }
         }
 
+        [HttpPost("master-deposit")]
+        [AllowAnonymous] // This endpoint doesn't require JWT authentication, only super secret key
+        [SwaggerOperation(Summary = "Master deposit to any user account", Description = "Deposits balance to any user account using master super secret key. This is an admin-only operation.")]
+        [SwaggerResponse(200, "Deposit successful.", typeof(BalanceResponse))]
+        [SwaggerResponse(400, "Invalid request data.", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized - Invalid super secret key.", typeof(object))]
+        [SwaggerResponse(404, "User not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
+        public async Task<IActionResult> MasterDeposit([FromBody] MasterDepositRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for master deposit request.");
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _balanceService.MasterDepositAsync(request);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt for master deposit: {Message}", ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "User not found for master deposit: {Message}", ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in master deposit: {Message}", ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while processing master deposit." });
+            }
+        }
+
     }
 }

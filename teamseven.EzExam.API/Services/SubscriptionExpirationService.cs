@@ -36,11 +36,11 @@ namespace teamseven.EzExam.API.Services
                     
                     if (result)
                     {
-                        _logger.LogInformation("Subscription expiration check completed successfully");
+                        _logger.LogInformation("Subscription expiration check completed - some subscriptions were expired");
                     }
                     else
                     {
-                        _logger.LogWarning("Subscription expiration check completed with errors");
+                        _logger.LogInformation("Subscription expiration check completed - no expired subscriptions found");
                     }
                 }
                 catch (Exception ex)

@@ -30,6 +30,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
         {
             return await _context.UserSubscriptions
+                .AsNoTracking() // Read-only query
                 .Where(x => x.UserId == userId)
                 .ToListAsync();
         }
@@ -46,7 +47,34 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<List<UserSubscription>?> GetActiveSubscriptionsAsync(long userId)
         {
             return await _context.UserSubscriptions
+                .AsNoTracking() // Read-only query
                 .Where(x => x.UserId == userId && x.IsActive)
+                .ToListAsync();
+        }
+
+        public async Task<UserSubscription?> GetActiveSubscriptionByUserIdAsync(int userId)
+        {
+            // Optimized query with proper indexing
+            return await _context.UserSubscriptions
+                .AsNoTracking() // Read-only query, no change tracking needed
+                .Where(x => x.UserId == userId && x.IsActive)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<UserSubscription>?> GetSubscriptionsByUserIdAsync(int userId)
+        {
+            return await _context.UserSubscriptions
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<UserSubscription>?> GetExpiredSubscriptionsAsync()
+        {
+            return await _context.UserSubscriptions
+                .AsNoTracking() // Read-only query
+                .Where(x => x.IsActive && x.EndDate.HasValue && x.EndDate.Value < DateTime.UtcNow)
                 .ToListAsync();
         }
 
@@ -57,7 +85,7 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<int> UpdateAsync(UserSubscription subscription)
         {
-            return await UpdateAsync(subscription);
+            return await base.UpdateAsync(subscription);
         }
 
         public async Task<bool> DeleteAsync(UserSubscription subscription)

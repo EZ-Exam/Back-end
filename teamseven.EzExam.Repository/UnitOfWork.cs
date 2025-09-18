@@ -9,6 +9,7 @@ namespace teamseven.EzExam.Repository
 {
     public interface IUnitOfWork : IDisposable
     {
+        teamsevenezexamdbContext Context { get; }
         ChapterRepository ChapterRepository { get; }
         ExamQuestionRepository ExamQuestionRepository { get; }
         ExamRepository ExamRepository { get; }
@@ -63,6 +64,8 @@ namespace teamseven.EzExam.Repository
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
+
+        public teamsevenezexamdbContext Context => _context;
 
         public ChapterRepository ChapterRepository => _chapterRepository ??= new ChapterRepository(_context);
         public ExamQuestionRepository ExamQuestionRepository => _examQuestionRepository ??= new ExamQuestionRepository(_context);
@@ -119,7 +122,15 @@ namespace teamseven.EzExam.Repository
                 }
                 catch
                 {
-                    await transaction.RollbackAsync();
+                    try
+                    {
+                        await transaction.RollbackAsync();
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        // Log rollback error but don't throw to avoid masking original error
+                        Console.WriteLine($"Rollback failed: {rollbackEx.Message}");
+                    }
                     throw;
                 }
             });

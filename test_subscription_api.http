@@ -1,76 +1,82 @@
 ### Test Subscription API Endpoints
-### Make sure to replace {token} with actual JWT token
+@host = http://localhost:5000
+@jwt_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm5hbWUiOiJUZXN0IFVzZXIiLCJyb2xlSWQiOjEsImlhdCI6MTczNzE5NzQ1NiwiZXhwIjoxNzM3MjgzODU2fQ.example
 
-@baseUrl = https://localhost:7000/api
-@token = your_jwt_token_here
-
-### 1. Get all subscription types (public endpoint)
-GET {{baseUrl}}/subscription-types
+### 1. Get All Subscription Types (Public)
+GET {{host}}/api/subscription-types
 Content-Type: application/json
 
-### 2. Get active subscription types (public endpoint)
-GET {{baseUrl}}/subscription-types/active
+### 2. Subscribe to FREE Plan (ID: 1)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
-
-### 3. Get subscription type by ID (public endpoint)
-GET {{baseUrl}}/subscription-types/1
-Content-Type: application/json
-
-### 4. Get subscription type by code (public endpoint)
-GET {{baseUrl}}/subscription-types/code/FREE
-Content-Type: application/json
-
-### 5. Subscribe to a subscription plan (requires authentication)
-POST {{baseUrl}}/subscription/subscribe
-Content-Type: application/json
-Authorization: Bearer {{token}}
 
 {
-    "subscriptionTypeId": 2,
-    "description": "Upgrading to Basic plan"
+  "subscriptionTypeId": 1,
+  "description": "Subscribe to FREE plan"
 }
 
-### 6. Get current subscription (requires authentication)
-GET {{baseUrl}}/subscription/current
+### 3. Subscribe to BASIC Plan (ID: 2)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
-Authorization: Bearer {{token}}
-
-### 7. Get subscription history (requires authentication)
-GET {{baseUrl}}/subscription/history
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-### 8. Cancel current subscription (requires authentication)
-POST {{baseUrl}}/subscription/cancel
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-### 9. Test AI limit check (requires authentication)
-GET {{baseUrl}}/usage-tracking/status/1
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-### 10. Test AI request with limit check (requires authentication)
-POST {{baseUrl}}/ai/gemini-1.5
-Content-Type: application/json
-Authorization: Bearer {{token}}
 
 {
-    "question": "What is the capital of Vietnam?",
-    "subject": "Geography"
+  "subscriptionTypeId": 2,
+  "description": "Subscribe to BASIC plan"
 }
 
-### 11. Add balance to user account (requires authentication)
-POST {{baseUrl}}/balance/add
+### 4. Subscribe to PREMIUM Plan (ID: 3)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
-Authorization: Bearer {{token}}
 
 {
-    "amount": 100000,
-    "description": "Adding balance for testing"
+  "subscriptionTypeId": 3,
+  "description": "Subscribe to PREMIUM plan"
 }
 
-### 12. Get user balance (requires authentication)
-GET {{baseUrl}}/balance
+### 5. Subscribe to UNLIMITED Plan (ID: 4)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
-Authorization: Bearer {{token}}
+
+{
+  "subscriptionTypeId": 4,
+  "description": "Subscribe to UNLIMITED plan"
+}
+
+### 6. Try to subscribe to another paid plan (should fail)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "subscriptionTypeId": 2,
+  "description": "Try to subscribe to BASIC plan again (should fail)"
+}
+
+### 7. Get Current Subscription
+GET {{host}}/api/subscription/current
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+### 8. Get Subscription History
+GET {{host}}/api/subscription/history
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+### 9. Cancel Current Subscription
+DELETE {{host}}/api/subscription/cancel
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+### 10. Subscribe to FREE Plan again (should work after cancellation)
+POST {{host}}/api/subscription/subscribe
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "subscriptionTypeId": 1,
+  "description": "Subscribe to FREE plan again"
+}

@@ -111,3 +111,5 @@ ehthumbs.db
 Thumbs.db
 *.json
 *.md
+*.sql
+*.http

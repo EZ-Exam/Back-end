@@ -24,7 +24,12 @@ namespace teamseven.EzExam.Repository.Repository
             return await _context.Users.FindAsync(id);
         }
 
-        public async Task<User?> GetByEmailAsync(string email) { return await _context.Users.FirstOrDefaultAsync(u => u.Email == email); }
+        public async Task<User?> GetByEmailAsync(string email) 
+        { 
+            return await _context.Users
+                .AsNoTracking() // Tối ưu performance cho read-only query
+                .FirstOrDefaultAsync(u => u.Email == email); 
+        }
 
         public async Task<IEnumerable<User>?> GetAllUserAsync()
         {

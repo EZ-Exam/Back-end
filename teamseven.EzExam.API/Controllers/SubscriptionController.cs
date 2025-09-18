@@ -137,6 +137,52 @@ namespace teamseven.EzExam.Controllers
             }
         }
 
+        [HttpPost("register")]
+        [SwaggerOperation(Summary = "Register for subscription package", Description = "Registers the current user for a subscription package. FREE subscription can be overridden by any paid package. Paid subscriptions cannot be overridden by other paid packages.")]
+        [SwaggerResponse(200, "Subscription registered successfully.", typeof(SubscribeResponse))]
+        [SwaggerResponse(400, "Invalid request data or subscription logic violation.", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
+        [SwaggerResponse(404, "User or subscription type not found.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
+        public async Task<IActionResult> RegisterSubscription([FromBody] SubscribeRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for subscription registration request.");
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                // Get current user ID from JWT token
+                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+                if (currentUserId == null)
+                {
+                    _logger.LogWarning("Could not extract user ID from JWT token.");
+                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
+                }
+
+                var result = await _subscriptionService.SubscribeUserAsync(currentUserId.Value, request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "User or subscription type not found: {Message}", ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error registering subscription: {Message}", ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while registering subscription." });
+            }
+        }
+
         [HttpPost("cancel")]
         [SwaggerOperation(Summary = "Cancel current subscription", Description = "Cancels the current active subscription for the authenticated user.")]
         [SwaggerResponse(200, "Subscription cancelled successfully.", typeof(object))]

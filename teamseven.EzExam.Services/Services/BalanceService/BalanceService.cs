@@ -96,6 +96,78 @@ namespace teamseven.EzExam.Services.Services.BalanceService
             }
         }
 
+        public async Task<BalanceResponse> MasterDepositAsync(MasterDepositRequest request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Master deposit request is null.");
+                throw new ArgumentNullException(nameof(request), "Master deposit request cannot be null.");
+            }
+
+            try
+            {
+                // Validate super secret key
+                var validSuperSecretKey = _configuration["Security:SuperSecretKey"];
+                if (string.IsNullOrEmpty(validSuperSecretKey))
+                {
+                    _logger.LogError("Super secret key is not configured in appsettings.json");
+                    throw new InvalidOperationException("Super secret key is not configured.");
+                }
+
+                if (request.SuperSecretKey != validSuperSecretKey)
+                {
+                    _logger.LogWarning("Invalid super secret key provided for master deposit to user {UserId}", request.UserId);
+                    throw new UnauthorizedAccessException("Invalid super secret key.");
+                }
+
+                // Get user
+                var user = await _unitOfWork.UserRepository.GetByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    _logger.LogWarning("User with ID {UserId} not found for master deposit", request.UserId);
+                    throw new NotFoundException($"User with ID {request.UserId} not found.");
+                }
+
+                var previousBalance = user.Balance ?? 0;
+                var newBalance = previousBalance + request.Amount;
+
+                // Update user balance
+                user.Balance = newBalance;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.UserRepository.UpdateAsync(user);
+                await _unitOfWork.SaveChangesWithTransactionAsync();
+
+                _logger.LogInformation("Master deposit: Added {Amount} to balance for user {UserId}. Previous: {PreviousBalance}, New: {NewBalance}", 
+                    request.Amount, request.UserId, previousBalance, newBalance);
+
+                return new BalanceResponse
+                {
+                    UserId = request.UserId,
+                    UserEmail = user.Email,
+                    UserName = user.FullName ?? "Unknown",
+                    PreviousBalance = previousBalance,
+                    AddedAmount = request.Amount,
+                    NewBalance = newBalance,
+                    Description = request.Description ?? "Master deposit",
+                    UpdatedAt = user.UpdatedAt
+                };
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (NotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in master deposit for user {UserId}: {Message}", request.UserId, ex.Message);
+                throw new ApplicationException("An error occurred while processing master deposit.", ex);
+            }
+        }
+
         public async Task<decimal> GetUserBalanceAsync(int userId)
         {
             try

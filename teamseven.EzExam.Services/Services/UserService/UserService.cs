@@ -17,6 +17,7 @@ namespace teamseven.EzExam.Services.Services.UserService
     {
         Task <IEnumerable<User>> GetUsersAsync ();
         Task <UserResponse> GetUserByIdAsync (int id);
+        Task <UserResponse> GetMyProfileAsync (int userId);
         Task UpdateUserAsync(UserResponse user);
         Task<UserResponse> SoftDeleteUserAsync(int id);
         Task<bool> UpgradeToPremiumAsync(int userId);
@@ -55,6 +56,28 @@ namespace teamseven.EzExam.Services.Services.UserService
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt
             };   
+        }
+
+        public async Task<UserResponse> GetMyProfileAsync(int userId)
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId)
+                ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+
+            return new UserResponse
+            {
+                Id = user.Id,
+                Balance = user.Balance,
+                Email = user.Email,
+                FullName = user.FullName,
+                AvatarUrl = user.AvatarUrl ?? string.Empty,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                RoleId = user.RoleId,
+                IsActive = user.IsActive,
+                EmailVerifiedAt = user.EmailVerifiedAt,
+                LastLoginAt = user.LastLoginAt,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            };
         }
         public async Task<UserResponse> SoftDeleteUserAsync(int id)
         {
