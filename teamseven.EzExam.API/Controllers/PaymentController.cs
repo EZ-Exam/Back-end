@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+Ôªøusing Microsoft.AspNetCore.Mvc;
 using Net.payOS.Types;
 using teamseven.EzExam.Controllers;
 using teamseven.EzExam.Services.Object.Requests;
@@ -10,7 +10,7 @@ namespace teamseven.EzExam.API.Controllers
     [Route("api/[controller]")]
     public class PaymentController : ControllerBase
     {
-        private readonly IServiceProviders _serviceProvider;  // ThÍm Repository cho UserSubscription
+        private readonly IServiceProviders _serviceProvider;  // Th√™m Repository cho UserSubscription
         private readonly ILogger<ChapterController> _logger;
 
         public PaymentController(ILogger<ChapterController> logger, IServiceProviders serviceProvider)
@@ -27,17 +27,17 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Invalid request data" });
             }
 
-            // T?o orderCode unique (s? d˘ng l‡m PaymentGatewayTransactionId)
+            // T?o orderCode unique (s? d√πng l√†m PaymentGatewayTransactionId)
             long orderCode = DateTimeOffset.Now.ToUnixTimeMilliseconds(); // 24/07/2025 03:18 PM +07
 
             // T?o ItemData cho PayOS
             var item = new ItemData(request.ItemName, request.Quantity, (int)request.Amount); // Chuy?n decimal sang int
             var items = new List<ItemData> { item };
 
-            // C?u hÏnh PaymentData
+            // C?u h√¨nh PaymentData
             var paymentData = new PaymentData(
                 orderCode,
-                (int)request.Amount, // Chuy?n decimal sang int vÏ PayOS yÍu c?u
+                (int)request.Amount, // Chuy?n decimal sang int v√¨ PayOS y√™u c?u
                 request.Description,
                 items,
                 "https://fe-phy-gen.vercel.app/",
@@ -50,13 +50,13 @@ namespace teamseven.EzExam.API.Controllers
             var subscriptionRequest = new UserSubscriptionRequest
             {
                 UserId = request.UserId,
-                SubscriptionTypeId = request.SubscriptionTypeId ?? 1, // Gi? s? m?c d?nh, b?n cÛ th? l?y t? request
-                EndDate = DateTime.UtcNow.AddMonths(1), // Gi? s? gÛi 1 th·ng t? 24/07/2025
+                SubscriptionTypeId = request.SubscriptionTypeId ?? 1, // Gi? s? m?c d?nh, b?n c√≥ th? l?y t? request
+                EndDate = DateTime.UtcNow.AddMonths(1), // Gi? s? g√≥i 1 th√°ng t? 24/07/2025
                 Amount = request.Amount,
                 PaymentGatewayTransactionId = orderCode.ToString()
             };
 
-            // Luu thÙng tin v‡o UserSubscription qua service
+            // Luu th√¥ng tin v√†o UserSubscription qua service
             await _serviceProvider.UserSubscriptionService.AddSubscriptionAsync(subscriptionRequest);
 
             // Tr? v? URL cho FE
@@ -64,54 +64,82 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         [HttpPost("payos-webhook")]
-        public async Task<IActionResult> HandleWebhook([FromBody] WebhookType webhookBody)
+        public async Task<IActionResult> HandleWebhook([FromBody] PayOSWebhookEnvelope body)
         {
-            Console.WriteLine("[Webhook] Received webhook from PayOS"); 
-            try
+            _logger.LogInformation("Webhook received: {@Body}", body);
+
+            var d = body?.data;
+            if (d == null) return Ok(); // kh√¥ng c√≥ data ‚Üí b·ªè qua
+
+            bool isSuccess =
+                string.Equals(body?.code, "00", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d.code, "00", StringComparison.OrdinalIgnoreCase);
+
+            if (!isSuccess) return Ok();
+
+            long orderCode = d.orderCode;
+            decimal amount = d.amount;
+
+            // üîç T√¨m UserSubscription theo orderCode
+            var subscription = await _serviceProvider.UserSubscriptionService
+                .GetByPaymentGatewayTransactionIdAsync(orderCode.ToString());
+
+            if (subscription == null)
             {
-                WebhookData data = webhookBody.data;
-                // N?u thanh to·n th‡nh cÙng (code == "00")
-                if (data.code == "00")
-                {
-
-                    var userSubscription = await _serviceProvider.UserSubscriptionService.GetByPaymentGatewayTransactionIdAsync(data.orderCode.ToString());
-                    if (userSubscription != null)
-                    {
-                        Console.WriteLine("Found subscription: " + userSubscription.Id + data.amount+ userSubscription.UserId);
-
-                        var user = await _serviceProvider.UserService.GetUserByIdAsync(userSubscription.UserId);
-                        if (user != null)
-                        {
-                            Console.WriteLine("hi");
-
-                            // X? l˝ Balance: N?u null thÏ g·n 0 tru?c khi c?ng amount
-                            if (!user.Balance.HasValue)
-                            {
-                                user.Balance = 0m; // Chuy?n null th‡nh 0
-                            }
-                            user.Balance += (decimal)data.amount; // Gi? s? Balance l‡ decimal
-                            await _serviceProvider.UserService.UpdateUserAsync(user);
-                        }
-                    }
-                }
-
+                _logger.LogWarning("Webhook: subscription not found for order {OrderCode}", orderCode);
                 return Ok();
             }
-            catch (Exception ex)
+
+            // üîç L·∫•y user theo subscription
+            var user = await _serviceProvider.UserService.GetUserByIdAsync(subscription.UserId);
+            if (user == null)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning("Webhook: user {UserId} not found for order {OrderCode}", subscription.UserId, orderCode);
+                return Ok();
             }
+
+            // üí∞ Update balance
+            user.Balance ??= 0m;
+            user.Balance += amount;
+            await _serviceProvider.UserService.UpdateUserAsync(user);
+
+            // ‚úÖ Set subscription status = COMPLETED
+            subscription.PaymentStatus = "COMPLETED";
+            await _serviceProvider.UserSubscriptionService.UpdateAsync(subscription);
+
+            _logger.LogInformation(
+                "Webhook: Order {OrderCode} completed. User {UserId} balance +{Amount}, new balance={Balance}",
+                orderCode, user.Id, amount, user.Balance
+            );
+
+            return Ok();
         }
+
     }
 
     // DTO cho request
     public class CreatePaymentRequest
     {
         public int UserId { get; set; }
-        public int? SubscriptionTypeId { get; set; }  // ThÍm field n‡y d? ch?n lo?i subscription
+        public int? SubscriptionTypeId { get; set; }  // Th√™m field n√†y d? ch?n lo?i subscription
         public string ItemName { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }  // S? d?ng decimal d? kh?p v?i UserSubscription
         public string Description { get; set; }
+    }
+    public class PayOSWebhookEnvelope
+    {
+        public string? code { get; set; }     // "00"
+        public string? desc { get; set; }     // "success"
+        public PayOSWebhookData? data { get; set; }
+    }
+
+    public class PayOSWebhookData
+    {
+        public long orderCode { get; set; }
+        public long amount { get; set; }
+        public string? description { get; set; }
+        public string? code { get; set; }     // "00"
+        public string? desc { get; set; }     // "Th√†nh c√¥ng"
     }
 }
