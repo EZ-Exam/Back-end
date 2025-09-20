@@ -38,6 +38,10 @@ namespace teamseven.EzExam.Services.Services.ExamService
             return exam.Id;
         }
 
+        public Task CreateExamHistoryAsync(ExamHistoryRequest examHistoryRequest)
+        {
+            throw new NotImplementedException();
+        }
         public async Task SoftDeleteExamAsync(int examId)
         {
             var exam = await _unitOfWork.ExamRepository.GetByIdAsync(examId);
@@ -45,7 +49,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 throw new ArgumentException("Exam not found");
 
             if (exam.IsDeleted == true)
-                return; // Already deleted
+                return; // xoa roi thi next
 
             exam.IsDeleted = true;
             exam.UpdatedAt = DateTime.UtcNow;
@@ -53,7 +57,6 @@ namespace teamseven.EzExam.Services.Services.ExamService
             _unitOfWork.ExamRepository.Update(exam);
             await _unitOfWork.SaveChangesWithTransactionAsync();
         }
-
         public async Task RecoverExamAsync(int examId)
         {
             var exam = await _unitOfWork.ExamRepository.GetByIdAsync(examId);
@@ -69,6 +72,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
             _unitOfWork.ExamRepository.Update(exam);
             await _unitOfWork.SaveChangesWithTransactionAsync();
         }
+
+
 
         public async Task CreateExamQuestionAsync(ExamQuestionRequest examQuestionRequest)
         {
@@ -97,6 +102,12 @@ namespace teamseven.EzExam.Services.Services.ExamService
 
             await _unitOfWork.ExamQuestionRepository.AddAsync(examQuestion);
             await _unitOfWork.SaveChangesWithTransactionAsync();
+        }
+
+
+        public Task DeleteExamHistoryAsync(ExamHistoryRequest historyRequest)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<IEnumerable<ExamResponse>> GetAllExamAsync()
@@ -144,6 +155,10 @@ namespace teamseven.EzExam.Services.Services.ExamService
             };
         }
 
+        public Task<ExamHistoryResponseDto> GetExamHistoryResponseAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
         public async Task RenameExamAsync(int examId, string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
@@ -177,7 +192,6 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 QuestionContent = eq.Question?.Content
             }).ToList();
         }
-
         public async Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId)
         {
             var exams = await _unitOfWork.ExamRepository.GetByCreatorAsync(userId);
@@ -198,6 +212,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 HistoryCount = e.ExamHistories?.Count ?? 0
             }).ToList();
         }
+
+        //
 
         public async Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest)
         {
