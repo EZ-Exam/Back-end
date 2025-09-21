@@ -10,6 +10,7 @@ namespace teamseven.EzExam.Repository
     public interface IUnitOfWork : IDisposable
     {
         teamsevenezexamdbContext Context { get; }
+        AnswerRepository AnswerRepository { get; }
         ChapterRepository ChapterRepository { get; }
         ExamQuestionRepository ExamQuestionRepository { get; }
         ExamRepository ExamRepository { get; }
@@ -38,6 +39,7 @@ namespace teamseven.EzExam.Repository
     {
         private readonly teamsevenezexamdbContext _context;
 
+        private AnswerRepository _answerRepository;
         private ChapterRepository _chapterRepository;
         private ExamQuestionRepository _examQuestionRepository;
         private ExamRepository _examRepository;
@@ -67,6 +69,7 @@ namespace teamseven.EzExam.Repository
 
         public teamsevenezexamdbContext Context => _context;
 
+        public AnswerRepository AnswerRepository => _answerRepository ??= new AnswerRepository(_context);
         public ChapterRepository ChapterRepository => _chapterRepository ??= new ChapterRepository(_context);
         public ExamQuestionRepository ExamQuestionRepository => _examQuestionRepository ??= new ExamQuestionRepository(_context);
         public ExamRepository ExamRepository => _examRepository ??= new ExamRepository(_context);

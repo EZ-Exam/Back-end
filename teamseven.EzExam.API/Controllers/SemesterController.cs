@@ -10,7 +10,7 @@ using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/semesters")]

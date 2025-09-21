@@ -70,7 +70,8 @@ namespace teamseven.EzExam.Repository.Context
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseNpgsql(GetConnectionString("DefaultConnection"),
-                options => options.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), null))
+                options => options.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), null)
+                                 .CommandTimeout(30))
                              .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -195,6 +196,8 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Id).HasColumnName("Id");
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
+                entity.Property(e => e.Document).HasColumnName("Document").HasMaxLength(5000);
+                entity.Property(e => e.DocumentType).HasColumnName("DocumentType").HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.HasOne(d => d.Chapter).WithMany(p => p.Lessons)
@@ -285,6 +288,8 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.IsActive).HasColumnName("IsActive").HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                
+                
                 entity.HasOne(d => d.CreatedByUser).WithMany(p => p.Questions)
                     .HasForeignKey(d => d.CreatedByUserId)
                     .HasConstraintName("fk_questions_created_by_user_id");

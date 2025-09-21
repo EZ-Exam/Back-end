@@ -30,6 +30,13 @@ public class QuestionDataResponse
 
     public DateTime? UpdatedAt { get; set; }
 
+    // Frontend required properties from Question model
+    public string? Formula { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public string? Explanation { get; set; }
+    public string Type { get; set; } = "multiple-choice";
+    public List<string> Options { get; set; } = new List<string>();
+
     //related
     public string CreatedByUserName { get; set; }
     public string LessonName { get; set; }

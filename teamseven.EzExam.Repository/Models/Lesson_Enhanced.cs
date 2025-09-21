@@ -1,31 +1,41 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
 {
     [Table("lessons")]
-    public class Lesson
+    public class Lesson_Enhanced
     {
         [Key]
         [Column("Id")]
         public int Id { get; set; }
 
         [Required]
-        [MaxLength(100)]
-        [Column("Name")]
-        public string Name { get; set; } = string.Empty;
+        [MaxLength(200)]
+        [Column("Title")]
+        public string Title { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        [Column("Description")]
+        public string? Description { get; set; }
 
         [Required]
         [Column("ChapterId")]
         public int ChapterId { get; set; }
 
-        [MaxLength(5000)]
-        [Column("Document")]
-        public string? Document { get; set; }
+        [MaxLength(500)]
+        [Column("PdfUrl")]
+        public string? PdfUrl { get; set; }
 
-        [MaxLength(50)]
-        [Column("DocumentType")]
-        public string? DocumentType { get; set; }
+        [MaxLength(500)]
+        [Column("VideoUrl")]
+        public string? VideoUrl { get; set; }
+
+        [Column("Order")]
+        public int Order { get; set; } = 1;
+
+        [Column("IsActive")]
+        public bool IsActive { get; set; } = true;
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

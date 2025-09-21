@@ -95,6 +95,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             if (question == null)
                 throw new NotFoundException($"Question with ID {id} not found.");
 
+            // Get answers for options
+            var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(id);
+
             return new QuestionDataResponse
             {
                 Id = question.Id,
@@ -103,11 +106,19 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
                 Image = question.Image,
                 LessonId = question.LessonId,
+                ChapterId = question.ChapterId,
                 CreatedByUserId = question.CreatedByUserId,
                 CreatedAt = question.CreatedAt,
                 UpdatedAt = question.UpdatedAt,
                 LessonName = question.Lesson?.Name,
-                CreatedByUserName = question.CreatedByUser?.Email
+                ChapterName = question.Chapter?.Name,
+                CreatedByUserName = question.CreatedByUser?.Email,
+                // New fields from Question model (temporarily set to null until migration)
+                Formula = null,
+                CorrectAnswer = null,
+                Explanation = null,
+                Type = question.QuestionType?.ToLower() ?? "multiple-choice",
+                Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
             };
         }
 
@@ -254,21 +265,32 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
                 var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
                 var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
-                var questionResponses = questions.Select(q => new QuestionDataResponse
+                
+                var questionResponses = new List<QuestionDataResponse>();
+                foreach (var q in questions)
                 {
-                    Id = q.Id,
-                    Content = q.Content,
-                    QuestionSource = q.QuestionSource,
-                    DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
-                    LessonId = q.LessonId,
-                    ChapterId = q.Lesson?.ChapterId,
-                    CreatedByUserId = q.CreatedByUserId,
-                    CreatedAt = q.CreatedAt,
-                    UpdatedAt = q.UpdatedAt,
-                    LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
-                    ChapterName = allChapters.FirstOrDefault(c => c.Id == q.Lesson?.ChapterId)?.Name ?? string.Empty,
-                    CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty
-                }).ToList();
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
+                    questionResponses.Add(new QuestionDataResponse
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        QuestionSource = q.QuestionSource,
+                        DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
+                        LessonId = q.LessonId,
+                        ChapterId = q.ChapterId,
+                        CreatedByUserId = q.CreatedByUserId,
+                        CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt,
+                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
+                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
+                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
+                        Formula = null,
+                        CorrectAnswer = null,
+                        Explanation = null,
+                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
+                        Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
+                    });
+                }
 
                 return new PagedResponse<QuestionDataResponse>(
                     questionResponses,

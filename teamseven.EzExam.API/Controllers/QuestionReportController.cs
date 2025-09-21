@@ -10,7 +10,7 @@ using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 using teamseven.EzExam.Services.Extensions;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/question-reports")] 

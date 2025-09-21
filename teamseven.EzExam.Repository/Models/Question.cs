@@ -48,6 +48,7 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Image")]
         public string? Image { get; set; }
 
+
         [Column("TemplateQuestionId")]
         public int? TemplateQuestionId { get; set; }
 

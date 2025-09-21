@@ -7,7 +7,7 @@ using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/balance")]
