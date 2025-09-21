@@ -6,7 +6,7 @@ using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.UsageTrackingService;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/usage-tracking")]

@@ -30,6 +30,8 @@ namespace teamseven.EzExam.Services.Services.LessonService
                 Id = l.Id,
                 Name = l.Name,
                 ChapterId = l.ChapterId,
+                Document = l.Document,
+                DocumentType = l.DocumentType,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt
             });
@@ -95,6 +97,8 @@ namespace teamseven.EzExam.Services.Services.LessonService
                     Id = l.Id,
                     Name = l.Name,
                     ChapterId = l.ChapterId,
+                    Document = l.Document,
+                    DocumentType = l.DocumentType,
                     CreatedAt = l.CreatedAt,
                     UpdatedAt = l.UpdatedAt
                 }).ToList();
@@ -127,6 +131,8 @@ namespace teamseven.EzExam.Services.Services.LessonService
                 Id = lesson.Id,
                 Name = lesson.Name,
                 ChapterId = lesson.ChapterId,
+                Document = lesson.Document,
+                DocumentType = lesson.DocumentType,
                 CreatedAt = lesson.CreatedAt,
                 UpdatedAt = lesson.UpdatedAt
             };
@@ -181,7 +187,7 @@ namespace teamseven.EzExam.Services.Services.LessonService
             await _unitOfWork.LessonRepository.RemoveAsync(lesson);
             await _unitOfWork.SaveChangesWithTransactionAsync();
 
-            _logger.LogInformation("Deleted lesson with ID {Id}.", id);
+            _logger.LogInformation("Deleted lesson with ID {Id}.", lesson.Id);
         }
     }
 }

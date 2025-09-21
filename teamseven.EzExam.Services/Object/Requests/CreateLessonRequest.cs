@@ -14,5 +14,11 @@ namespace teamseven.EzExam.Services.Object.Requests
         public string Name { get; set; }
 
         public int ChapterId { get; set; }
+
+        [StringLength(5000, ErrorMessage = "Document cannot exceed 5000 characters.")]
+        public string? Document { get; set; }
+
+        [StringLength(50, ErrorMessage = "Document type cannot exceed 50 characters.")]
+        public string? DocumentType { get; set; }
     }
 }

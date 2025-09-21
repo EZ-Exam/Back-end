@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using teamseven.EzExam.Services.Object.Responses;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/solutions")]

@@ -48,17 +48,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Image")]
         public string? Image { get; set; }
 
-        [MaxLength(2000)]
-        [Column("Formula")]
-        public string? Formula { get; set; }
-
-        [MaxLength(2000)]
-        [Column("CorrectAnswer")]
-        public string? CorrectAnswer { get; set; }
-
-        [MaxLength(5000)]
-        [Column("Explanation")]
-        public string? Explanation { get; set; }
 
         [Column("TemplateQuestionId")]
         public int? TemplateQuestionId { get; set; }

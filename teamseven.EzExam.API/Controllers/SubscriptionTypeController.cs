@@ -7,7 +7,7 @@ using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 using teamseven.EzExam.Services.Services.SubscriptionTypeService;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/subscription-types")]

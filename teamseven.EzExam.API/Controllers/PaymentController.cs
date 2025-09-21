@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Net.payOS.Types;
-using teamseven.EzExam.Controllers;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 
@@ -10,7 +9,7 @@ namespace teamseven.EzExam.API.Controllers
     [Route("api/[controller]")]
     public class PaymentController : ControllerBase
     {
-        private readonly IServiceProviders _serviceProvider;  // Thêm Repository cho UserSubscription
+        private readonly IServiceProviders _serviceProvider;  // Thï¿½m Repository cho UserSubscription
         private readonly ILogger<ChapterController> _logger;
 
         public PaymentController(ILogger<ChapterController> logger, IServiceProviders serviceProvider)
@@ -27,17 +26,17 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Invalid request data" });
             }
 
-            // T?o orderCode unique (s? dùng làm PaymentGatewayTransactionId)
+            // T?o orderCode unique (s? dï¿½ng lï¿½m PaymentGatewayTransactionId)
             long orderCode = DateTimeOffset.Now.ToUnixTimeMilliseconds(); // 24/07/2025 03:18 PM +07
 
             // T?o ItemData cho PayOS
             var item = new ItemData(request.ItemName, request.Quantity, (int)request.Amount); // Chuy?n decimal sang int
             var items = new List<ItemData> { item };
 
-            // C?u hình PaymentData
+            // C?u hï¿½nh PaymentData
             var paymentData = new PaymentData(
                 orderCode,
-                (int)request.Amount, // Chuy?n decimal sang int vì PayOS yêu c?u
+                (int)request.Amount, // Chuy?n decimal sang int vï¿½ PayOS yï¿½u c?u
                 request.Description,
                 items,
                 "https://fe-phy-gen.vercel.app/",
@@ -50,13 +49,13 @@ namespace teamseven.EzExam.API.Controllers
             var subscriptionRequest = new UserSubscriptionRequest
             {
                 UserId = request.UserId,
-                SubscriptionTypeId = request.SubscriptionTypeId ?? 1, // Gi? s? m?c d?nh, b?n có th? l?y t? request
-                EndDate = DateTime.UtcNow.AddMonths(1), // Gi? s? gói 1 tháng t? 24/07/2025
+                SubscriptionTypeId = request.SubscriptionTypeId ?? 1, // Gi? s? m?c d?nh, b?n cï¿½ th? l?y t? request
+                EndDate = DateTime.UtcNow.AddMonths(1), // Gi? s? gï¿½i 1 thï¿½ng t? 24/07/2025
                 Amount = request.Amount,
                 PaymentGatewayTransactionId = orderCode.ToString()
             };
 
-            // Luu thông tin vào UserSubscription qua service
+            // Luu thï¿½ng tin vï¿½o UserSubscription qua service
             await _serviceProvider.UserSubscriptionService.AddSubscriptionAsync(subscriptionRequest);
 
             // Tr? v? URL cho FE
@@ -70,7 +69,7 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 WebhookData data = webhookBody.data;
-                // N?u thanh toán thành công (code == "00")
+                // N?u thanh toï¿½n thï¿½nh cï¿½ng (code == "00")
                 if (data.code == "00")
                 {
 
@@ -84,12 +83,12 @@ namespace teamseven.EzExam.API.Controllers
                         {
                             Console.WriteLine("hi");
 
-                            // X? lý Balance: N?u null thì gán 0 tru?c khi c?ng amount
+                            // X? lï¿½ Balance: N?u null thï¿½ gï¿½n 0 tru?c khi c?ng amount
                             if (!user.Balance.HasValue)
                             {
-                                user.Balance = 0m; // Chuy?n null thành 0
+                                user.Balance = 0m; // Chuy?n null thï¿½nh 0
                             }
-                            user.Balance += (decimal)data.amount; // Gi? s? Balance là decimal
+                            user.Balance += (decimal)data.amount; // Gi? s? Balance lï¿½ decimal
                             await _serviceProvider.UserService.UpdateUserAsync(user);
                         }
                     }
@@ -108,7 +107,7 @@ namespace teamseven.EzExam.API.Controllers
     public class CreatePaymentRequest
     {
         public int UserId { get; set; }
-        public int? SubscriptionTypeId { get; set; }  // Thêm field này d? ch?n lo?i subscription
+        public int? SubscriptionTypeId { get; set; }  // Thï¿½m field nï¿½y d? ch?n lo?i subscription
         public string ItemName { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }  // S? d?ng decimal d? kh?p v?i UserSubscription

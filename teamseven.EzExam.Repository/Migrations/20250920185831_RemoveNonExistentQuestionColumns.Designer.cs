@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using teamseven.EzExam.Repository.Context;
@@ -11,9 +12,11 @@ using teamseven.EzExam.Repository.Context;
 namespace teamseven.EzExam.Repository.Migrations
 {
     [DbContext(typeof(teamsevenezexamdbContext))]
-    partial class teamsevenezexamdbContextModelSnapshot : ModelSnapshot
+    [Migration("20250920185831_RemoveNonExistentQuestionColumns")]
+    partial class RemoveNonExistentQuestionColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -558,16 +561,6 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Document")
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)")
-                        .HasColumnName("Document");
-
-                    b.Property<string>("DocumentType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("DocumentType");
 
                     b.Property<string>("Name")
                         .IsRequired()

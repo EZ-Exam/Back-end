@@ -113,10 +113,10 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 LessonName = question.Lesson?.Name,
                 ChapterName = question.Chapter?.Name,
                 CreatedByUserName = question.CreatedByUser?.Email,
-                // New fields from Question model
-                Formula = question.Formula,
-                CorrectAnswer = question.CorrectAnswer,
-                Explanation = question.Explanation,
+                // New fields from Question model (temporarily set to null until migration)
+                Formula = null,
+                CorrectAnswer = null,
+                Explanation = null,
                 Type = question.QuestionType?.ToLower() ?? "multiple-choice",
                 Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
             };
@@ -284,10 +284,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
                         ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
                         CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
-                        // New fields from Question model
-                        Formula = q.Formula,
-                        CorrectAnswer = q.CorrectAnswer,
-                        Explanation = q.Explanation,
+                        Formula = null,
+                        CorrectAnswer = null,
+                        Explanation = null,
                         Type = q.QuestionType?.ToLower() ?? "multiple-choice",
                         Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
                     });

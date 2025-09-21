@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Helpers;
 
-namespace teamseven.EzExam.Controllers
+namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
     [Route("api/grades")]
