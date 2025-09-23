@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Services.LessonService
     public interface ILessonService
     {
         Task<IEnumerable<LessonDataResponse>> GetAllLessonAsync();
+        Task<IEnumerable<LessonDataResponse>> GetLessonsByChapterIdAsync(int chapterId);
 
         Task<PagedResponse<LessonDataResponse>> GetLessonsAsync(
             int? pageNumber = null,

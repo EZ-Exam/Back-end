@@ -52,6 +52,19 @@ namespace teamseven.EzExam.Services.Services.ChapterService
             };
         }
 
+        public async Task<IEnumerable<ChapterDataResponse>> GetChaptersBySemesterIdAsync(int semesterId)
+        {
+            var chapters = await _unitOfWork.ChapterRepository.GetBySemesterIdAsync(semesterId) ?? new List<Chapter>();
+            return chapters.Select(c => new ChapterDataResponse
+            {
+                Id = c.Id,
+                Name = c.Name,
+                SemesterId = c.SemesterId,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt
+            });
+        }
+
         public async Task CreateChapterAsync(CreateChapterRequest request)
         {
             var semester = await _unitOfWork.SemesterRepository.GetByIdAsync(request.SemesterId);
