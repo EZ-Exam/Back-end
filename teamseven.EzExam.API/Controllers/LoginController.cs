@@ -4,7 +4,6 @@ using System;
 using System.Threading.Tasks;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Services.ServiceProvider;
-using teamseven.EzExam.Services.Object.Requests;
 using IServiceProviders = teamseven.EzExam.Services.Services.ServiceProvider.IServiceProviders;
 
 namespace teamseven.EzExam.API.Controllers

@@ -8,16 +8,16 @@ public class NotificationService
     /// <summary>
     /// G?i notification qua Firebase.
     /// </summary>
-    /// <param name="title">Tiêu d? noti.</param>
+    /// <param name="title">Tiï¿½u d? noti.</param>
     /// <param name="body">N?i dung noti.</param>
-    /// <param name="data">D? li?u tùy ch?nh (ví d?: transactionId cho xác minh).</param>
-    /// <param name="target">Token device (cho cá nhân) ho?c topic (cho qu?ng cáo, ví d? "promotion").</param>
-    /// <param name="isTopic">True n?u target là topic (qu?ng cáo), false n?u là token cá nhân.</param>
+    /// <param name="data">D? li?u tï¿½y ch?nh (vï¿½ d?: transactionId cho xï¿½c minh).</param>
+    /// <param name="target">Token device (cho cï¿½ nhï¿½n) ho?c topic (cho qu?ng cï¿½o, vï¿½ d? "promotion").</param>
+    /// <param name="isTopic">True n?u target lï¿½ topic (qu?ng cï¿½o), false n?u lï¿½ token cï¿½ nhï¿½n.</param>
     public async Task<string> SendNotificationAsync(string title, string body, Dictionary<string, string> data = null, string target = null, bool isTopic = false)
     {
         if (string.IsNullOrEmpty(target))
         {
-            throw new ArgumentException("Target (token ho?c topic) không du?c d? tr?ng.");
+            throw new ArgumentException("Target (token ho?c topic) khï¿½ng du?c d? tr?ng.");
         }
 
         var message = new Message()
@@ -32,17 +32,17 @@ public class NotificationService
 
         if (isTopic)
         {
-            message.Topic = target; // Ví d?: "promotion" cho qu?ng cáo
+            message.Topic = target; // Vï¿½ d?: "promotion" cho qu?ng cï¿½o
         }
         else
         {
-            message.Token = target; // Token device cho xác minh giao d?ch
+            message.Token = target; // Token device cho xï¿½c minh giao d?ch
         }
 
         try
         {
             var response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
-            return response; // Tr? v? message ID n?u thành công
+            return response; // Tr? v? message ID n?u thï¿½nh cï¿½ng
         }
         catch (Exception ex)
         {

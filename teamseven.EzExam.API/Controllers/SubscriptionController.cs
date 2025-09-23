@@ -12,7 +12,7 @@ namespace teamseven.EzExam.API.Controllers
     [ApiController]
     [Route("api/subscription")]
     [Produces("application/json")]
-    [Authorize] // Require authentication for all endpoints
+    [Authorize] 
     public class SubscriptionController : ControllerBase
     {
         private readonly ISubscriptionService _subscriptionService;

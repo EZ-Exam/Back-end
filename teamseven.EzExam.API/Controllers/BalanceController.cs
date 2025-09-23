@@ -12,7 +12,7 @@ namespace teamseven.EzExam.API.Controllers
     [ApiController]
     [Route("api/balance")]
     [Produces("application/json")]
-    [Authorize] // Require authentication for all endpoints
+    [Authorize] 
     public class BalanceController : ControllerBase
     {
         private readonly IBalanceService _balanceService;
@@ -144,7 +144,7 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         [HttpPost("master-deposit")]
-        [AllowAnonymous] // This endpoint doesn't require JWT authentication, only super secret key
+        [AllowAnonymous] 
         [SwaggerOperation(Summary = "Master deposit to any user account", Description = "Deposits balance to any user account using master super secret key. This is an admin-only operation.")]
         [SwaggerResponse(200, "Deposit successful.", typeof(BalanceResponse))]
         [SwaggerResponse(400, "Invalid request data.", typeof(object))]

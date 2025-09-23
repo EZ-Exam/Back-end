@@ -11,7 +11,7 @@ namespace teamseven.EzExam.API.Controllers
     [ApiController]
     [Route("api/usage-tracking")]
     [Produces("application/json")]
-    [Authorize] // Require authentication for all endpoints
+    [Authorize] 
     public class UsageTrackingController : ControllerBase
     {
         private readonly IUsageTrackingService _usageTrackingService;

@@ -61,19 +61,19 @@ public class DatabaseKeepAliveMiddleware
                 Console.WriteLine($"Keep-alive query failed: {ex.Message}");
             }
 
-            // Ch? 30 phút tru?c khi ki?m tra l?i
+            // Ch? 30 phï¿½t tru?c khi ki?m tra l?i
             await Task.Delay(_queryInterval, cancellationToken);
         }
     }
 
-    // H?y task khi middleware b? dispose (tùy ch?n)
+    // H?y task khi middleware b? dispose (tï¿½y ch?n)
     public void Dispose()
     {
         _cts.Cancel();
     }
 }
 
-// Extension method d? dang ký middleware
+// Extension method d? dang kï¿½ middleware
 public static class DatabaseKeepAliveMiddlewareExtensions
 {
     public static IApplicationBuilder UseDatabaseKeepAlive(this IApplicationBuilder builder)
