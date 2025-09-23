@@ -42,8 +42,13 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 Content = questionDataRequest.Content,
                 QuestionSource = questionDataRequest.QuestionSource,
                 DifficultyLevelId = questionDataRequest.DifficultyLevelId,
-                Image = questionDataRequest.Image,
+                SubjectId = questionDataRequest.SubjectId,
+                ChapterId = questionDataRequest.ChapterId,
                 LessonId = questionDataRequest.LessonId,
+                TextbookId = questionDataRequest.TextbookId,
+                QuestionType = string.IsNullOrWhiteSpace(questionDataRequest.QuestionType) ? "MULTIPLE_CHOICE" : questionDataRequest.QuestionType!,
+                Image = questionDataRequest.Image,
+                TemplateQuestionId = questionDataRequest.TemplateQuestionId,
                 CreatedByUserId = questionDataRequest.CreatedByUserId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -60,6 +65,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     QuestionSource = question.QuestionSource,
                     DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
                     LessonId = question.LessonId,
+                    ChapterId = question.ChapterId,
                     CreatedByUserId = question.CreatedByUserId,
                     CreatedAt = question.CreatedAt,
                     UpdatedAt = question.UpdatedAt
@@ -138,10 +144,15 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
 
             existingQuestion.Content = questionDataRequest.Content;
-            //existingQuestion.QuestionSource = questionDataRequest.QuestionSource;
             existingQuestion.DifficultyLevelId = questionDataRequest.DifficultyLevelId;
-            //existingQuestion.Image = questionDataRequest.Image;
-            //existingQuestion.LessonId = questionDataRequest.LessonId;
+            if (questionDataRequest.QuestionSource != null) existingQuestion.QuestionSource = questionDataRequest.QuestionSource;
+            if (questionDataRequest.SubjectId.HasValue) existingQuestion.SubjectId = questionDataRequest.SubjectId.Value;
+            if (questionDataRequest.ChapterId.HasValue) existingQuestion.ChapterId = questionDataRequest.ChapterId;
+            if (questionDataRequest.LessonId.HasValue) existingQuestion.LessonId = questionDataRequest.LessonId;
+            if (questionDataRequest.TextbookId.HasValue) existingQuestion.TextbookId = questionDataRequest.TextbookId;
+            if (questionDataRequest.Image != null) existingQuestion.Image = questionDataRequest.Image;
+            if (!string.IsNullOrWhiteSpace(questionDataRequest.QuestionType)) existingQuestion.QuestionType = questionDataRequest.QuestionType!;
+            if (questionDataRequest.TemplateQuestionId.HasValue) existingQuestion.TemplateQuestionId = questionDataRequest.TemplateQuestionId;
             existingQuestion.UpdatedAt = DateTime.UtcNow;
 
             try
@@ -160,6 +171,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     DifficultyLevel = existingQuestion.DifficultyLevel?.Name ?? "Unknown",
                     Image = existingQuestion.Image,
                     LessonId = existingQuestion.LessonId,
+                    ChapterId = existingQuestion.ChapterId,
                     CreatedAt = existingQuestion.CreatedAt,
                     UpdatedAt = existingQuestion.UpdatedAt
                 };

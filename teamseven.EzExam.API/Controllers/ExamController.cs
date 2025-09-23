@@ -92,6 +92,36 @@ namespace teamseven.EzExam.API.Controllers
             }
         }
 
+        // =================== UPDATE EXAM ===================
+
+        [HttpPut("{id}")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Update exam", Description = "Updates an existing exam")]
+        public async Task<IActionResult> UpdateExam(int id, [FromBody] UpdateExamRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != request.Id)
+                return BadRequest(new { Message = "Route ID and request ID do not match." });
+
+            try
+            {
+                var updatedExam = await _serviceProvider.ExamService.UpdateExamAsync(request);
+                return Ok(updatedExam);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Exam not found");
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating exam");
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
+
         // =================== ADD QUESTION TO EXAM ===================
 
         [HttpPost("questions")]

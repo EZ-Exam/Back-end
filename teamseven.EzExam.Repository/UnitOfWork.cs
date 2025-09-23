@@ -30,6 +30,14 @@ namespace teamseven.EzExam.Repository
         TextBookRepository TextBookRepository { get; }
         UserUsageTrackingRepository UserUsageTrackingRepository { get; }
         UserUsageHistoryRepository UserUsageHistoryRepository { get; }
+        
+        // Test System Repositories
+        UserQuestionCartRepository UserQuestionCartRepository { get; }
+        AITestRecommendationRepository AITestRecommendationRepository { get; }
+        TestSessionRepository TestSessionRepository { get; }
+        TestSessionAnswerRepository TestSessionAnswerRepository { get; }
+        UserCompetencyAssessmentRepository UserCompetencyAssessmentRepository { get; }
+        UserQuestionAttemptRepository UserQuestionAttemptRepository { get; }
 
         int SaveChangesWithTransaction();
         Task<int> SaveChangesWithTransactionAsync();
@@ -59,6 +67,14 @@ namespace teamseven.EzExam.Repository
         private TextBookRepository _textBookRepository;
         private UserUsageTrackingRepository _userUsageTrackingRepository;
         private UserUsageHistoryRepository _userUsageHistoryRepository;
+        
+        // Test System Repositories
+        private UserQuestionCartRepository _userQuestionCartRepository;
+        private AITestRecommendationRepository _aiTestRecommendationRepository;
+        private TestSessionRepository _testSessionRepository;
+        private TestSessionAnswerRepository _testSessionAnswerRepository;
+        private UserCompetencyAssessmentRepository _userCompetencyAssessmentRepository;
+        private UserQuestionAttemptRepository _userQuestionAttemptRepository;
 
         private bool _disposed = false;
 
@@ -89,6 +105,14 @@ namespace teamseven.EzExam.Repository
         public TextBookRepository TextBookRepository => _textBookRepository ??= new TextBookRepository(_context);
         public UserUsageTrackingRepository UserUsageTrackingRepository => _userUsageTrackingRepository ??= new UserUsageTrackingRepository(_context);
         public UserUsageHistoryRepository UserUsageHistoryRepository => _userUsageHistoryRepository ??= new UserUsageHistoryRepository(_context);
+        
+        // Test System Repositories
+        public UserQuestionCartRepository UserQuestionCartRepository => _userQuestionCartRepository ??= new UserQuestionCartRepository(_context);
+        public AITestRecommendationRepository AITestRecommendationRepository => _aiTestRecommendationRepository ??= new AITestRecommendationRepository(_context);
+        public TestSessionRepository TestSessionRepository => _testSessionRepository ??= new TestSessionRepository(_context);
+        public TestSessionAnswerRepository TestSessionAnswerRepository => _testSessionAnswerRepository ??= new TestSessionAnswerRepository(_context);
+        public UserCompetencyAssessmentRepository UserCompetencyAssessmentRepository => _userCompetencyAssessmentRepository ??= new UserCompetencyAssessmentRepository(_context);
+        public UserQuestionAttemptRepository UserQuestionAttemptRepository => _userQuestionAttemptRepository ??= new UserQuestionAttemptRepository(_context);
 
         public int SaveChangesWithTransaction()
         {

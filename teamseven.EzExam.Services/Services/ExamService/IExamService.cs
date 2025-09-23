@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
     public interface IExamService
     {
         Task<int> CreateExamAsync (ExamRequest examRequest);
+        Task<ExamResponse> UpdateExamAsync(UpdateExamRequest updateExamRequest);
 
         Task<IEnumerable<ExamResponse>> GetAllExamAsync();
         Task RenameExamAsync(int examId, string newName);

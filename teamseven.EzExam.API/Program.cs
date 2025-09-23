@@ -40,6 +40,7 @@ using teamseven.EzExam.Services.Services.UsageTrackingService;
 using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
+using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.API.Middleware;
 using teamseven.EzExam.API.Services;
 var builder = WebApplication.CreateBuilder(args);
@@ -116,6 +117,10 @@ builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ITextBookService, TextBookService>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
+
+// Test System Services
+builder.Services.AddScoped<IUserQuestionCartService, UserQuestionCartService>();
+builder.Services.AddScoped<ITestSessionService, TestSessionService>();
 
 // 📌 Background Services - DISABLED for performance
 // builder.Services.AddHostedService<SubscriptionExpirationService>();

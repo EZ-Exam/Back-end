@@ -18,6 +18,7 @@ using teamseven.EzExam.Services.Services.UsageTrackingService;
 using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
+using teamseven.EzExam.Services.Services.TestSystemServices;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -45,5 +46,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         IBalanceService BalanceService { get; }
         IJwtHelperService JwtHelperService { get; }
         ISubscriptionService SubscriptionService { get; }
+        
+        // Test System Services
+        IUserQuestionCartService UserQuestionCartService { get; }
+        ITestSessionService TestSessionService { get; }
     }
 }

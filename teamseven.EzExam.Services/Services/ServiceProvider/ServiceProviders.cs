@@ -16,6 +16,7 @@ using teamseven.EzExam.Services.Services.UsageTrackingService;
 using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
+using teamseven.EzExam.Services.Services.TestSystemServices;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -43,6 +44,10 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         private readonly IBalanceService _balanceService;
         private readonly IJwtHelperService _jwtHelperService;
         private readonly ISubscriptionService _subscriptionService;
+        
+        // Test System Services
+        private readonly IUserQuestionCartService _userQuestionCartService;
+        private readonly ITestSessionService _testSessionService;
 
         public ServiceProviders(
             IAuthService authService,
@@ -66,7 +71,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             IUsageTrackingService usageTrackingService,
             IBalanceService balanceService,
             IJwtHelperService jwtHelperService,
-            ISubscriptionService subscriptionService)
+            ISubscriptionService subscriptionService,
+            IUserQuestionCartService userQuestionCartService,
+            ITestSessionService testSessionService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -90,6 +97,10 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             _balanceService = balanceService ?? throw new ArgumentNullException(nameof(balanceService));
             _jwtHelperService = jwtHelperService ?? throw new ArgumentNullException(nameof(jwtHelperService));
             _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
+            
+            // Test System Services
+            _userQuestionCartService = userQuestionCartService ?? throw new ArgumentNullException(nameof(userQuestionCartService));
+            _testSessionService = testSessionService ?? throw new ArgumentNullException(nameof(testSessionService));
         }
 
         public IAuthService AuthService => _authService;
@@ -114,5 +125,13 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         public IBalanceService BalanceService => _balanceService;
         public IJwtHelperService JwtHelperService => _jwtHelperService;
         public ISubscriptionService SubscriptionService => _subscriptionService;
+        
+        // Test System Services
+        public IUserQuestionCartService UserQuestionCartService => _userQuestionCartService;
+        public ITestSessionService TestSessionService => _testSessionService;
+
+        IUserQuestionCartService IServiceProviders.UserQuestionCartService => throw new NotImplementedException();
+
+        ITestSessionService IServiceProviders.TestSessionService => throw new NotImplementedException();
     }
 }

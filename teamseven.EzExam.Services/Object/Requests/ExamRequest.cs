@@ -13,9 +13,12 @@ namespace teamseven.EzExam.Services.Object.Requests
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "LessonId is required")]
+        [Required(ErrorMessage = "SubjectId is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "SubjectId must be a positive number")]
+        public int SubjectId { get; set; }
+
         [Range(1, int.MaxValue, ErrorMessage = "LessonId must be a positive number")]
-        public int LessonId { get; set; }
+        public int? LessonId { get; set; }
 
         [Required(ErrorMessage = "ExamTypeId is required")]
         [Range(1, int.MaxValue, ErrorMessage = "ExamTypeId must be a positive number")]
