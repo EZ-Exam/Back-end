@@ -43,6 +43,25 @@ namespace teamseven.EzExam.API.Controllers
             }
         }
 
+        [HttpGet("by-chapter/{chapterId}")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get lessons by chapter ID", Description = "Retrieves lessons filtered by chapter ID")]
+        [SwaggerResponse(200, "Lessons retrieved successfully.", typeof(IEnumerable<LessonDataResponse>))]
+        [SwaggerResponse(500, "Internal server error.")]
+        public async Task<IActionResult> GetLessonsByChapterId(int chapterId)
+        {
+            try
+            {
+                var lessons = await _serviceProvider.LessonService.GetLessonsByChapterIdAsync(chapterId);
+                return Ok(lessons);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving lessons by chapterId {ChapterId}", chapterId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         // =================== GET LESSONS WITH PAGINATION ===================
 
         [HttpGet("paged")]

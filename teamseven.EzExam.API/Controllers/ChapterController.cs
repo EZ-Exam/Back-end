@@ -37,6 +37,17 @@ namespace teamseven.EzExam.API.Controllers
             return Ok(chapters);
         }
 
+        [HttpGet("by-semester/{semesterId}")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get chapters by semester ID")]
+        [SwaggerResponse(200, "Chapters retrieved successfully.", typeof(IEnumerable<ChapterDataResponse>))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
+        public async Task<IActionResult> GetChaptersBySemesterId(int semesterId)
+        {
+            var chapters = await _serviceProvider.ChapterService.GetChaptersBySemesterIdAsync(semesterId);
+            return Ok(chapters);
+        }
+
         [HttpGet("{id}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get chapter by ID")]

@@ -37,6 +37,21 @@ namespace teamseven.EzExam.Services.Services.LessonService
             });
         }
 
+        public async Task<IEnumerable<LessonDataResponse>> GetLessonsByChapterIdAsync(int chapterId)
+        {
+            var lessons = await _unitOfWork.LessonRepository.GetByChapterIdAsync(chapterId) ?? new List<Lesson>();
+            return lessons.Select(l => new LessonDataResponse
+            {
+                Id = l.Id,
+                Name = l.Name,
+                ChapterId = l.ChapterId,
+                Document = l.Document,
+                DocumentType = l.DocumentType,
+                CreatedAt = l.CreatedAt,
+                UpdatedAt = l.UpdatedAt
+            });
+        }
+
         public async Task<PagedResponse<LessonDataResponse>> GetLessonsAsync(
              int? pageNumber = null,
              int? pageSize = null,
