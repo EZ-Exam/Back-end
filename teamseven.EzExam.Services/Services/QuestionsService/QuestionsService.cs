@@ -50,6 +50,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 Image = questionDataRequest.Image,
                 TemplateQuestionId = questionDataRequest.TemplateQuestionId,
                 CreatedByUserId = questionDataRequest.CreatedByUserId,
+                Formula = questionDataRequest.Formula,
+                CorrectAnswer = questionDataRequest.CorrectAnswer,
+                Explanation = questionDataRequest.Explanation,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -68,7 +71,12 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     ChapterId = question.ChapterId,
                     CreatedByUserId = question.CreatedByUserId,
                     CreatedAt = question.CreatedAt,
-                    UpdatedAt = question.UpdatedAt
+                    UpdatedAt = question.UpdatedAt,
+                    Formula = question.Formula,
+                    CorrectAnswer = question.CorrectAnswer,
+                    Explanation = question.Explanation,
+                    Type = question.QuestionType?.ToLower() ?? "multiple-choice",
+                    Options = questionDataRequest.Options ?? new List<string>()
                 };
 
                 return response;
@@ -119,10 +127,10 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 LessonName = question.Lesson?.Name,
                 ChapterName = question.Chapter?.Name,
                 CreatedByUserName = question.CreatedByUser?.Email,
-                // New fields from Question model (temporarily set to null until migration)
-                Formula = null,
-                CorrectAnswer = null,
-                Explanation = null,
+                // New fields from Question model
+                Formula = question.Formula,
+                CorrectAnswer = question.CorrectAnswer,
+                Explanation = question.Explanation,
                 Type = question.QuestionType?.ToLower() ?? "multiple-choice",
                 Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
             };
@@ -153,6 +161,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             if (questionDataRequest.Image != null) existingQuestion.Image = questionDataRequest.Image;
             if (!string.IsNullOrWhiteSpace(questionDataRequest.QuestionType)) existingQuestion.QuestionType = questionDataRequest.QuestionType!;
             if (questionDataRequest.TemplateQuestionId.HasValue) existingQuestion.TemplateQuestionId = questionDataRequest.TemplateQuestionId;
+            if (questionDataRequest.Formula != null) existingQuestion.Formula = questionDataRequest.Formula;
+            if (questionDataRequest.CorrectAnswer != null) existingQuestion.CorrectAnswer = questionDataRequest.CorrectAnswer;
+            if (questionDataRequest.Explanation != null) existingQuestion.Explanation = questionDataRequest.Explanation;
             existingQuestion.UpdatedAt = DateTime.UtcNow;
 
             try
@@ -162,7 +173,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
 
                 _logger.LogInformation("Question with ID {QuestionId} updated successfully.", existingQuestion.Id);
 
-                // ? Tr? v? d? li?u sau khi c?p nh?t
+                // Return updated data
                 return new QuestionDataResponse
                 {
                     Id = existingQuestion.Id,
@@ -173,7 +184,12 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     LessonId = existingQuestion.LessonId,
                     ChapterId = existingQuestion.ChapterId,
                     CreatedAt = existingQuestion.CreatedAt,
-                    UpdatedAt = existingQuestion.UpdatedAt
+                    UpdatedAt = existingQuestion.UpdatedAt,
+                    Formula = existingQuestion.Formula,
+                    CorrectAnswer = existingQuestion.CorrectAnswer,
+                    Explanation = existingQuestion.Explanation,
+                    Type = existingQuestion.QuestionType?.ToLower() ?? "multiple-choice",
+                    Options = questionDataRequest.Options ?? new List<string>()
                 };
             }
             catch (Exception ex)
@@ -296,9 +312,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
                         ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
                         CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
-                        Formula = null,
-                        CorrectAnswer = null,
-                        Explanation = null,
+                        Formula = q.Formula,
+                        CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation,
                         Type = q.QuestionType?.ToLower() ?? "multiple-choice",
                         Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
                     });

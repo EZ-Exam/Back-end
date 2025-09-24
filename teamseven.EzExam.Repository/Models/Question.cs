@@ -70,6 +70,18 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        [MaxLength(2000)]
+        [Column("Formula")]
+        public string? Formula { get; set; }
+
+        [MaxLength(2000)]
+        [Column("CorrectAnswer")]
+        public string? CorrectAnswer { get; set; }
+
+        [MaxLength(5000)]
+        [Column("Explanation")]
+        public string? Explanation { get; set; }
+
         // Navigation properties
         [ForeignKey("CreatedByUserId")]
         public virtual User CreatedByUser { get; set; } = null!;
