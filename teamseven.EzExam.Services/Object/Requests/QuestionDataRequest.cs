@@ -45,4 +45,15 @@ public class QuestionDataRequest
     [Required(ErrorMessage = "Created by user ID is required.")]
     [Range(1, int.MaxValue, ErrorMessage = "Created by user ID must be a positive integer.")]
     public int CreatedByUserId { get; set; }
+
+    [StringLength(5000, ErrorMessage = "Formula cannot exceed 5000 characters.")]
+    public string? Formula { get; set; }
+
+    [StringLength(5000, ErrorMessage = "Correct answer cannot exceed 5000 characters.")]
+    public string? CorrectAnswer { get; set; }
+
+    [StringLength(5000, ErrorMessage = "Explanation cannot exceed 5000 characters.")]
+    public string? Explanation { get; set; }
+
+    public List<string>? Options { get; set; }
 }

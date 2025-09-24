@@ -126,7 +126,12 @@ namespace teamseven.EzExam.API.Controllers
                         lessonId = questionResponse.LessonId,
                         createdByUserId = questionResponse.CreatedByUserId,
                         createdAt = questionResponse.CreatedAt,
-                        updatedAt = questionResponse.UpdatedAt
+                        updatedAt = questionResponse.UpdatedAt,
+                        formula = questionResponse.Formula,
+                        correctAnswer = questionResponse.CorrectAnswer,
+                        explanation = questionResponse.Explanation,
+                        type = questionResponse.Type,
+                        options = questionResponse.Options
                     },
                     message = "Question created successfully."
                 };

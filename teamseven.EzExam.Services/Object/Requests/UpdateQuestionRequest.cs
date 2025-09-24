@@ -41,5 +41,16 @@ namespace teamseven.EzExam.Services.Object.Requests
 
         [Range(1, int.MaxValue, ErrorMessage = "Template question ID must be a positive integer.")]
         public int? TemplateQuestionId { get; set; }
+
+        [StringLength(5000, ErrorMessage = "Formula cannot exceed 5000 characters.")]
+        public string? Formula { get; set; }
+
+        [StringLength(5000, ErrorMessage = "Correct answer cannot exceed 5000 characters.")]
+        public string? CorrectAnswer { get; set; }
+
+        [StringLength(5000, ErrorMessage = "Explanation cannot exceed 5000 characters.")]
+        public string? Explanation { get; set; }
+
+        public List<string>? Options { get; set; }
     }
 }
