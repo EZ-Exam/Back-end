@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Dtos;
@@ -53,6 +54,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 Formula = questionDataRequest.Formula,
                 CorrectAnswer = questionDataRequest.CorrectAnswer,
                 Explanation = questionDataRequest.Explanation,
+                Options = questionDataRequest.Options != null ? JsonSerializer.Serialize(questionDataRequest.Options) : null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -76,7 +78,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     CorrectAnswer = question.CorrectAnswer,
                     Explanation = question.Explanation,
                     Type = question.QuestionType?.ToLower() ?? "multiple-choice",
-                    Options = questionDataRequest.Options ?? new List<string>()
+                    Options = question.Options != null ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>() : (questionDataRequest.Options ?? new List<string>())
                 };
 
                 return response;
@@ -132,7 +134,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 CorrectAnswer = question.CorrectAnswer,
                 Explanation = question.Explanation,
                 Type = question.QuestionType?.ToLower() ?? "multiple-choice",
-                Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
+                Options = question.Options != null ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>() : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
             };
         }
 
@@ -164,6 +166,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             if (questionDataRequest.Formula != null) existingQuestion.Formula = questionDataRequest.Formula;
             if (questionDataRequest.CorrectAnswer != null) existingQuestion.CorrectAnswer = questionDataRequest.CorrectAnswer;
             if (questionDataRequest.Explanation != null) existingQuestion.Explanation = questionDataRequest.Explanation;
+            if (questionDataRequest.Options != null) existingQuestion.Options = JsonSerializer.Serialize(questionDataRequest.Options);
             existingQuestion.UpdatedAt = DateTime.UtcNow;
 
             try
@@ -189,7 +192,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     CorrectAnswer = existingQuestion.CorrectAnswer,
                     Explanation = existingQuestion.Explanation,
                     Type = existingQuestion.QuestionType?.ToLower() ?? "multiple-choice",
-                    Options = questionDataRequest.Options ?? new List<string>()
+                    Options = existingQuestion.Options != null ? JsonSerializer.Deserialize<List<string>>(existingQuestion.Options) ?? new List<string>() : (questionDataRequest.Options ?? new List<string>())
                 };
             }
             catch (Exception ex)
@@ -316,7 +319,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         CorrectAnswer = q.CorrectAnswer,
                         Explanation = q.Explanation,
                         Type = q.QuestionType?.ToLower() ?? "multiple-choice",
-                        Options = answers?.Select(a => a.Content).ToList() ?? new List<string>()
+                        Options = q.Options != null ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>() : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
                     });
                 }
 
