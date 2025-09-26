@@ -200,6 +200,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ================= CẤU HÌNH AUTOMAPPER =================
+// ================= CẤU HÌNH MEMORY CACHE =================
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 1000; // Maximum number of cache entries
+    options.CompactionPercentage = 0.25; // Remove 25% of entries when limit is reached
+});
+
 // ================= CẤU HÌNH CONTROLLERS =================
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
