@@ -82,6 +82,10 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Explanation")]
         public string? Explanation { get; set; }
 
+        [MaxLength(5000)]
+        [Column("Options")]
+        public string? Options { get; set; }
+
         // Navigation properties
         [ForeignKey("CreatedByUserId")]
         public virtual User CreatedByUser { get; set; } = null!;
