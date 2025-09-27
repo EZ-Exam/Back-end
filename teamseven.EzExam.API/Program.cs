@@ -154,6 +154,28 @@ builder.Services.AddScoped<IServiceProviders, ServiceProviders>();
 ////var blobServiceClient = new BlobServiceClient(builder.Configuration["AzureStorage:ConnectionString"]);
 //builder.Services.AddSingleton(blobServiceClient);
 
+// ================= CẤU HÌNH SUPABASE =================
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseKey = builder.Configuration["Supabase:ServiceRoleKey"];
+
+if (!string.IsNullOrEmpty(supabaseUrl) && !string.IsNullOrEmpty(supabaseKey))
+{
+    builder.Services.AddSingleton<Supabase.Client>(provider => 
+    {
+        var options = new Supabase.SupabaseOptions
+        {
+            AutoConnectRealtime = false,
+            AutoRefreshToken = false
+        };
+        return new Supabase.Client(supabaseUrl, supabaseKey, options);
+    });
+    Console.WriteLine("Supabase client registered successfully.");
+}
+else
+{
+    Console.WriteLine("Supabase configuration is missing. PDF blob functionality will not be available.");
+}
+
 // ================= CẤU HÌNH CORS =================
 builder.Services.AddCors(options =>
 {
