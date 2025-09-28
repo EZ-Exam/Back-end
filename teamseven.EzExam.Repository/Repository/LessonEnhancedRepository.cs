@@ -17,11 +17,51 @@ namespace teamseven.EzExam.Repository.Repository
             _context = context;
         }
 
-        // ===== CRUD cơ bản (giống mẫu) =====
-        public async Task<List<LessonEnhanced>?> GetAllAsync()
+        // Repository/LessonEnhancedRepository.cs
+
+        public async Task<List<LessonEnhanced>> GetAllAsync(string? subjectId = null)
         {
-            return await base.GetAllAsync();
+            var q = _context.LessonsEnhanced.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(subjectId))
+            {
+                if (int.TryParse(subjectId, out var sid))
+                {
+                    q = q.Where(x => x.SubjectId == sid);
+                }
+                else
+                {
+                    return new List<LessonEnhanced>();
+                }
+            }
+
+            return await q.OrderByDescending(x => x.CreatedAt).ToListAsync();
         }
+
+        public async Task<Dictionary<int, List<int>>> GetQuestionsForLessonsAsync(IEnumerable<string> lessonIds)
+        {
+            // Parse & lọc id hợp lệ
+            var idList = (lessonIds ?? Enumerable.Empty<string>())
+                .Select(s => int.TryParse(s, out var id) ? (int?)id : null)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .ToList();
+
+            if (idList.Count == 0) return new();
+
+            var rows = await _context.LessonsEnhancedQuestions
+                .Where(x => idList.Contains(x.LessonId))
+                .OrderBy(x => x.LessonId).ThenBy(x => x.Position)
+                .Select(x => new { x.LessonId, x.QuestionId })
+                .ToListAsync();
+
+            return rows
+                .GroupBy(r => r.LessonId)
+                .ToDictionary(g => g.Key, g => g.Select(r => r.QuestionId).ToList());
+        }
+
+
 
         public async Task<LessonEnhanced?> GetByIdAsync(int id)
         {

@@ -10,5 +10,7 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
         Task<LessonEnhancedResponse> CreateAsync(LessonEnhancedUpsertRequest req);
         Task<LessonEnhancedResponse> GetByIdAsync(int id);
         Task<List<LessonEnhancedResponse>> GetByQuestionIdAsync(int questionId);
+        Task<List<LessonEnhancedResponse>> GetAllAsync(string? subjectId = null, bool includeQuestions = false);
+
     }
 }

@@ -5,6 +5,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Threading.Tasks;
 using teamseven.EzExam.Services.Object.Requests;
+using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 
 namespace teamseven.EzExam.API.Controllers
@@ -93,6 +94,27 @@ namespace teamseven.EzExam.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting lessons by questionId {QuestionId}", questionId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+        [HttpGet]
+        [AllowAnonymous]
+        [SwaggerOperation(
+        Summary = "Get all lesson-enhanced",
+        Description = "Lấy toàn bộ lesson-enhanced; có thể lọc theo subjectId (string) và chọn kèm danh sách questions.")]
+        [SwaggerResponse(200, "OK", typeof(IEnumerable<LessonEnhancedResponse>))]
+        [SwaggerResponse(500, "Internal server error.")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? subjectId = null)
+        {
+            try
+            {
+                var res = await _serviceProvider.LessonEnhancedService.GetAllAsync(subjectId, true);
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetAll LessonEnhanced failed. subjectId={SubjectId}, includeQuestions={IncludeQuestions}", subjectId, true);
                 return StatusCode(500, "Internal server error");
             }
         }
