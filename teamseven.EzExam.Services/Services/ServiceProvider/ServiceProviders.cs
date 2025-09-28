@@ -17,6 +17,7 @@ using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
+using teamseven.EzExam.Services.Services.LessonEnhancedService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -44,7 +45,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         private readonly IBalanceService _balanceService;
         private readonly IJwtHelperService _jwtHelperService;
         private readonly ISubscriptionService _subscriptionService;
-        
+        private readonly ILessonEnhancedService _lessonEnhancedService;
+
         // Test System Services
         private readonly IUserQuestionCartService _userQuestionCartService;
         private readonly ITestSessionService _testSessionService;
@@ -73,7 +75,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             IJwtHelperService jwtHelperService,
             ISubscriptionService subscriptionService,
             IUserQuestionCartService userQuestionCartService,
-            ITestSessionService testSessionService)
+            ITestSessionService testSessionService,
+            ILessonEnhancedService lessonEnhancedService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -97,7 +100,7 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             _balanceService = balanceService ?? throw new ArgumentNullException(nameof(balanceService));
             _jwtHelperService = jwtHelperService ?? throw new ArgumentNullException(nameof(jwtHelperService));
             _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
-            
+            _lessonEnhancedService = lessonEnhancedService ?? throw new ArgumentNullException(nameof(lessonEnhancedService));
             // Test System Services
             _userQuestionCartService = userQuestionCartService ?? throw new ArgumentNullException(nameof(userQuestionCartService));
             _testSessionService = testSessionService ?? throw new ArgumentNullException(nameof(testSessionService));
@@ -125,7 +128,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         public IBalanceService BalanceService => _balanceService;
         public IJwtHelperService JwtHelperService => _jwtHelperService;
         public ISubscriptionService SubscriptionService => _subscriptionService;
-        
+        public ILessonEnhancedService LessonEnhancedService => _lessonEnhancedService;
+
+
         // Test System Services
         public IUserQuestionCartService UserQuestionCartService => _userQuestionCartService;
         public ITestSessionService TestSessionService => _testSessionService;

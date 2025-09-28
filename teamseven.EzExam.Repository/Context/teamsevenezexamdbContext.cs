@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using teamseven.EzExam.Repository.Models;
@@ -27,6 +27,10 @@ namespace teamseven.EzExam.Repository.Context
         public virtual DbSet<TextBook> TextBooks { get; set; }
         public virtual DbSet<Chapter> Chapters { get; set; }
         public virtual DbSet<Lesson> Lessons { get; set; }
+
+        public virtual DbSet<LessonEnhanced> LessonsEnhanced { get; set; }
+        public virtual DbSet<LessonEnhancedQuestion> LessonsEnhancedQuestions { get; set; }
+
 
         // User management tables
         public virtual DbSet<User> Users { get; set; }
@@ -213,6 +217,49 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Chapter).WithMany(p => p.Lessons)
                     .HasForeignKey(d => d.ChapterId)
                     .HasConstraintName("fk_lessons_chapter_id");
+            });
+            // ===== Lessons Enhanced (bảng chính) =====
+            modelBuilder.Entity<LessonEnhanced>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_lessons_enhanced");
+                entity.ToTable("lessons_enhanced", "public");
+
+                entity.HasIndex(e => e.SubjectId, "idx_le_subject");
+
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.Title).HasColumnName("Title").IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(1000);
+                entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.PdfUrl).HasColumnName("PdfUrl").HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // 1 - n tới bảng nối (EF-side; DB không cần FK vẫn map được)
+                entity.HasMany(e => e.LessonQuestions)
+                      .WithOne(lq => lq.Lesson)
+                      .HasForeignKey(lq => lq.LessonId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ===== Lessons Enhanced Questions (bảng nối) =====
+            modelBuilder.Entity<LessonEnhancedQuestion>(entity =>
+            {
+                entity.HasKey(e => new { e.LessonId, e.QuestionId }).HasName("pk_lessons_enhanced_questions");
+                entity.ToTable("lessons_enhanced_questions", "public");
+
+                entity.HasIndex(e => e.LessonId, "idx_leq_lesson");
+                entity.HasIndex(e => e.QuestionId, "idx_leq_question");
+
+                entity.Property(e => e.LessonId).HasColumnName("LessonId");
+                entity.Property(e => e.QuestionId).HasColumnName("QuestionId");
+                entity.Property(e => e.Position).HasColumnName("Position");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // n - 1 tới Question (không cần thêm nav collection ở Question)
+                entity.HasOne(e => e.Question)
+                      .WithMany()
+                      .HasForeignKey(e => e.QuestionId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Users
