@@ -25,6 +25,9 @@ public class QuestionDataRequest
     [Range(1, int.MaxValue, ErrorMessage = "Subject ID must be a positive integer.")]
     public int SubjectId { get; set; }
 
+    [Range(1, int.MaxValue, ErrorMessage = "Grade ID must be a positive integer.")]
+    public int? GradeId { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "Chapter ID must be a positive integer.")]
     public int? ChapterId { get; set; }
 

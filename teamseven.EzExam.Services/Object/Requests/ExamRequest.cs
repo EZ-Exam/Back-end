@@ -17,6 +17,9 @@ namespace teamseven.EzExam.Services.Object.Requests
         [Range(1, int.MaxValue, ErrorMessage = "SubjectId must be a positive number")]
         public int SubjectId { get; set; }
 
+        [Range(1, int.MaxValue, ErrorMessage = "GradeId must be a positive number")]
+        public int? GradeId { get; set; }
+
         [Range(1, int.MaxValue, ErrorMessage = "LessonId must be a positive number")]
         public int? LessonId { get; set; }
 

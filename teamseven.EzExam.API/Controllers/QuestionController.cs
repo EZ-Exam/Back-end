@@ -31,7 +31,7 @@ namespace teamseven.EzExam.API.Controllers
         [AllowAnonymous]
         [SwaggerOperation(
              Summary = "Get questions",
-             Description = "Retrieves a list of questions with optional search, sort, filter, and pagination. Use 'search' to filter by content or source (accent-insensitive, e.g., 'lam' matches 'l�m'), 'lessonId' to filter by lesson, 'difficultyLevel' to filter by difficulty, 'chapterId' to filter by chapter, 'isSort' (0 = no sort, 1 = sort), 'sort' (e.g., 'content:asc', 'createdAt:desc'), and 'pageNumber'/'pageSize' for pagination. If 'isSort' is 0 or not provided, questions are sorted by 'Id' (ascending). If 'isSort' is 1, 'sort' parameter is used, defaulting to 'createdAt:desc' if 'sort' is invalid or not provided."
+             Description = "Retrieves a list of questions with optional search, sort, filter, and pagination. Use 'search' to filter by content or source (accent-insensitive, e.g., 'lam' matches 'l�m'), 'lessonId' to filter by lesson, 'difficultyLevel' to filter by difficulty, 'chapterId' to filter by chapter, 'gradeId' to filter by grade, 'isSort' (0 = no sort, 1 = sort), 'sort' (e.g., 'content:asc', 'createdAt:desc'), and 'pageNumber'/'pageSize' for pagination. If 'isSort' is 0 or not provided, questions are sorted by 'Id' (ascending). If 'isSort' is 1, 'sort' parameter is used, defaulting to 'createdAt:desc' if 'sort' is invalid or not provided."
          )]
         [SwaggerResponse(200, "Questions retrieved successfully.", typeof(PagedResponse<QuestionDataResponse>))]
         [SwaggerResponse(400, "Invalid parameters.", typeof(ProblemDetails))]
@@ -42,6 +42,7 @@ namespace teamseven.EzExam.API.Controllers
              [FromQuery] int? lessonId = null,
              [FromQuery] string? difficultyLevel = null,
              [FromQuery] int? chapterId = null,
+             [FromQuery] int? gradeId = null,
              [FromQuery] int? pageNumber = null,
              [FromQuery] int? pageSize = null,
              [FromQuery] int isSort = 0,

@@ -11,16 +11,16 @@ using System.Security.Claims;
 namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
-    [Route("api/pdf-blob")]
+    [Route("api/document-blob")]
     [Produces("application/json")]
     [Authorize]
-    public class PdfBlobController : ControllerBase
+    public class DocumentBlobController : ControllerBase
     {
         private readonly Supabase.Client _supabaseClient;
-        private readonly ILogger<PdfBlobController> _logger;
+        private readonly ILogger<DocumentBlobController> _logger;
         private readonly IConfiguration _configuration;
 
-        public PdfBlobController(Supabase.Client supabaseClient, IConfiguration configuration, ILogger<PdfBlobController> logger)
+        public DocumentBlobController(Supabase.Client supabaseClient, IConfiguration configuration, ILogger<DocumentBlobController> logger)
         {
             _supabaseClient = supabaseClient;
             _configuration = configuration;
@@ -28,17 +28,17 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Upload a PDF file to Supabase storage
+        /// Upload a document file (PDF or Word) to Supabase storage
         /// </summary>
-        /// <param name="file">PDF file to upload</param>
+        /// <param name="file">Document file to upload (PDF or Word)</param>
         /// <param name="folder">Optional folder path (default: "uploads")</param>
         /// <returns>Upload result with file URL</returns>
         [HttpPost("upload")]
-        [SwaggerOperation(Summary = "Upload PDF file", Description = "Uploads a PDF file to Supabase storage")]
-        [SwaggerResponse(200, "File uploaded successfully", typeof(PdfUploadResponse))]
+        [SwaggerOperation(Summary = "Upload document file", Description = "Uploads a PDF or Word document to Supabase storage")]
+        [SwaggerResponse(200, "File uploaded successfully", typeof(DocumentUploadResponse))]
         [SwaggerResponse(400, "Invalid file or request", typeof(object))]
         [SwaggerResponse(500, "Upload failed", typeof(object))]
-        public async Task<IActionResult> UploadPdf(IFormFile file, [FromQuery] string folder = "uploads")
+        public async Task<IActionResult> UploadDocument(IFormFile file, [FromQuery] string folder = "uploads")
         {
             try
             {
@@ -48,10 +48,16 @@ namespace teamseven.EzExam.API.Controllers
                     return BadRequest(new { Message = "No file provided." });
                 }
 
-                // Check file type
-                if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+                // Check file type (PDF or Word)
+                var allowedTypes = new[] { 
+                    "application/pdf", 
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+                    "application/msword" // .doc
+                };
+                
+                if (!allowedTypes.Contains(file.ContentType.ToLower()))
                 {
-                    return BadRequest(new { Message = "Only PDF files are allowed." });
+                    return BadRequest(new { Message = "Only PDF and Word documents are allowed." });
                 }
 
                 // Check file size (max 50MB)
@@ -103,9 +109,17 @@ namespace teamseven.EzExam.API.Controllers
                     .From(bucketName)
                     .GetPublicUrl(filePath);
 
-                _logger.LogInformation("PDF uploaded successfully: {FilePath} by user {UserId}", filePath, userId);
+                _logger.LogInformation("Document uploaded successfully: {FilePath} by user {UserId}", filePath, userId);
 
-                var response = new PdfUploadResponse
+                var fileType = fileExtension.ToLower() switch
+                {
+                    ".pdf" => "PDF",
+                    ".docx" => "Word Document",
+                    ".doc" => "Word Document",
+                    _ => "Unknown"
+                };
+
+                var response = new DocumentUploadResponse
                 {
                     FileName = fileName,
                     FilePath = filePath,
@@ -113,29 +127,30 @@ namespace teamseven.EzExam.API.Controllers
                     FileSize = file.Length,
                     ContentType = file.ContentType,
                     UploadedAt = DateTime.UtcNow,
-                    UserId = userId
+                    UserId = userId,
+                    FileType = fileType
                 };
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading PDF file");
+                _logger.LogError(ex, "Error uploading document file");
                 return StatusCode(500, new { Message = "An error occurred while uploading the file." });
             }
         }
 
         /// <summary>
-        /// Download a PDF file from Supabase storage
+        /// Download a document file from Supabase storage
         /// </summary>
         /// <param name="filePath">Path to the file in storage</param>
-        /// <returns>PDF file content</returns>
+        /// <returns>Document file content</returns>
         [HttpGet("download")]
-        [SwaggerOperation(Summary = "Download PDF file", Description = "Downloads a PDF file from Supabase storage")]
+        [SwaggerOperation(Summary = "Download document file", Description = "Downloads a PDF or Word document from Supabase storage")]
         [SwaggerResponse(200, "File downloaded successfully")]
         [SwaggerResponse(404, "File not found", typeof(object))]
         [SwaggerResponse(500, "Download failed", typeof(object))]
-        public async Task<IActionResult> DownloadPdf([FromQuery] [Required] string filePath)
+        public async Task<IActionResult> DownloadDocument([FromQuery] [Required] string filePath)
         {
             try
             {
@@ -160,25 +175,36 @@ namespace teamseven.EzExam.API.Controllers
                 }
 
                 var fileName = Path.GetFileName(filePath);
-                return File(fileBytes, "application/pdf", fileName);
+                var fileExtension = Path.GetExtension(filePath).ToLower();
+                
+                // Determine content type based on file extension
+                string contentType = fileExtension switch
+                {
+                    ".pdf" => "application/pdf",
+                    ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ".doc" => "application/msword",
+                    _ => "application/octet-stream"
+                };
+                
+                return File(fileBytes, contentType, fileName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading PDF file: {FilePath}", filePath);
+                _logger.LogError(ex, "Error downloading document file: {FilePath}", filePath);
                 return StatusCode(500, new { Message = "An error occurred while downloading the file." });
             }
         }
 
         /// <summary>
-        /// Get public URL for a PDF file
+        /// Get public URL for a document file
         /// </summary>
         /// <param name="filePath">Path to the file in storage</param>
         /// <returns>Public URL for the file</returns>
         [HttpGet("url")]
-        [SwaggerOperation(Summary = "Get PDF file URL", Description = "Gets the public URL for a PDF file")]
-        [SwaggerResponse(200, "URL retrieved successfully", typeof(PdfUrlResponse))]
+        [SwaggerOperation(Summary = "Get document file URL", Description = "Gets the public URL for a PDF or Word document")]
+        [SwaggerResponse(200, "URL retrieved successfully", typeof(DocumentUrlResponse))]
         [SwaggerResponse(400, "Invalid file path", typeof(object))]
-        public IActionResult GetPdfUrl([FromQuery] [Required] string filePath)
+        public IActionResult GetDocumentUrl([FromQuery] [Required] string filePath)
         {
             try
             {
@@ -194,7 +220,7 @@ namespace teamseven.EzExam.API.Controllers
                     .From(bucketName)
                     .GetPublicUrl(filePath);
 
-                var response = new PdfUrlResponse
+                var response = new DocumentUrlResponse
                 {
                     FilePath = filePath,
                     PublicUrl = publicUrl
@@ -204,22 +230,22 @@ namespace teamseven.EzExam.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting PDF URL: {FilePath}", filePath);
+                _logger.LogError(ex, "Error getting document URL: {FilePath}", filePath);
                 return StatusCode(500, new { Message = "An error occurred while getting the file URL." });
             }
         }
 
         /// <summary>
-        /// Delete a PDF file from Supabase storage
+        /// Delete a document file from Supabase storage
         /// </summary>
         /// <param name="filePath">Path to the file in storage</param>
         /// <returns>Deletion result</returns>
         [HttpDelete("delete")]
-        [SwaggerOperation(Summary = "Delete PDF file", Description = "Deletes a PDF file from Supabase storage")]
+        [SwaggerOperation(Summary = "Delete document file", Description = "Deletes a PDF or Word document from Supabase storage")]
         [SwaggerResponse(200, "File deleted successfully", typeof(object))]
         [SwaggerResponse(404, "File not found", typeof(object))]
         [SwaggerResponse(500, "Deletion failed", typeof(object))]
-        public async Task<IActionResult> DeletePdf([FromQuery] [Required] string filePath)
+        public async Task<IActionResult> DeleteDocument([FromQuery] [Required] string filePath)
         {
             try
             {
@@ -250,27 +276,27 @@ namespace teamseven.EzExam.API.Controllers
                     return NotFound(new { Message = "File not found or could not be deleted." });
                 }
 
-                _logger.LogInformation("PDF deleted successfully: {FilePath} by user {UserId}", filePath, userId);
+                _logger.LogInformation("Document deleted successfully: {FilePath} by user {UserId}", filePath, userId);
 
                 return Ok(new { Message = "File deleted successfully." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting PDF file: {FilePath}", filePath);
+                _logger.LogError(ex, "Error deleting document file: {FilePath}", filePath);
                 return StatusCode(500, new { Message = "An error occurred while deleting the file." });
             }
         }
 
         /// <summary>
-        /// List PDF files in a folder
+        /// List document files in a folder
         /// </summary>
         /// <param name="folder">Folder path to list files from</param>
-        /// <returns>List of PDF files</returns>
+        /// <returns>List of document files</returns>
         [HttpGet("list")]
-        [SwaggerOperation(Summary = "List PDF files", Description = "Lists PDF files in a specified folder")]
-        [SwaggerResponse(200, "Files listed successfully", typeof(PdfListResponse))]
+        [SwaggerOperation(Summary = "List document files", Description = "Lists PDF and Word document files in a specified folder")]
+        [SwaggerResponse(200, "Files listed successfully", typeof(DocumentListResponse))]
         [SwaggerResponse(500, "List operation failed", typeof(object))]
-        public async Task<IActionResult> ListPdfs([FromQuery] string folder = "uploads")
+        public async Task<IActionResult> ListDocuments([FromQuery] string folder = "uploads")
         {
             try
             {
@@ -292,7 +318,10 @@ namespace teamseven.EzExam.API.Controllers
                     .From(bucketName)
                     .List(userFolder);
 
-                var pdfFiles = files?.Where(f => f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                var documentFiles = files?.Where(f => 
+                    f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ||
+                    f.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ||
+                    f.Name.EndsWith(".doc", StringComparison.OrdinalIgnoreCase))
                     .Select(f => 
                     {
                         long fileSize = 0;
@@ -304,36 +333,47 @@ namespace teamseven.EzExam.API.Controllers
                                 fileSize = intSize;
                         }
 
-                        return new PdfFileInfo
+                        var fileExtension = Path.GetExtension(f.Name).ToLower();
+                        var fileType = fileExtension switch
+                        {
+                            ".pdf" => "PDF",
+                            ".docx" => "Word Document",
+                            ".doc" => "Word Document",
+                            _ => "Unknown"
+                        };
+
+                        return new DocumentFileInfo
                         {
                             Name = f.Name,
                             Path = $"{userFolder}/{f.Name}",
                             Size = fileSize,
                             LastModified = f.UpdatedAt ?? DateTime.MinValue,
-                            PublicUrl = storage.From(bucketName).GetPublicUrl($"{userFolder}/{f.Name}")
+                            PublicUrl = storage.From(bucketName).GetPublicUrl($"{userFolder}/{f.Name}"),
+                            FileType = fileType,
+                            FileExtension = fileExtension
                         };
                     })
-                    .ToList() ?? new List<PdfFileInfo>();
+                    .ToList() ?? new List<DocumentFileInfo>();
 
-                var response = new PdfListResponse
+                var response = new DocumentListResponse
                 {
                     Folder = userFolder,
-                    Files = pdfFiles,
-                    TotalCount = pdfFiles.Count
+                    Files = documentFiles,
+                    TotalCount = documentFiles.Count
                 };
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error listing PDF files in folder: {Folder}", folder);
+                _logger.LogError(ex, "Error listing document files in folder: {Folder}", folder);
                 return StatusCode(500, new { Message = "An error occurred while listing files." });
             }
         }
     }
 
     // Response models
-    public class PdfUploadResponse
+    public class DocumentUploadResponse
     {
         public string FileName { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
@@ -342,27 +382,30 @@ namespace teamseven.EzExam.API.Controllers
         public string ContentType { get; set; } = string.Empty;
         public DateTime UploadedAt { get; set; }
         public string UserId { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;
     }
 
-    public class PdfUrlResponse
+    public class DocumentUrlResponse
     {
         public string FilePath { get; set; } = string.Empty;
         public string PublicUrl { get; set; } = string.Empty;
     }
 
-    public class PdfListResponse
+    public class DocumentListResponse
     {
         public string Folder { get; set; } = string.Empty;
-        public List<PdfFileInfo> Files { get; set; } = new();
+        public List<DocumentFileInfo> Files { get; set; } = new();
         public int TotalCount { get; set; }
     }
 
-    public class PdfFileInfo
+    public class DocumentFileInfo
     {
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public long Size { get; set; }
         public DateTime LastModified { get; set; }
         public string PublicUrl { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;
+        public string FileExtension { get; set; } = string.Empty;
     }
 }

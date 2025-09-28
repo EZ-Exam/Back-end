@@ -75,6 +75,7 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] string? search = null,
             [FromQuery] string? sort = null,
             [FromQuery] int? chapterId = null,
+            [FromQuery] int? gradeId = null,
             [FromQuery] int isSort = 0)
         {
             try

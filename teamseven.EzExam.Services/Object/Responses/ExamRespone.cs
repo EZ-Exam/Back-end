@@ -13,6 +13,7 @@ namespace teamseven.EzExam.Services.Object.Responses
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public int SubjectId { get; set; }
+        public int? GradeId { get; set; }
         public int? LessonId { get; set; }
         public int ExamTypeId { get; set; }
         public int CreatedByUserId { get; set; }

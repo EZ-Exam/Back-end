@@ -19,6 +19,9 @@ namespace teamseven.EzExam.Repository.Models
         [Column("ChapterId")]
         public int ChapterId { get; set; }
 
+        [Column("GradeId")]
+        public int? GradeId { get; set; }
+
         [MaxLength(5000)]
         [Column("Document")]
         public string? Document { get; set; }
@@ -36,6 +39,9 @@ namespace teamseven.EzExam.Repository.Models
         // Navigation properties
         [ForeignKey("ChapterId")]
         public virtual Chapter Chapter { get; set; } = null!;
+
+        [ForeignKey("GradeId")]
+        public virtual Grade? Grade { get; set; }
 
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
         public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();
