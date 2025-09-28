@@ -20,20 +20,22 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
             _repo = repo;
             _logger = logger;
         }
-
         public async Task<LessonEnhancedResponse> CreateAsync(LessonEnhancedUpsertRequest req)
         {
             if (!int.TryParse(req.subjectId, out var sid))
                 throw new ArgumentException("Invalid subjectId");
 
-            var qids = new List<int>();
-            foreach (var s in req.questions ?? Enumerable.Empty<string>())
-            {
-                if (!int.TryParse(s, out var qid))
-                    throw new ArgumentException($"Invalid questionId: {s}");
-                qids.Add(qid);
-            }
+            // Parse các questionId từ string -> int (bỏ qua id parse lỗi)
+            var parsedQids = (req.questions ?? Enumerable.Empty<string>())
+                .Select(s => int.TryParse(s, out var id) ? (int?)id : null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
 
+            // Lọc chỉ giữ QuestionId có tồn tại trong DB
+            var existingQids = await _repo.FilterExistingQuestionIdsAsync(parsedQids);
+
+            // Tao lesson
             var entity = new LessonEnhanced
             {
                 Title = req.title,
@@ -46,10 +48,12 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
 
             var newId = await _repo.AddAsync(entity);
 
-            await _repo.ReplaceLessonQuestionsAsync(newId, qids);
+            await _repo.AppendLessonQuestionsAsync(newId, existingQids);
+            // await _repo.ReplaceLessonQuestionsAsync(newId, existingQids);
 
             return await GetByIdAsync(newId);
         }
+
 
 
         public async Task<LessonEnhancedResponse> GetByIdAsync(int id)

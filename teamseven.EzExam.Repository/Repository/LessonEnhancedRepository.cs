@@ -37,7 +37,9 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<int> AddAsync(LessonEnhanced lesson)
         {
-            return await CreateAsync(lesson);
+            _context.LessonsEnhanced.Add(lesson);
+            await _context.SaveChangesAsync();   // EF sẽ gán Id tự tăng vào entity.Id
+            return lesson.Id;
         }
 
         public async Task<int> UpdateAsync(LessonEnhanced lesson)
@@ -121,7 +123,44 @@ namespace teamseven.EzExam.Repository.Repository
                 .Select(x => x.QuestionId)
                 .ToListAsync();
         }
+        /// (B1) Lọc chỉ giữ các QuestionId có tồn tại trong bảng questions
+        public async Task<List<int>> FilterExistingQuestionIdsAsync(IEnumerable<int> ids)
+        {
+            var set = ids?.Distinct().ToList() ?? new List<int>();
+            if (set.Count == 0) return new List<int>();
 
+            return await _context.Questions
+                .Where(q => set.Contains(q.Id))
+                .Select(q => q.Id)
+                .ToListAsync();
+        }
+
+        /// (B2) Chỉ thêm mới (append) các QuestionId chưa có, gán Position tiếp theo
+        public async Task AppendLessonQuestionsAsync(int lessonId, IEnumerable<int> newQuestionIds)
+        {
+            var incoming = newQuestionIds?.Distinct().ToList() ?? new List<int>();
+            if (incoming.Count == 0) return;
+
+            var existing = await _context.LessonsEnhancedQuestions
+                .Where(x => x.LessonId == lessonId)
+                .ToListAsync();
+
+            var existingIds = existing.Select(x => x.QuestionId).ToHashSet();
+            var toAdd = incoming.Where(id => !existingIds.Contains(id)).ToList();
+            if (toAdd.Count == 0) return;
+
+            int startPos = existing.Count == 0 ? 1 : existing.Max(x => x.Position) + 1;
+
+            var rows = toAdd.Select((qid, i) => new LessonEnhancedQuestion
+            {
+                LessonId = lessonId,
+                QuestionId = qid,
+                Position = startPos + i
+            });
+
+            await _context.LessonsEnhancedQuestions.AddRangeAsync(rows);
+            await _context.SaveChangesAsync();
+        }
         /// <summary>Thay toàn bộ danh sách question theo thứ tự (Position = index + 1)</summary>
         public async Task ReplaceLessonQuestionsAsync(int lessonId, IEnumerable<int> questionIds)
         {
