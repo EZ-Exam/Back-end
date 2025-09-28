@@ -43,6 +43,7 @@ using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.API.Middleware;
 using teamseven.EzExam.API.Services;
+using teamseven.EzExam.Services.Services.LessonEnhancedService;
 var builder = WebApplication.CreateBuilder(args);
 
 // ================= CẤU HÌNH DB =================
@@ -117,6 +118,9 @@ builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ITextBookService, TextBookService>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
+builder.Services.AddScoped<LessonEnhancedRepository>();            // repo thẳng
+builder.Services.AddScoped<ILessonEnhancedService, LessonEnhancedService>(); // service
+
 
 // Test System Services
 builder.Services.AddScoped<IUserQuestionCartService, UserQuestionCartService>();
