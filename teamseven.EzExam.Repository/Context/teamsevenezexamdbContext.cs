@@ -207,9 +207,11 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasKey(e => e.Id).HasName("pk_lessons");
                 entity.ToTable("lessons", "public");
                 entity.HasIndex(e => e.ChapterId, "ix_lessons_chapter_id");
+                entity.HasIndex(e => e.GradeId, "ix_lessons_grade_id");
                 entity.Property(e => e.Id).HasColumnName("Id");
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.Document).HasColumnName("Document").HasMaxLength(5000);
                 entity.Property(e => e.DocumentType).HasColumnName("DocumentType").HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -217,6 +219,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Chapter).WithMany(p => p.Lessons)
                     .HasForeignKey(d => d.ChapterId)
                     .HasConstraintName("fk_lessons_chapter_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_lessons_grade_id");
             });
             // ===== Lessons Enhanced (bảng chính) =====
             modelBuilder.Entity<LessonEnhanced>(entity =>
@@ -321,6 +326,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.CreatedByUserId, "ix_questions_created_by_user_id");
                 entity.HasIndex(e => e.SubjectId, "ix_questions_subject_id");
                 entity.HasIndex(e => e.DifficultyLevelId, "ix_questions_difficulty_level_id");
+                entity.HasIndex(e => e.GradeId, "ix_questions_grade_id");
                 entity.HasIndex(e => e.ChapterId, "ix_questions_chapter_id");
                 entity.HasIndex(e => e.LessonId, "ix_questions_lesson_id");
                 entity.HasIndex(e => e.TextbookId, "ix_questions_textbook_id");
@@ -332,6 +338,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.QuestionSource).HasColumnName("QuestionSource").HasMaxLength(500);
                 entity.Property(e => e.DifficultyLevelId).HasColumnName("DifficultyLevelId");
                 entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
                 entity.Property(e => e.LessonId).HasColumnName("LessonId");
                 entity.Property(e => e.TextbookId).HasColumnName("TextbookId");
@@ -353,6 +360,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Subject).WithMany(p => p.Questions)
                     .HasForeignKey(d => d.SubjectId)
                     .HasConstraintName("fk_questions_subject_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_questions_grade_id");
                 entity.HasOne(d => d.DifficultyLevel).WithMany(p => p.Questions)
                     .HasForeignKey(d => d.DifficultyLevelId)
                     .HasConstraintName("fk_questions_difficulty_level_id");
@@ -469,6 +479,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.CreatedByUserId, "ix_exams_created_by_user_id");
                 entity.HasIndex(e => e.ExamTypeId, "ix_exams_exam_type_id");
                 entity.HasIndex(e => e.SubjectId, "ix_exams_subject_id");
+                entity.HasIndex(e => e.GradeId, "ix_exams_grade_id");
                 entity.HasIndex(e => e.LessonId, "ix_exams_lesson_id");
                 entity.HasIndex(e => e.IsDeleted, "ix_exams_is_deleted");
                 entity.HasIndex(e => e.IsActive, "ix_exams_is_active");
@@ -477,6 +488,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(1000);
                 entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.LessonId).HasColumnName("LessonId");
                 entity.Property(e => e.ExamTypeId).HasColumnName("ExamTypeId");
                 entity.Property(e => e.CreatedByUserId).HasColumnName("CreatedByUserId");
@@ -504,6 +516,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Subject).WithMany(p => p.Exams)
                     .HasForeignKey(d => d.SubjectId)
                     .HasConstraintName("fk_exams_subject_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_exams_grade_id");
                 entity.HasOne(d => d.Lesson).WithMany(p => p.Exams)
                     .HasForeignKey(d => d.LessonId)
                     .HasConstraintName("fk_exams_lesson_id");
