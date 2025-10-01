@@ -30,9 +30,11 @@ namespace teamseven.EzExam.API.Controllers
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get all textbooks")]
         [SwaggerResponse(200, "Textbooks retrieved successfully", typeof(IEnumerable<TextBookDataResponse>))]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetTextBooks(
+            [FromQuery] int? gradeId = null,
+            [FromQuery] int? subjectId = null)
         {
-            var result = await _serviceProvider.TextBookService.GetAllTextBookAsync();
+            var result = await _serviceProvider.TextBookService.GetAsync(gradeId, subjectId);
             return Ok(result);
         }
 
