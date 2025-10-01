@@ -46,7 +46,8 @@ namespace teamseven.EzExam.API.Controllers
              [FromQuery] int? pageNumber = null,
              [FromQuery] int? pageSize = null,
              [FromQuery] int isSort = 0,
-             [FromQuery] int? userId = null) 
+             [FromQuery] int? userId = null,
+             [FromQuery] int? textbookId = null) 
         {
             try
             {
@@ -77,7 +78,8 @@ namespace teamseven.EzExam.API.Controllers
                     difficultyLevel,
                     chapterId,
                     isSort,
-                    userId);
+                    userId,
+                    textbookId);
                 _logger.LogInformation("Retrieved {Count} questions for page {PageNumber}.", pagedQuestions.Items.Count, pagedQuestions.PageNumber);
                 return Ok(pagedQuestions);
             }
@@ -148,6 +150,7 @@ namespace teamseven.EzExam.API.Controllers
                         questionSource = questionResponse.QuestionSource,
                         difficultyLevel = questionResponse.DifficultyLevel,
                         lessonId = questionResponse.LessonId,
+                        textbookId = questionResponse.TextbookId,
                         createdByUserId = questionResponse.CreatedByUserId,
                         createdAt = questionResponse.CreatedAt,
                         updatedAt = questionResponse.UpdatedAt,

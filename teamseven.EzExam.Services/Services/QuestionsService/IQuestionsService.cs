@@ -22,6 +22,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             string? difficultyLevel = null,
             int? chapterId = null,
             int isSort = 0,
-            int? createdByUserId = null);
+            int? createdByUserId = null,
+            int? textbookId = null);
     }
 }

@@ -70,6 +70,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     QuestionSource = question.QuestionSource,
                     DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
                     LessonId = question.LessonId,
+                    TextbookId = question.TextbookId,
                     ChapterId = question.ChapterId,
                     CreatedByUserId = question.CreatedByUserId,
                     CreatedAt = question.CreatedAt,
@@ -214,7 +215,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
     string? difficultyLevel = null,
     int? chapterId = null,
     int isSort = 0,
-    int? createdByUserId = null) // Th�m l?c theo user
+    int? createdByUserId = null,
+    int? textbookId = null) // Th�m l?c theo user
         {
             try
             {
@@ -233,7 +235,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         difficultyLevel,
                         chapterId,
                         isSort,
-                        createdByUserId ?? 0); // c?n th�m n?u repo c� x? l�
+                        createdByUserId ?? 0,
+                        textbookId); // c?n th�m n?u repo c� x? l�
                 }
                 else
                 {
@@ -270,6 +273,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         lessonIds = lessonIds.Where(l => l.ChapterId == chapterId.Value).ToList();
                         questions = questions.Where(q => lessonIds.Any(l => l.Id == q.LessonId)).ToList();
                     }
+                    if (textbookId.HasValue)
+                        questions = questions.Where(q => q.TextbookId == textbookId.Value).ToList();
 
                     if (isSort == 1)
                     {
@@ -309,6 +314,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
                         LessonId = q.LessonId,
                         ChapterId = q.ChapterId,
+                        TextbookId = q.TextbookId,
                         CreatedByUserId = q.CreatedByUserId,
                         CreatedAt = q.CreatedAt,
                         UpdatedAt = q.UpdatedAt,
