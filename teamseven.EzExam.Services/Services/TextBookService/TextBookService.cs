@@ -35,6 +35,19 @@ namespace teamseven.EzExam.Services.Services.TextBookService
                 UpdatedAt = tb.UpdatedAt
             });
         }
+        public async Task<List<TextBookDataResponse>> GetAsync(int? gradeId = null, int? subjectId = null)
+        {
+            var items = await _unitOfWork.TextBookRepository.GetAllAsync(gradeId, subjectId);
+            return items.Select(x => new TextBookDataResponse
+            {
+                Id = x.Id,
+                Name = x.Name,
+                GradeId = x.GradeId,
+                SubjectId = x.SubjectId,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            }).ToList();
+        }
 
         public async Task<TextBookDataResponse> GetTextBookByIdAsync(int id)
         {

@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Services.TextBookService
     public interface ITextBookService
     {
         Task<IEnumerable<TextBookDataResponse>> GetAllTextBookAsync();
+        Task<List<TextBookDataResponse>> GetAsync(int? gradeId = null, int? subjectId = null);
         Task<TextBookDataResponse> GetTextBookByIdAsync(int id);
         Task CreateTextBookAsync(CreateTextBookRequest request);
         Task UpdateTextBookAsync(TextBookDataRequest request);
