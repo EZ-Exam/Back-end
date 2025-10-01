@@ -181,6 +181,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 Id = e.Id,
                 Name = e.Name,
                 LessonId = e.LessonId,
+                SubjectId = e.SubjectId,
                 ExamTypeId = e.ExamTypeId,
                 CreatedByUserId = e.CreatedByUserId,
                 IsDeleted = e.IsDeleted,

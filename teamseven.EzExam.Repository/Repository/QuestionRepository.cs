@@ -42,6 +42,13 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<Question>?> GetBySubjectIdAsync(int subjectId)
+        {
+            return await _context.Questions
+                .Where(q => q.SubjectId == subjectId)
+                .ToListAsync();
+        }
+
         public async Task<int> AddAsync(Question question)
         {
             return await CreateAsync(question);

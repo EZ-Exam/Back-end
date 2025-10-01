@@ -336,6 +336,60 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
         }
 
+        public async Task<List<QuestionDataResponse>> GetQuestionBySubjectIdAsync(int subjectId)
+        {
+            try
+            {
+                var questions = await _unitOfWork.QuestionRepository.GetBySubjectIdAsync(subjectId);
+                if (questions == null || !questions.Any())
+                {
+                    _logger.LogWarning("No questions found for SubjectId {SubjectId}", subjectId);
+                    return new List<QuestionDataResponse>();
+                }
+
+                var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
+                var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
+                var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
+
+                var responses = new List<QuestionDataResponse>();
+
+                foreach (var q in questions)
+                {
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
+
+                    responses.Add(new QuestionDataResponse
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        QuestionSource = q.QuestionSource,
+                        DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
+                        LessonId = q.LessonId,
+                        ChapterId = q.ChapterId,
+                        CreatedByUserId = q.CreatedByUserId,
+                        CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt,
+                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
+                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
+                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
+                        Formula = q.Formula,
+                        CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation,
+                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
+                        Options = q.Options != null
+                            ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>()
+                            : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
+                    });
+                }
+
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
+                throw new ApplicationException($"Error retrieving questions for subject {subjectId}.", ex);
+            }
+        }
+
 
     }
 }
