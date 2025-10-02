@@ -46,7 +46,8 @@ namespace teamseven.EzExam.API.Controllers
              [FromQuery] int? pageNumber = null,
              [FromQuery] int? pageSize = null,
              [FromQuery] int isSort = 0,
-             [FromQuery] int? userId = null) 
+             [FromQuery] int? userId = null,
+             [FromQuery] int? textbookId = null) 
         {
             try
             {
@@ -77,7 +78,8 @@ namespace teamseven.EzExam.API.Controllers
                     difficultyLevel,
                     chapterId,
                     isSort,
-                    userId);
+                    userId,
+                    textbookId);
                 _logger.LogInformation("Retrieved {Count} questions for page {PageNumber}.", pagedQuestions.Items.Count, pagedQuestions.PageNumber);
                 return Ok(pagedQuestions);
             }
@@ -95,6 +97,29 @@ namespace teamseven.EzExam.API.Controllers
             return parts.Length == 2 && validFields.Contains(parts[0]) && validOrders.Contains(parts[1]);
         }
 
+        [HttpGet("by-subject/{subjectId}")]
+        [AllowAnonymous]
+        [SwaggerOperation(
+            Summary = "Get questions by subject ID",
+            Description = "Retrieves all questions belonging to a specific subject ID."
+        )]
+        [SwaggerResponse(200, "Questions retrieved successfully.", typeof(List<QuestionDataResponse>))]
+        [SwaggerResponse(404, "Subject not found.", typeof(ProblemDetails))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
+        public async Task<IActionResult> GetBySubjectId(int subjectId)
+        {
+            try
+            {
+                var result = await _serviceProvider.QuestionsService.GetQuestionBySubjectIdAsync(subjectId);
+                _logger.LogInformation("Retrieved {Count} questions for SubjectId {SubjectId}.", result.Count, subjectId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving questions for the subject." });
+            }
+        }
 
 
         [HttpPost]
@@ -125,6 +150,7 @@ namespace teamseven.EzExam.API.Controllers
                         questionSource = questionResponse.QuestionSource,
                         difficultyLevel = questionResponse.DifficultyLevel,
                         lessonId = questionResponse.LessonId,
+                        textbookId = questionResponse.TextbookId,
                         createdByUserId = questionResponse.CreatedByUserId,
                         createdAt = questionResponse.CreatedAt,
                         updatedAt = questionResponse.UpdatedAt,

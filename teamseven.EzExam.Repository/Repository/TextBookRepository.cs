@@ -62,5 +62,13 @@ namespace teamseven.EzExam.Repository.Repository
             _context.TextBooks.Remove(textBook);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<TextBook>> GetAllAsync(int? gradeId = null, int? subjectId = null)
+        {
+            var q = _context.TextBooks.AsNoTracking().AsQueryable();
+            if (gradeId.HasValue) q = q.Where(x => x.GradeId == gradeId.Value);
+            if (subjectId.HasValue) q = q.Where(x => x.SubjectId == subjectId.Value);
+            return await q.OrderBy(x => x.GradeId).ThenBy(x => x.Name).ToListAsync();
+        }
     }
 }

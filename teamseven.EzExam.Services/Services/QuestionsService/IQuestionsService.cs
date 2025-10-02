@@ -12,6 +12,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
         Task DeleteQuestionAsync(int id);
         Task<QuestionDataResponse> GetQuestionById(int id);
         Task<QuestionDataResponse> ModifyQuestionAsync(UpdateQuestionRequest questionDataRequest);
+        Task<List<QuestionDataResponse>> GetQuestionBySubjectIdAsync(int subjectId);
         Task<PagedResponse<QuestionDataResponse>> GetQuestionsAsync(
             int? pageNumber = null,
             int? pageSize = null,
@@ -21,6 +22,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             string? difficultyLevel = null,
             int? chapterId = null,
             int isSort = 0,
-            int? createdByUserId = null);
+            int? createdByUserId = null,
+            int? textbookId = null);
     }
 }

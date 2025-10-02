@@ -42,6 +42,13 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<Question>?> GetBySubjectIdAsync(int subjectId)
+        {
+            return await _context.Questions
+                .Where(q => q.SubjectId == subjectId)
+                .ToListAsync();
+        }
+
         public async Task<int> AddAsync(Question question)
         {
             return await CreateAsync(question);
@@ -66,7 +73,8 @@ namespace teamseven.EzExam.Repository.Repository
     string? difficultyLevel = null,
     int? chapterId = null,
     int isSort = 0,
-    int createdByUserId = 0) // Default = 0 => kh�ng l?c theo user
+    int createdByUserId = 0,
+    int? textbookId = null) // Default = 0 => kh�ng l?c theo user
         {
             var query = _context.Questions
                 .Include(q => q.Lesson)
@@ -101,6 +109,10 @@ namespace teamseven.EzExam.Repository.Repository
             {
                 query = query.Where(q => q.Lesson.ChapterId == chapterId.Value);
             }
+            // NEW: filter theo textbookId
+            if (textbookId.HasValue)
+                query = query.Where(q => q.TextbookId == textbookId.Value);
+
 
             // ?? S?p x?p
             if (isSort == 1)

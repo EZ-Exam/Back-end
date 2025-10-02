@@ -26,9 +26,11 @@ namespace teamseven.EzExam.Services.Services.ExamService
             var exam = new Exam
             {
                 Name = examRequest.Name,
+                Description = examRequest.Description,
                 SubjectId = examRequest.SubjectId,
                 LessonId = examRequest.LessonId,
                 ExamTypeId = examRequest.ExamTypeId,
+                Duration = examRequest.Duration,
                 CreatedByUserId = examRequest.CreatedByUserId,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
@@ -179,6 +181,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 Id = e.Id,
                 Name = e.Name,
                 LessonId = e.LessonId,
+                SubjectId = e.SubjectId,
                 ExamTypeId = e.ExamTypeId,
                 CreatedByUserId = e.CreatedByUserId,
                 IsDeleted = e.IsDeleted,
@@ -187,6 +190,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 CreatedByUserName = e.CreatedByUser?.Email,
                 ExamTypeName = e.ExamType?.Name,
                 LessonName = e.Lesson?.Name,
+                Duration = e.Duration,
                 QuestionCount = e.ExamQuestions?.Count ?? 0,
                 HistoryCount = e.ExamHistories?.Count ?? 0
             }).ToList();
@@ -211,6 +215,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 CreatedByUserName = exam.CreatedByUser?.Email,
                 ExamTypeName = exam.ExamType?.Name,
                 LessonName = exam.Lesson?.Name,
+                Duration = exam.Duration,
                 QuestionCount = exam.ExamQuestions?.Count ?? 0,
                 HistoryCount = exam.ExamHistories?.Count ?? 0
             };

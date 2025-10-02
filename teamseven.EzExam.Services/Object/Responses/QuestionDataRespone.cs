@@ -23,6 +23,7 @@ public class QuestionDataResponse
     public int? GradeId { get; set; }
 
     public int? ChapterId { get; set; }
+    public int? TextbookId { get; set; }
 
     public string? Image { get; set; }
 

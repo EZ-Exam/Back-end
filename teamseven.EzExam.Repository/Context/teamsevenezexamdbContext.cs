@@ -174,6 +174,8 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => new { e.Name, e.GradeId }, "uq_textbooks_name_grade").IsUnique();
                 entity.HasIndex(e => e.GradeId, "ix_textbooks_grade_id");
                 entity.Property(e => e.Id).HasColumnName("Id");
+                entity.HasIndex(e => e.SubjectId, "ix_textbooks_subject_id");
+                entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");

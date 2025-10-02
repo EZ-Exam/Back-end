@@ -70,6 +70,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     QuestionSource = question.QuestionSource,
                     DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
                     LessonId = question.LessonId,
+                    TextbookId = question.TextbookId,
                     ChapterId = question.ChapterId,
                     CreatedByUserId = question.CreatedByUserId,
                     CreatedAt = question.CreatedAt,
@@ -214,7 +215,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
     string? difficultyLevel = null,
     int? chapterId = null,
     int isSort = 0,
-    int? createdByUserId = null) // Th�m l?c theo user
+    int? createdByUserId = null,
+    int? textbookId = null) // Th�m l?c theo user
         {
             try
             {
@@ -233,7 +235,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         difficultyLevel,
                         chapterId,
                         isSort,
-                        createdByUserId ?? 0); // c?n th�m n?u repo c� x? l�
+                        createdByUserId ?? 0,
+                        textbookId); // c?n th�m n?u repo c� x? l�
                 }
                 else
                 {
@@ -270,6 +273,8 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         lessonIds = lessonIds.Where(l => l.ChapterId == chapterId.Value).ToList();
                         questions = questions.Where(q => lessonIds.Any(l => l.Id == q.LessonId)).ToList();
                     }
+                    if (textbookId.HasValue)
+                        questions = questions.Where(q => q.TextbookId == textbookId.Value).ToList();
 
                     if (isSort == 1)
                     {
@@ -309,6 +314,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
                         LessonId = q.LessonId,
                         ChapterId = q.ChapterId,
+                        TextbookId = q.TextbookId,
                         CreatedByUserId = q.CreatedByUserId,
                         CreatedAt = q.CreatedAt,
                         UpdatedAt = q.UpdatedAt,
@@ -333,6 +339,60 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             {
                 _logger.LogError(ex, "Error retrieving questions: {Message}", ex.Message);
                 throw new ApplicationException("Error retrieving questions.", ex);
+            }
+        }
+
+        public async Task<List<QuestionDataResponse>> GetQuestionBySubjectIdAsync(int subjectId)
+        {
+            try
+            {
+                var questions = await _unitOfWork.QuestionRepository.GetBySubjectIdAsync(subjectId);
+                if (questions == null || !questions.Any())
+                {
+                    _logger.LogWarning("No questions found for SubjectId {SubjectId}", subjectId);
+                    return new List<QuestionDataResponse>();
+                }
+
+                var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
+                var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
+                var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
+
+                var responses = new List<QuestionDataResponse>();
+
+                foreach (var q in questions)
+                {
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
+
+                    responses.Add(new QuestionDataResponse
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        QuestionSource = q.QuestionSource,
+                        DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
+                        LessonId = q.LessonId,
+                        ChapterId = q.ChapterId,
+                        CreatedByUserId = q.CreatedByUserId,
+                        CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt,
+                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
+                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
+                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
+                        Formula = q.Formula,
+                        CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation,
+                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
+                        Options = q.Options != null
+                            ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>()
+                            : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
+                    });
+                }
+
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
+                throw new ApplicationException($"Error retrieving questions for subject {subjectId}.", ex);
             }
         }
 
