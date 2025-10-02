@@ -19,6 +19,8 @@ namespace teamseven.EzExam.Repository.Models
         [Column("GradeId")]
         public int GradeId { get; set; }
 
+        public int? SubjectId { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
