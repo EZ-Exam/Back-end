@@ -19,6 +19,7 @@ using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
 using teamseven.EzExam.Services.Services.StudentHistoryService;
+using teamseven.EzExam.Services.Services.ExamHistoryService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -54,6 +55,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         
         // Student History Services
         private readonly IStudentHistoryService _studentHistoryService;
+        
+        // Exam History Services
+        private readonly IExamHistoryService _examHistoryService;
 
         public ServiceProviders(
             IAuthService authService,
@@ -81,7 +85,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             IUserQuestionCartService userQuestionCartService,
             ITestSessionService testSessionService,
             ILessonEnhancedService lessonEnhancedService,
-            IStudentHistoryService studentHistoryService)
+            IStudentHistoryService studentHistoryService,
+            IExamHistoryService examHistoryService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -112,6 +117,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             
             // Student History Services
             _studentHistoryService = studentHistoryService ?? throw new ArgumentNullException(nameof(studentHistoryService));
+            
+            // Exam History Services
+            _examHistoryService = examHistoryService ?? throw new ArgumentNullException(nameof(examHistoryService));
         }
 
         public IAuthService AuthService => _authService;
@@ -145,5 +153,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         
         // Student History Services
         public IStudentHistoryService StudentHistoryService => _studentHistoryService;
+        
+        // Exam History Services
+        public IExamHistoryService ExamHistoryService => _examHistoryService;
     }
 }

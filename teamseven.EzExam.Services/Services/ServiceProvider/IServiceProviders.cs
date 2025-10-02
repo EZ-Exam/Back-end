@@ -57,5 +57,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         
         // Student History Services
         IStudentHistoryService StudentHistoryService { get; }
+        
+        // Exam History Services
+        IExamHistoryService ExamHistoryService { get; }
     }
 }
