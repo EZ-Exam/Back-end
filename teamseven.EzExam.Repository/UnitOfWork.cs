@@ -27,6 +27,7 @@ namespace teamseven.EzExam.Repository
         UserSubscriptionRepository UserSubscriptionRepository { get; }
         UserSocialProviderRepository UserSocialProviderRepository { get; }
         QuestionReportRepository QuestionReportRepository { get; }
+        QuestionCommentRepository QuestionCommentRepository { get; }
         TextBookRepository TextBookRepository { get; }
         UserUsageTrackingRepository UserUsageTrackingRepository { get; }
         UserUsageHistoryRepository UserUsageHistoryRepository { get; }
@@ -64,6 +65,7 @@ namespace teamseven.EzExam.Repository
         private UserSubscriptionRepository _userSubscriptionRepository;
         private UserSocialProviderRepository _userSocialProvider;
         private QuestionReportRepository _questionReportRepository;
+        private QuestionCommentRepository _questionCommentRepository;
         private TextBookRepository _textBookRepository;
         private UserUsageTrackingRepository _userUsageTrackingRepository;
         private UserUsageHistoryRepository _userUsageHistoryRepository;
@@ -102,6 +104,7 @@ namespace teamseven.EzExam.Repository
         public UserSubscriptionRepository UserSubscriptionRepository => _userSubscriptionRepository ??= new UserSubscriptionRepository(_context);
         public UserSocialProviderRepository UserSocialProviderRepository => _userSocialProvider ??= new UserSocialProviderRepository(_context);
         public QuestionReportRepository QuestionReportRepository => _questionReportRepository ??= new QuestionReportRepository(_context);
+        public QuestionCommentRepository QuestionCommentRepository => _questionCommentRepository ??= new QuestionCommentRepository(_context);
         public TextBookRepository TextBookRepository => _textBookRepository ??= new TextBookRepository(_context);
         public UserUsageTrackingRepository UserUsageTrackingRepository => _userUsageTrackingRepository ??= new UserUsageTrackingRepository(_context);
         public UserUsageHistoryRepository UserUsageHistoryRepository => _userUsageHistoryRepository ??= new UserUsageHistoryRepository(_context);
