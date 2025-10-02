@@ -8,12 +8,12 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
     public interface IQuestionCommentService
     {
         Task<QuestionCommentResponse> CreateCommentAsync(CreateQuestionCommentRequest request);
-        Task<QuestionCommentResponse> UpdateCommentAsync(UpdateQuestionCommentRequest request, int userId);
-        Task DeleteCommentAsync(int commentId, int userId);
+        Task<QuestionCommentResponse> UpdateCommentAsync(UpdateQuestionCommentRequest request, int userId, int roleId);
+        Task DeleteCommentAsync(int commentId, int userId, int roleId);
         Task<List<QuestionCommentResponse>> GetCommentsByQuestionIdAsync(int questionId);
         Task<QuestionCommentResponse> GetCommentByIdAsync(int commentId);
         Task<QuestionCommentResponse> ApproveCommentAsync(ApproveQuestionCommentRequest request);
         Task<List<QuestionCommentResponse>> GetPendingApprovalCommentsAsync();
-        Task<bool> CanUserModifyCommentAsync(int commentId, int userId);
+        Task<bool> CanUserModifyCommentAsync(int commentId, int userId, int roleId);
     }
 }

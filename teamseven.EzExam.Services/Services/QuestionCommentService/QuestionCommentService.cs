@@ -99,7 +99,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
         }
 
-        public async Task<QuestionCommentResponse> UpdateCommentAsync(UpdateQuestionCommentRequest request, int userId)
+        public async Task<QuestionCommentResponse> UpdateCommentAsync(UpdateQuestionCommentRequest request, int userId, int roleId)
         {
             if (request == null)
             {
@@ -115,7 +115,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
 
             // Check if user can modify this comment
-            if (!await CanUserModifyCommentAsync(request.Id, userId))
+            if (!await CanUserModifyCommentAsync(request.Id, userId, roleId))
             {
                 _logger.LogWarning("User {UserId} cannot modify comment {CommentId}.", userId, request.Id);
                 throw new UnauthorizedAccessException("You are not authorized to modify this comment.");
@@ -141,7 +141,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
         }
 
-        public async Task DeleteCommentAsync(int commentId, int userId)
+        public async Task DeleteCommentAsync(int commentId, int userId, int roleId)
         {
             var comment = await _unitOfWork.QuestionCommentRepository.GetByIdAsync(commentId);
             if (comment == null)
@@ -151,7 +151,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
 
             // Check if user can modify this comment
-            if (!await CanUserModifyCommentAsync(commentId, userId))
+            if (!await CanUserModifyCommentAsync(commentId, userId, roleId))
             {
                 _logger.LogWarning("User {UserId} cannot delete comment {CommentId}.", userId, commentId);
                 throw new UnauthorizedAccessException("You are not authorized to delete this comment.");
@@ -274,23 +274,25 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
         }
 
-        public async Task<bool> CanUserModifyCommentAsync(int commentId, int userId)
+        public async Task<bool> CanUserModifyCommentAsync(int commentId, int userId, int roleId)
         {
             var comment = await _unitOfWork.QuestionCommentRepository.GetByIdAsync(commentId);
             if (comment == null) return false;
 
-            // User can modify their own comment
-            if (comment.UserId == userId) return true;
+            if (roleId == 3)
+            {
+                return true;
+            }
 
-            // Check if user is moderator (you can implement role checking here)
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
-            if (user?.Role?.RoleName?.ToLower() == "moderator" || user?.Role?.RoleName?.ToLower() == "admin")
+            // Nếu user là role 1 (User) và là chủ comment thì cho phép
+            if (roleId == 1 && comment.UserId == userId)
             {
                 return true;
             }
 
             return false;
         }
+
 
         private async Task<QuestionCommentResponse> MapToResponseAsync(QuestionComment comment)
         {

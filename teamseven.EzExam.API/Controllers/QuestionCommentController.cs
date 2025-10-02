@@ -90,12 +90,14 @@ namespace teamseven.EzExam.API.Controllers
                 }
 
                 var userId = GetCurrentUserId();
-                if (userId == null)
+                var roleId = GetCurrentUserRoleId();
+
+                if (userId == null || roleId == null)
                 {
-                    return Unauthorized("User ID not found in token");
+                    return Unauthorized("User ID or Role ID not found in token");
                 }
 
-                var result = await _serviceProvider.QuestionCommentService.UpdateCommentAsync(request, userId.Value);
+                var result = await _serviceProvider.QuestionCommentService.UpdateCommentAsync(request, userId.Value, roleId.Value);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -111,7 +113,7 @@ namespace teamseven.EzExam.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(ex, "Unauthorized access when updating comment");
-                return Forbid(ex.Message);
+                return StatusCode(403, ex.Message);
             }
             catch (Exception ex)
             {
@@ -135,14 +137,15 @@ namespace teamseven.EzExam.API.Controllers
         {
             try
             {
-                // lay userId tu JWT token
                 var userId = GetCurrentUserId();
-                if (userId == null)
+                var roleId = GetCurrentUserRoleId();
+
+                if (userId == null || roleId == null)
                 {
-                    return Unauthorized("User ID not found in token");
+                    return Unauthorized("User ID or Role ID not found in token");
                 }
 
-                await _serviceProvider.QuestionCommentService.DeleteCommentAsync(id, userId.Value);
+                await _serviceProvider.QuestionCommentService.DeleteCommentAsync(id, userId.Value, roleId.Value);
                 return Ok(new { message = "Comment deleted successfully" });
             }
             catch (NotFoundException ex)
@@ -153,7 +156,7 @@ namespace teamseven.EzExam.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(ex, "Unauthorized access when deleting comment");
-                return Forbid(ex.Message);
+                return StatusCode(403, ex.Message);
             }
             catch (Exception ex)
             {
@@ -335,6 +338,21 @@ namespace teamseven.EzExam.API.Controllers
 
             if (int.TryParse(userIdClaim.Value, out int userId))
                 return userId;
+
+            return null;
+        }
+
+        private int? GetCurrentUserRoleId()
+        {
+            if (User?.Identity?.IsAuthenticated != true)
+                return null;
+
+            var roleIdClaim = User.FindFirst("roleId"); 
+            if (roleIdClaim == null)
+                return null;
+
+            if (int.TryParse(roleIdClaim.Value, out int roleId))
+                return roleId;
 
             return null;
         }

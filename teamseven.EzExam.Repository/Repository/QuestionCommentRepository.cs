@@ -70,6 +70,24 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<QuestionComment> UpdateAsync(QuestionComment comment)
         {
+            // Tìm entity đã được track trong context
+            var existingComment = await _context.QuestionComments
+                .FirstOrDefaultAsync(c => c.Id == comment.Id);
+            
+            if (existingComment != null)
+            {
+                // Chỉ update những field cần thiết, không touch navigation properties
+                existingComment.Content = comment.Content;
+                existingComment.Rating = comment.Rating;
+                existingComment.IsHelpful = comment.IsHelpful;
+                existingComment.IsApproved = comment.IsApproved;
+                existingComment.UpdatedAt = DateTime.UtcNow;
+                
+                await _context.SaveChangesAsync();
+                return existingComment;
+            }
+            
+            // Fallback nếu không tìm thấy existing entity
             comment.UpdatedAt = DateTime.UtcNow;
             _context.QuestionComments.Update(comment);
             await _context.SaveChangesAsync();
