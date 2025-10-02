@@ -26,7 +26,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
 
         Task<IEnumerable<ExamQuestionResponse>> GetExamQuestionByIdAsync(int id);
         
-        Task<IEnumerable<QuestionDataResponse>> GetExamQuestionsDetailAsync(int examId);
+        Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId);
 
         Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest);
 

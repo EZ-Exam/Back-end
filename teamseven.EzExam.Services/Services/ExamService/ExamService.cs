@@ -261,47 +261,50 @@ namespace teamseven.EzExam.Services.Services.ExamService
             }).ToList();
         }
 
-        public async Task<IEnumerable<QuestionDataResponse>> GetExamQuestionsDetailAsync(int examId)
+        public async Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId)
         {
             var examQuestions = await _unitOfWork.ExamQuestionRepository.GetByExamIdAsync(examId);
             if (!examQuestions.Any())
-                return new List<QuestionDataResponse>();
+                return new List<ExamQuestionDetailResponse>();
 
-            var questionResponses = new List<QuestionDataResponse>();
+            var questionResponses = new List<ExamQuestionDetailResponse>();
 
             foreach (var examQuestion in examQuestions.OrderBy(eq => eq.Order))
             {
                 var question = examQuestion.Question;
                 if (question == null) continue;
 
-                // Get answers for options fallback
-                var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                // Get answers for options fallback if Options field is empty
+                var options = new List<string>();
+                if (!string.IsNullOrEmpty(question.Options))
+                {
+                    try
+                    {
+                        options = JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        // Fallback to answers if JSON parsing fails
+                        var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                        options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                    }
+                }
+                else
+                {
+                    // Fallback to answers if Options is empty
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                    options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                }
 
-                var questionResponse = new QuestionDataResponse
+                var questionResponse = new ExamQuestionDetailResponse
                 {
                     Id = question.Id,
-                    Content = question.Content,
-                    QuestionSource = question.QuestionSource,
-                    DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
-                    Image = question.Image,
-                    LessonId = question.LessonId,
-                    ChapterId = question.ChapterId,
-                    GradeId = question.GradeId,
-                    TextbookId = question.TextbookId,
-                    CreatedByUserId = question.CreatedByUserId,
-                    CreatedAt = question.CreatedAt,
-                    UpdatedAt = question.UpdatedAt,
-                    LessonName = question.Lesson?.Name,
-                    ChapterName = question.Chapter?.Name,
-                    CreatedByUserName = question.CreatedByUser?.Email,
-                    // Required fields for exam
-                    Formula = question.Formula,
+                    ContentQuestion = question.Content ?? string.Empty,
                     CorrectAnswer = question.CorrectAnswer,
+                    Options = options,
                     Explanation = question.Explanation,
-                    Type = question.QuestionType?.ToLower() ?? "multiple-choice",
-                    Options = question.Options != null 
-                        ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>()
-                        : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
+                    ImageUrl = question.Image,
+                    Formula = question.Formula
                 };
 
                 questionResponses.Add(questionResponse);
