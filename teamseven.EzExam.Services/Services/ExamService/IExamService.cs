@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
+using teamseven.EzExam.Repository.Dtos;
 
 namespace teamseven.EzExam.Services.Services.ExamService
 {
@@ -24,6 +25,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
         Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId);
 
         Task<IEnumerable<ExamQuestionResponse>> GetExamQuestionByIdAsync(int id);
+        
+        Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId);
 
         Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest);
 

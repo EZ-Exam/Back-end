@@ -19,6 +19,7 @@ using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
 using teamseven.EzExam.Services.Services.QuestionCommentService;
+using teamseven.EzExam.Services.Services.StudentHistoryService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -52,6 +53,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         // Test System Services
         private readonly IUserQuestionCartService _userQuestionCartService;
         private readonly ITestSessionService _testSessionService;
+        
+        // Student History Services
+        private readonly IStudentHistoryService _studentHistoryService;
 
         public ServiceProviders(
             IAuthService authService,
@@ -79,7 +83,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             IUserQuestionCartService userQuestionCartService,
             ITestSessionService testSessionService,
             ILessonEnhancedService lessonEnhancedService,
-            IQuestionCommentService questionCommentService)
+            IQuestionCommentService questionCommentService,
+            IStudentHistoryService studentHistoryService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -108,6 +113,9 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             // Test System Services
             _userQuestionCartService = userQuestionCartService ?? throw new ArgumentNullException(nameof(userQuestionCartService));
             _testSessionService = testSessionService ?? throw new ArgumentNullException(nameof(testSessionService));
+            
+            // Student History Services
+            _studentHistoryService = studentHistoryService ?? throw new ArgumentNullException(nameof(studentHistoryService));
         }
 
         public IAuthService AuthService => _authService;
@@ -139,5 +147,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         // Test System Services
         public IUserQuestionCartService UserQuestionCartService => _userQuestionCartService;
         public ITestSessionService TestSessionService => _testSessionService;
+        
+        // Student History Services
+        public IStudentHistoryService StudentHistoryService => _studentHistoryService;
     }
 }

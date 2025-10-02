@@ -41,6 +41,7 @@ using teamseven.EzExam.Services.Services.BalanceService;
 using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
+using teamseven.EzExam.Services.Services.StudentHistoryService;
 using teamseven.EzExam.API.Middleware;
 using teamseven.EzExam.API.Services;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
@@ -127,6 +128,10 @@ builder.Services.AddScoped<IQuestionCommentService, QuestionCommentService>(); /
 // Test System Services
 builder.Services.AddScoped<IUserQuestionCartService, UserQuestionCartService>();
 builder.Services.AddScoped<ITestSessionService, TestSessionService>();
+builder.Services.AddScoped<ITestSessionIntegrationService, TestSessionIntegrationService>();
+
+// Student History Services
+builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
 
 // 📌 Background Services - DISABLED for performance
 // builder.Services.AddHostedService<SubscriptionExpirationService>();

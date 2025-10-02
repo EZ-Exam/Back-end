@@ -170,6 +170,25 @@ namespace teamseven.EzExam.API.Controllers
             var questions = await _serviceProvider.ExamService.GetExamQuestionByIdAsync(id);
             return Ok(questions);
         }
+
+        // =================== GET DETAILED QUESTIONS BY EXAM ID ===================
+
+        [HttpGet("{id}/questions/detail")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get detailed exam questions with all fields (correctAnswer, options, explanation, etc.)")]
+        public async Task<IActionResult> GetExamQuestionsDetail(int id)
+        {
+            try
+            {
+                var questions = await _serviceProvider.ExamService.GetExamQuestionsDetailAsync(id);
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving detailed exam questions for exam {ExamId}", id);
+                return StatusCode(500, new { Message = "Error retrieving exam questions", Detail = ex.Message });
+            }
+        }
         [HttpPut("rename/{examId}")]
         public async Task<IActionResult> RenameExam(int examId, string newName)
         {

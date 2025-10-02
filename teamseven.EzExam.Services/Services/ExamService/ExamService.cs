@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
+using teamseven.EzExam.Repository.Dtos;
 
 namespace teamseven.EzExam.Services.Services.ExamService
 {
@@ -257,6 +259,58 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 ExamName = eq.Exam?.Name,
                 QuestionContent = eq.Question?.Content
             }).ToList();
+        }
+
+        public async Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId)
+        {
+            var examQuestions = await _unitOfWork.ExamQuestionRepository.GetByExamIdAsync(examId);
+            if (!examQuestions.Any())
+                return new List<ExamQuestionDetailResponse>();
+
+            var questionResponses = new List<ExamQuestionDetailResponse>();
+
+            foreach (var examQuestion in examQuestions.OrderBy(eq => eq.Order))
+            {
+                var question = examQuestion.Question;
+                if (question == null) continue;
+
+                // Get answers for options fallback if Options field is empty
+                var options = new List<string>();
+                if (!string.IsNullOrEmpty(question.Options))
+                {
+                    try
+                    {
+                        options = JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        // Fallback to answers if JSON parsing fails
+                        var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                        options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                    }
+                }
+                else
+                {
+                    // Fallback to answers if Options is empty
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                    options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                }
+
+                var questionResponse = new ExamQuestionDetailResponse
+                {
+                    Id = question.Id,
+                    ContentQuestion = question.Content ?? string.Empty,
+                    CorrectAnswer = question.CorrectAnswer,
+                    Options = options,
+                    Explanation = question.Explanation,
+                    ImageUrl = question.Image,
+                    Formula = question.Formula
+                };
+
+                questionResponses.Add(questionResponse);
+            }
+
+            return questionResponses;
         }
         public async Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId)
         {
