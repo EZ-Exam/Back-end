@@ -20,6 +20,7 @@ using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
+using teamseven.EzExam.Services.Services.StudentHistoryService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -53,5 +54,8 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         // Test System Services
         IUserQuestionCartService UserQuestionCartService { get; }
         ITestSessionService TestSessionService { get; }
+        
+        // Student History Services
+        IStudentHistoryService StudentHistoryService { get; }
     }
 }
