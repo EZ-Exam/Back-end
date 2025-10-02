@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
+using teamseven.EzExam.Repository.Dtos;
 
 namespace teamseven.EzExam.Services.Services.ExamService
 {
@@ -257,6 +259,55 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 ExamName = eq.Exam?.Name,
                 QuestionContent = eq.Question?.Content
             }).ToList();
+        }
+
+        public async Task<IEnumerable<QuestionDataResponse>> GetExamQuestionsDetailAsync(int examId)
+        {
+            var examQuestions = await _unitOfWork.ExamQuestionRepository.GetByExamIdAsync(examId);
+            if (!examQuestions.Any())
+                return new List<QuestionDataResponse>();
+
+            var questionResponses = new List<QuestionDataResponse>();
+
+            foreach (var examQuestion in examQuestions.OrderBy(eq => eq.Order))
+            {
+                var question = examQuestion.Question;
+                if (question == null) continue;
+
+                // Get answers for options fallback
+                var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+
+                var questionResponse = new QuestionDataResponse
+                {
+                    Id = question.Id,
+                    Content = question.Content,
+                    QuestionSource = question.QuestionSource,
+                    DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
+                    Image = question.Image,
+                    LessonId = question.LessonId,
+                    ChapterId = question.ChapterId,
+                    GradeId = question.GradeId,
+                    TextbookId = question.TextbookId,
+                    CreatedByUserId = question.CreatedByUserId,
+                    CreatedAt = question.CreatedAt,
+                    UpdatedAt = question.UpdatedAt,
+                    LessonName = question.Lesson?.Name,
+                    ChapterName = question.Chapter?.Name,
+                    CreatedByUserName = question.CreatedByUser?.Email,
+                    // Required fields for exam
+                    Formula = question.Formula,
+                    CorrectAnswer = question.CorrectAnswer,
+                    Explanation = question.Explanation,
+                    Type = question.QuestionType?.ToLower() ?? "multiple-choice",
+                    Options = question.Options != null 
+                        ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>()
+                        : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
+                };
+
+                questionResponses.Add(questionResponse);
+            }
+
+            return questionResponses;
         }
         public async Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId)
         {
