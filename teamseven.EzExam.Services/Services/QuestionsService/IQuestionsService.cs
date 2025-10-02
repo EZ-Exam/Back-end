@@ -24,5 +24,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             int isSort = 0,
             int? createdByUserId = null,
             int? textbookId = null);
+        
+        Task<List<QuestionSimpleResponse>> GetAllQuestionsSimpleAsync(QuestionSearchRequest? searchRequest = null);
     }
 }

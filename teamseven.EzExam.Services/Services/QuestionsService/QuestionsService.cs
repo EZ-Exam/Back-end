@@ -396,6 +396,61 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
         }
 
+        public async Task<List<QuestionSimpleResponse>> GetAllQuestionsSimpleAsync(QuestionSearchRequest? searchRequest = null)
+        {
+            try
+            {
+                var questions = await _unitOfWork.QuestionRepository.GetAllAsync();
+                
+                if (questions == null)
+                    return new List<QuestionSimpleResponse>();
+
+                var query = questions.AsQueryable();
+
+                // Apply search filters if provided
+                if (searchRequest != null)
+                {
+                    if (!string.IsNullOrEmpty(searchRequest.Content))
+                    {
+                        query = query.Where(q => q.Content.Contains(searchRequest.Content, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (!string.IsNullOrEmpty(searchRequest.DifficultyLevel))
+                    {
+                        query = query.Where(q => q.DifficultyLevel != null && 
+                            q.DifficultyLevel.Name.Equals(searchRequest.DifficultyLevel, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (searchRequest.GradeId.HasValue)
+                    {
+                        query = query.Where(q => q.GradeId == searchRequest.GradeId.Value);
+                    }
+
+                    if (searchRequest.LessonId.HasValue)
+                    {
+                        query = query.Where(q => q.LessonId == searchRequest.LessonId.Value);
+                    }
+                }
+
+                var result = query.Select(q => new QuestionSimpleResponse
+                {
+                    Id = q.Id,
+                    Content = q.Content,
+                    DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
+                    GradeId = q.GradeId,
+                    GradeName = q.Grade != null ? q.Grade.Name : null,
+                    LessonId = q.LessonId,
+                    LessonName = q.Lesson != null ? q.Lesson.Name : null
+                }).ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving simple questions: {Message}", ex.Message);
+                throw new ApplicationException("Error retrieving simple questions.", ex);
+            }
+        }
 
     }
 }

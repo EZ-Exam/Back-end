@@ -268,5 +268,41 @@ namespace teamseven.EzExam.API.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving question." });
             }
         }
+
+        [HttpGet("simple")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get all questions (simple)", Description = "Retrieves all questions with basic information and optional search filters")]
+        public async Task<IActionResult> GetAllQuestionsSimple(
+            [FromQuery] string? content = null,
+            [FromQuery] string? difficultyLevel = null,
+            [FromQuery] int? gradeId = null,
+            [FromQuery] int? lessonId = null)
+        {
+            try
+            {
+                var searchRequest = new QuestionSearchRequest
+                {
+                    Content = content,
+                    DifficultyLevel = difficultyLevel,
+                    GradeId = gradeId,
+                    LessonId = lessonId
+                };
+
+                var questions = await _serviceProvider.QuestionsService.GetAllQuestionsSimpleAsync(searchRequest);
+                
+                return Ok(new
+                {
+                    Success = true,
+                    Data = questions,
+                    Total = questions.Count,
+                    Message = "Questions retrieved successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving simple questions: {Message}", ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving questions." });
+            }
+        }
     }
 }
