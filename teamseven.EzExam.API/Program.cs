@@ -42,6 +42,7 @@ using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.Services.Services.StudentHistoryService;
+using teamseven.EzExam.Services.Services.ExamHistoryService;
 using teamseven.EzExam.API.Middleware;
 using teamseven.EzExam.API.Services;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
@@ -132,6 +133,9 @@ builder.Services.AddScoped<ITestSessionIntegrationService, TestSessionIntegratio
 
 // Student History Services
 builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
+
+// Exam History Services
+builder.Services.AddScoped<IExamHistoryService, ExamHistoryService>();
 
 // 📌 Background Services - DISABLED for performance
 // builder.Services.AddHostedService<SubscriptionExpirationService>();

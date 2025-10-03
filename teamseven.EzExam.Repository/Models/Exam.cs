@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -106,6 +106,5 @@ namespace teamseven.EzExam.Repository.Models
         public virtual AITestRecommendation? AITestRecommendation { get; set; }
 
         public virtual ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
-        public virtual ICollection<ExamHistory> ExamHistories { get; set; } = new List<ExamHistory>();
     }
 }

@@ -44,6 +44,9 @@ namespace teamseven.EzExam.Repository
         IStudentQuizHistoryRepository StudentQuizHistoryRepository { get; }
         IStudentPerformanceSummaryRepository StudentPerformanceSummaryRepository { get; }
         IStudentQuestionAttemptRepository StudentQuestionAttemptRepository { get; }
+        
+        // Exam History Repository
+        IExamHistoryRepository ExamHistoryRepository { get; }
 
         int SaveChangesWithTransaction();
         Task<int> SaveChangesWithTransactionAsync();
@@ -87,6 +90,9 @@ namespace teamseven.EzExam.Repository
         private StudentQuizHistoryRepository _studentQuizHistoryRepository;
         private StudentPerformanceSummaryRepository _studentPerformanceSummaryRepository;
         private StudentQuestionAttemptRepository _studentQuestionAttemptRepository;
+        
+        // Exam History Repository
+        private ExamHistoryRepository _examHistoryRepository;
 
         private bool _disposed = false;
 
@@ -131,6 +137,9 @@ namespace teamseven.EzExam.Repository
         public IStudentQuizHistoryRepository StudentQuizHistoryRepository => _studentQuizHistoryRepository ??= new StudentQuizHistoryRepository(_context);
         public IStudentPerformanceSummaryRepository StudentPerformanceSummaryRepository => _studentPerformanceSummaryRepository ??= new StudentPerformanceSummaryRepository(_context);
         public IStudentQuestionAttemptRepository StudentQuestionAttemptRepository => _studentQuestionAttemptRepository ??= new StudentQuestionAttemptRepository(_context);
+        
+        // Exam History Repository
+        public IExamHistoryRepository ExamHistoryRepository => _examHistoryRepository ??= new ExamHistoryRepository(_context);
 
         public int SaveChangesWithTransaction()
         {

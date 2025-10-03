@@ -194,7 +194,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 LessonName = e.Lesson?.Name,
                 Duration = e.Duration,
                 QuestionCount = e.ExamQuestions?.Count ?? 0,
-                HistoryCount = e.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             }).ToList();
         }
 
@@ -219,7 +219,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 LessonName = exam.Lesson?.Name,
                 Duration = exam.Duration,
                 QuestionCount = exam.ExamQuestions?.Count ?? 0,
-                HistoryCount = exam.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             };
         }
 
@@ -329,7 +329,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 ExamTypeName = e.ExamType?.Name,
                 LessonName = e.Lesson?.Name,
                 QuestionCount = e.ExamQuestions?.Count ?? 0,
-                HistoryCount = e.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             }).ToList();
         }
 

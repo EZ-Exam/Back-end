@@ -559,20 +559,24 @@ namespace teamseven.EzExam.Repository.Context
             {
                 entity.HasKey(e => e.Id).HasName("pk_exam_histories");
                 entity.ToTable("exam_histories", "public");
-                entity.HasIndex(e => e.ExamId, "ix_exam_histories_exam_id");
-                entity.HasIndex(e => e.ActionByUserId, "ix_exam_histories_action_by_user_id");
+                entity.HasIndex(e => e.ExamId, "IX_ExamHistories_ExamId");
+                entity.HasIndex(e => e.UserId, "IX_ExamHistories_UserId");
+                entity.HasIndex(e => e.SubmittedAt, "IX_ExamHistories_SubmittedAt");
+                entity.HasIndex(e => e.Score, "IX_ExamHistories_Score");
+                
                 entity.Property(e => e.Id).HasColumnName("Id");
-                entity.Property(e => e.ExamId).HasColumnName("ExamId");
-                entity.Property(e => e.ActionByUserId).HasColumnName("ActionByUserId");
-                entity.Property(e => e.Action).HasColumnName("Action").IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(500);
-                entity.Property(e => e.ActionDate).HasColumnName("ActionDate").HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.HasOne(d => d.Exam).WithMany(p => p.ExamHistories)
-                    .HasForeignKey(d => d.ExamId)
-                    .HasConstraintName("fk_exam_histories_exam_id");
-                entity.HasOne(d => d.ActionByUser).WithMany(p => p.ExamHistories)
-                    .HasForeignKey(d => d.ActionByUserId)
-                    .HasConstraintName("fk_exam_histories_action_by_user_id");
+                entity.Property(e => e.ExamId).HasColumnName("ExamId").IsRequired().HasMaxLength(50);
+                entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Score).HasColumnName("Score").HasColumnType("decimal(5,2)").HasDefaultValue(0);
+                entity.Property(e => e.CorrectCount).HasColumnName("CorrectCount").HasDefaultValue(0);
+                entity.Property(e => e.IncorrectCount).HasColumnName("IncorrectCount").HasDefaultValue(0);
+                entity.Property(e => e.UnansweredCount).HasColumnName("UnansweredCount").HasDefaultValue(0);
+                entity.Property(e => e.TotalQuestions).HasColumnName("TotalQuestions").HasDefaultValue(0);
+                entity.Property(e => e.SubmittedAt).HasColumnName("SubmittedAt").HasDefaultValueSql("NOW()");
+                entity.Property(e => e.TimeTaken).HasColumnName("TimeTaken").HasDefaultValue(0);
+                entity.Property(e => e.Answers).HasColumnName("Answers").HasColumnType("text");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("NOW()");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("NOW()");
             });
 
             // Solutions
