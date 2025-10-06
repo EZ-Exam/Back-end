@@ -9,7 +9,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
     {
         Task<QuestionCommentResponse> CreateCommentAsync(CreateQuestionCommentRequest request);
         Task<QuestionCommentResponse> UpdateCommentAsync(UpdateQuestionCommentRequest request, int userId, int roleId);
-        Task DeleteCommentAsync(int commentId, int userId, int roleId);
+        Task SoftDeleteCommentAsync(int commentId, int deletedByUserId);
         Task<List<QuestionCommentResponse>> GetCommentsByQuestionIdAsync(int questionId);
         Task<QuestionCommentResponse> GetCommentByIdAsync(int commentId);
         Task<QuestionCommentResponse> ApproveCommentAsync(ApproveQuestionCommentRequest request);

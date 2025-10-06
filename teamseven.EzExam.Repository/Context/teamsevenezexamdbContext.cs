@@ -418,6 +418,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.UserId, "ix_question_comments_user_id");
                 entity.HasIndex(e => e.ParentCommentId, "ix_question_comments_parent_comment_id");
                 entity.HasIndex(e => e.IsApproved, "ix_question_comments_is_approved");
+                entity.HasIndex(e => e.IsDeleted, "ix_question_comments_is_deleted");
                 entity.Property(e => e.Id).HasColumnName("Id");
                 entity.Property(e => e.QuestionId).HasColumnName("QuestionId");
                 entity.Property(e => e.UserId).HasColumnName("UserId");
@@ -426,6 +427,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Rating).HasColumnName("Rating").HasDefaultValue(0);
                 entity.Property(e => e.IsHelpful).HasColumnName("IsHelpful").HasDefaultValue(false);
                 entity.Property(e => e.IsApproved).HasColumnName("IsApproved").HasDefaultValue(true);
+                entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
+                entity.Property(e => e.DeletedAt).HasColumnName("DeletedAt");
+                entity.Property(e => e.DeletedBy).HasColumnName("DeletedBy");
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.HasOne(d => d.Question).WithMany(p => p.QuestionComments)
@@ -565,8 +569,8 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.Score, "IX_ExamHistories_Score");
                 
                 entity.Property(e => e.Id).HasColumnName("Id");
-                entity.Property(e => e.ExamId).HasColumnName("ExamId").IsRequired().HasMaxLength(50);
-                entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ExamId).HasColumnName("ExamId").IsRequired();
+                entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired();
                 entity.Property(e => e.Score).HasColumnName("Score").HasColumnType("decimal(5,2)").HasDefaultValue(0);
                 entity.Property(e => e.CorrectCount).HasColumnName("CorrectCount").HasDefaultValue(0);
                 entity.Property(e => e.IncorrectCount).HasColumnName("IncorrectCount").HasDefaultValue(0);

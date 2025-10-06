@@ -141,7 +141,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             }
         }
 
-        public async Task DeleteCommentAsync(int commentId, int userId, int roleId)
+        public async Task SoftDeleteCommentAsync(int commentId, int deletedByUserId)
         {
             var comment = await _unitOfWork.QuestionCommentRepository.GetByIdAsync(commentId);
             if (comment == null)
@@ -150,23 +150,29 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"Comment with ID {commentId} not found.");
             }
 
-            // Check if user can modify this comment
-            if (!await CanUserModifyCommentAsync(commentId, userId, roleId))
+            // Check if comment is already deleted
+            if (comment.IsDeleted)
             {
-                _logger.LogWarning("User {UserId} cannot delete comment {CommentId}.", userId, commentId);
-                throw new UnauthorizedAccessException("You are not authorized to delete this comment.");
+                _logger.LogWarning("Comment with ID {CommentId} is already deleted.", commentId);
+                throw new ArgumentException($"Comment with ID {commentId} is already deleted.");
             }
 
             try
             {
-                await _unitOfWork.QuestionCommentRepository.DeleteAsync(commentId);
+
+                comment.IsDeleted = true;
+                comment.DeletedAt = DateTime.UtcNow;
+                comment.DeletedBy = deletedByUserId;
+                comment.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.QuestionCommentRepository.UpdateAsync(comment);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
-                _logger.LogInformation("Comment with ID {CommentId} deleted successfully.", commentId);
+                _logger.LogInformation("Comment with ID {CommentId} soft deleted successfully by user {DeletedByUserId}.", commentId, deletedByUserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting comment with ID {CommentId}: {Message}", commentId, ex.Message);
-                throw new ApplicationException($"Error deleting comment with ID {commentId}", ex);
+                _logger.LogError(ex, "Error soft deleting comment with ID {CommentId}: {Message}", commentId, ex.Message);
+                throw new ApplicationException($"Error soft deleting comment with ID {commentId}", ex);
             }
         }
 

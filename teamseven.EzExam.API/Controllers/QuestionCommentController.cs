@@ -27,17 +27,17 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Tạo comment mới cho câu hỏi
+        /// Create a new comment for a question
         /// </summary>
-        /// <param name="request">Thông tin comment</param>
-        /// <returns>Comment đã được tạo</returns>
+        /// <param name="request">Comment information</param>
+        /// <returns>Created comment</returns>
         [HttpPost]
         [Authorize]
-        [SwaggerOperation(Summary = "Tạo comment mới cho câu hỏi")]
-        [SwaggerResponse(200, "Comment được tạo thành công", typeof(QuestionCommentResponse))]
-        [SwaggerResponse(400, "Dữ liệu không hợp lệ")]
-        [SwaggerResponse(401, "Chưa đăng nhập")]
-        [SwaggerResponse(404, "Không tìm thấy câu hỏi hoặc user")]
+        [SwaggerOperation(Summary = "Create a new comment for a question")]
+        [SwaggerResponse(200, "Comment created successfully", typeof(QuestionCommentResponse))]
+        [SwaggerResponse(400, "Invalid data")]
+        [SwaggerResponse(401, "Unauthorized")]
+        [SwaggerResponse(404, "Question or user not found")]
         public async Task<IActionResult> CreateComment([FromBody] CreateQuestionCommentRequest request)
         {
             try
@@ -68,18 +68,19 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Cập nhật comment
+        /// Update a comment
         /// </summary>
-        /// <param name="id">ID của comment</param>
-        /// <param name="request">Thông tin cập nhật</param>
-        /// <returns>Comment đã được cập nhật</returns>
+        /// <param name="id">Comment ID</param>
+        /// <param name="request">Update information</param>
+        /// <returns>Updated comment</returns>
         [HttpPut]
         [Authorize]
-        [SwaggerOperation(Summary = "Cập nhật comment")]
-        [SwaggerResponse(200, "Comment được cập nhật thành công", typeof(QuestionCommentResponse))]
-        [SwaggerResponse(400, "Dữ liệu không hợp lệ")]
-        [SwaggerResponse(401, "Chưa đăng nhập hoặc không có quyền")]
-        [SwaggerResponse(404, "Không tìm thấy comment")]
+        [SwaggerOperation(Summary = "Update a comment")]
+        [SwaggerResponse(200, "Comment updated successfully", typeof(QuestionCommentResponse))]
+        [SwaggerResponse(400, "Invalid data")]
+        [SwaggerResponse(401, "Unauthorized")]
+        [SwaggerResponse(403, "Forbidden - insufficient permissions")]
+        [SwaggerResponse(404, "Comment not found")]
         public async Task<IActionResult> UpdateComment(UpdateQuestionCommentRequest request)
         {
             try
@@ -123,16 +124,17 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Xóa comment
+        /// Delete a comment (soft delete - moderator only)
         /// </summary>
-        /// <param name="id">ID của comment</param>
-        /// <returns>Kết quả xóa</returns>
+        /// <param name="id">Comment ID</param>
+        /// <returns>Delete result</returns>
         [HttpDelete("{id}")]
-        [Authorize]
-        [SwaggerOperation(Summary = "Xóa comment")]
-        [SwaggerResponse(200, "Comment được xóa thành công")]
-        [SwaggerResponse(401, "Chưa đăng nhập hoặc không có quyền")]
-        [SwaggerResponse(404, "Không tìm thấy comment")]
+        [Authorize(Policy = "SaleStaffPolicy")]
+        [SwaggerOperation(Summary = "Delete a comment (soft delete - moderator only)")]
+        [SwaggerResponse(200, "Comment deleted successfully")]
+        [SwaggerResponse(401, "Unauthorized")]
+        [SwaggerResponse(403, "Forbidden - moderator role required")]
+        [SwaggerResponse(404, "Comment not found")]
         public async Task<IActionResult> DeleteComment(int id)
         {
             try
@@ -145,7 +147,13 @@ namespace teamseven.EzExam.API.Controllers
                     return Unauthorized("User ID or Role ID not found in token");
                 }
 
-                await _serviceProvider.QuestionCommentService.DeleteCommentAsync(id, userId.Value, roleId.Value);
+                // Kiểm tra role moderator (roleId = 3)
+                if (roleId.Value != 3)
+                {
+                    return StatusCode(403, "Only moderators can delete comments");
+                }
+
+                await _serviceProvider.QuestionCommentService.SoftDeleteCommentAsync(id, userId.Value);
                 return Ok(new { message = "Comment deleted successfully" });
             }
             catch (NotFoundException ex)
@@ -166,14 +174,14 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách comment theo question ID (flat structure)
+        /// Get comments by question ID (flat structure)
         /// </summary>
-        /// <param name="questionId">ID của câu hỏi</param>
-        /// <returns>Danh sách comment với replies</returns>
+        /// <param name="questionId">Question ID</param>
+        /// <returns>List of comments with replies</returns>
         [HttpGet("by-question/{questionId}")]
-        [SwaggerOperation(Summary = "Lấy danh sách comment theo question ID")]
-        [SwaggerResponse(200, "Danh sách comment", typeof(List<QuestionCommentResponse>))]
-        [SwaggerResponse(404, "Không tìm thấy câu hỏi")]
+        [SwaggerOperation(Summary = "Get comments by question ID")]
+        [SwaggerResponse(200, "List of comments", typeof(List<QuestionCommentResponse>))]
+        [SwaggerResponse(404, "Question not found")]
         public async Task<IActionResult> GetCommentsByQuestionId(int questionId)
         {
             try
@@ -194,13 +202,13 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách comment ID có thể dùng làm ParentCommentId cho một question
+        /// Get available parent comment IDs for a question
         /// </summary>
-        /// <param name="questionId">ID của câu hỏi</param>
-        /// <returns>Danh sách comment ID có thể reply</returns>
+        /// <param name="questionId">Question ID</param>
+        /// <returns>List of available parent comment IDs</returns>
         [HttpGet("available-parents/{questionId}")]
-        [SwaggerOperation(Summary = "Lấy danh sách comment ID có thể dùng làm ParentCommentId")]
-        [SwaggerResponse(200, "Danh sách comment ID", typeof(List<object>))]
+        [SwaggerOperation(Summary = "Get available parent comment IDs")]
+        [SwaggerResponse(200, "List of available parent comment IDs", typeof(List<object>))]
         public async Task<IActionResult> GetAvailableParentComments(int questionId)
         {
             try
@@ -227,14 +235,14 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Lấy comment theo ID
+        /// Get comment by ID
         /// </summary>
-        /// <param name="id">ID của comment</param>
+        /// <param name="id">Comment ID</param>
         /// <returns>Comment</returns>
         [HttpGet("{id}")]
-        [SwaggerOperation(Summary = "Lấy comment theo ID")]
+        [SwaggerOperation(Summary = "Get comment by ID")]
         [SwaggerResponse(200, "Comment", typeof(QuestionCommentResponse))]
-        [SwaggerResponse(404, "Không tìm thấy comment")]
+        [SwaggerResponse(404, "Comment not found")]
         public async Task<IActionResult> GetCommentById(int id)
         {
             try
@@ -255,19 +263,19 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Duyệt comment (chỉ moderator/admin)
+        /// Approve a comment (moderator/admin only)
         /// </summary>
-        /// <param name="id">ID của comment</param>
-        /// <param name="request">Thông tin duyệt</param>
-        /// <returns>Comment đã được duyệt</returns>
+        /// <param name="id">Comment ID</param>
+        /// <param name="request">Approval information</param>
+        /// <returns>Approved comment</returns>
         [HttpPut("{id}/approve")]
-        [Authorize(Roles = "Moderator,Admin")]
-        [SwaggerOperation(Summary = "Duyệt comment (chỉ moderator/admin)")]
-        [SwaggerResponse(200, "Comment được duyệt thành công", typeof(QuestionCommentResponse))]
-        [SwaggerResponse(400, "Dữ liệu không hợp lệ")]
-        [SwaggerResponse(401, "Chưa đăng nhập")]
-        [SwaggerResponse(403, "Không có quyền moderator/admin")]
-        [SwaggerResponse(404, "Không tìm thấy comment")]
+        [Authorize(Policy = "SaleStaffPolicy")]
+        [SwaggerOperation(Summary = "Approve a comment ")]
+        [SwaggerResponse(200, "Comment approved successfully", typeof(QuestionCommentResponse))]
+        [SwaggerResponse(400, "Invalid data")]
+        [SwaggerResponse(401, "Unauthorized")]
+        [SwaggerResponse(403, "Forbidden - moderator/admin role required")]
+        [SwaggerResponse(404, "Comment not found")]
         public async Task<IActionResult> ApproveComment(int id, [FromBody] ApproveQuestionCommentRequest request)
         {
             try
@@ -299,15 +307,15 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách comment chờ duyệt (chỉ moderator/admin)
+        /// Get pending approval comments (moderator/admin only)
         /// </summary>
-        /// <returns>Danh sách comment chờ duyệt</returns>
+        /// <returns>List of pending approval comments</returns>
         [HttpGet("pending-approval")]
-        [Authorize(Roles = "Moderator,Admin")]
-        [SwaggerOperation(Summary = "Lấy danh sách comment chờ duyệt (chỉ moderator/admin)")]
-        [SwaggerResponse(200, "Danh sách comment chờ duyệt", typeof(List<QuestionCommentResponse>))]
-        [SwaggerResponse(401, "Chưa đăng nhập")]
-        [SwaggerResponse(403, "Không có quyền moderator/admin")]
+        [Authorize(Policy = "SaleStaffPolicy")]
+        [SwaggerOperation(Summary = "Get pending approval comments")]
+        [SwaggerResponse(200, "List of pending approval comments", typeof(List<QuestionCommentResponse>))]
+        [SwaggerResponse(401, "Unauthorized")]
+        [SwaggerResponse(403, "Forbidden - moderator/admin role required")]
         public async Task<IActionResult> GetPendingApprovalComments()
         {
             try
@@ -323,9 +331,9 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         /// <summary>
-        /// Lấy userId từ JWT token (cần implement)
+        /// Get userId from JWT token (needs implementation)
         /// </summary>
-        /// <returns>User ID hoặc null</returns>
+        /// <returns>User ID or null</returns>
         private int? GetCurrentUserId()
         {
             if (User?.Identity?.IsAuthenticated != true)

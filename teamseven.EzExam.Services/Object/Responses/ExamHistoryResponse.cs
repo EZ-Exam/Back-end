@@ -3,8 +3,8 @@ namespace teamseven.EzExam.Services.Object.Responses
     public class ExamHistoryResponse
     {
         public int Id { get; set; }
-        public string ExamId { get; set; } = string.Empty;
-        public string UserId { get; set; } = string.Empty;
+        public int ExamId { get; set; }
+        public int UserId { get; set; }
         public decimal Score { get; set; }
         public int CorrectCount { get; set; }
         public int IncorrectCount { get; set; }
@@ -24,5 +24,11 @@ namespace teamseven.EzExam.Services.Object.Responses
         public string CorrectAnswer { get; set; } = string.Empty;
         public bool IsCorrect { get; set; }
         public int TimeSpent { get; set; }
+       
+        public string ContentQuestion { get; set; } = string.Empty;
+        public List<string> Options { get; set; } = new List<string>();
+        public string? Explanation { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? Formula { get; set; }
     }
 }

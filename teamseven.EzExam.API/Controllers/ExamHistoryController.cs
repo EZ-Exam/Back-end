@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 using teamseven.EzExam.Services.Interfaces;
 using teamseven.EzExam.Services.Object.Requests;
+using teamseven.EzExam.Services.Object.Responses;
 
 namespace teamseven.EzExam.API.Controllers
 {
@@ -64,7 +65,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpGet("user/{userId}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get exam histories by user ID", Description = "Retrieves all exam histories for a specific user")]
-        public async Task<IActionResult> GetExamHistoriesByUser(string userId)
+        public async Task<IActionResult> GetExamHistoriesByUser(int userId)
         {
             try
             {
@@ -81,7 +82,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpGet("exam/{examId}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get exam histories by exam ID", Description = "Retrieves all exam histories for a specific exam")]
-        public async Task<IActionResult> GetExamHistoriesByExam(string examId)
+        public async Task<IActionResult> GetExamHistoriesByExam(int examId)
         {
             try
             {
@@ -153,6 +154,25 @@ namespace teamseven.EzExam.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting exam history");
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
+
+        [HttpGet("{examId}/questions/detail")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get exam questions detail", Description = "Retrieves detailed information of all questions in an exam")]
+        [SwaggerResponse(200, "Exam questions retrieved successfully", typeof(IEnumerable<ExamQuestionDetailResponse>))]
+        [SwaggerResponse(404, "Exam not found")]
+        public async Task<IActionResult> GetExamQuestionsDetail(int examId)
+        {
+            try
+            {
+                var questions = await _examHistoryService.GetExamQuestionsDetailAsync(examId);
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving exam questions detail");
                 return StatusCode(500, new { Message = "Internal server error." });
             }
         }

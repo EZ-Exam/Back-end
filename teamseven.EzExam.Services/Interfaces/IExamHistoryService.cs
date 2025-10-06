@@ -10,8 +10,8 @@ namespace teamseven.EzExam.Services.Interfaces
 
         // Read
         Task<ExamHistoryResponse?> GetExamHistoryByIdAsync(int id);
-        Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(string userId);
-        Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(string examId);
+        Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(int userId);
+        Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(int examId);
         Task<IEnumerable<ExamHistoryResponse>> GetAllExamHistoriesAsync();
 
         // Update
@@ -19,5 +19,8 @@ namespace teamseven.EzExam.Services.Interfaces
 
         // Delete
         Task DeleteExamHistoryAsync(int id);
+
+        // Exam Questions Detail
+        Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId);
     }
 }

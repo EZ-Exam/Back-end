@@ -59,7 +59,7 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
                 var examHistory = await _unitOfWork.ExamHistoryRepository.GetByIdAsync(id);
                 if (examHistory == null) return null;
 
-                return MapToResponse(examHistory);
+                return await MapToResponseAsync(examHistory);
             }
             catch (Exception ex)
             {
@@ -68,14 +68,19 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             }
         }
 
-        public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(string userId)
+        public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(int userId)
         {
             try
             {
                 var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
                 var userHistories = examHistories.Where(h => h.UserId == userId).OrderByDescending(h => h.SubmittedAt);
                 
-                return userHistories.Select(MapToResponse);
+                var responses = new List<ExamHistoryResponse>();
+                foreach (var history in userHistories)
+                {
+                    responses.Add(await MapToResponseAsync(history));
+                }
+                return responses;
             }
             catch (Exception ex)
             {
@@ -84,14 +89,19 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             }
         }
 
-        public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(string examId)
+        public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(int examId)
         {
             try
             {
                 var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
                 var examSpecificHistories = examHistories.Where(h => h.ExamId == examId).OrderByDescending(h => h.SubmittedAt);
                 
-                return examSpecificHistories.Select(MapToResponse);
+                var responses = new List<ExamHistoryResponse>();
+                foreach (var history in examSpecificHistories)
+                {
+                    responses.Add(await MapToResponseAsync(history));
+                }
+                return responses;
             }
             catch (Exception ex)
             {
@@ -105,7 +115,12 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             try
             {
                 var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
-                return examHistories.OrderByDescending(h => h.SubmittedAt).Select(MapToResponse);
+                var responses = new List<ExamHistoryResponse>();
+                foreach (var history in examHistories.OrderByDescending(h => h.SubmittedAt))
+                {
+                    responses.Add(await MapToResponseAsync(history));
+                }
+                return responses;
             }
             catch (Exception ex)
             {
@@ -164,7 +179,50 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             }
         }
 
-        private ExamHistoryResponse MapToResponse(ExamHistory examHistory)
+        public async Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId)
+        {
+            try
+            {
+                var examQuestions = await _unitOfWork.ExamQuestionRepository.GetAllAsync();
+                var examSpecificQuestions = examQuestions.Where(eq => eq.ExamId == examId).ToList();
+                
+                if (!examSpecificQuestions.Any())
+                {
+                    _logger.LogWarning($"No questions found for exam {examId}");
+                    return new List<ExamQuestionDetailResponse>();
+                }
+              
+                var questionIds = examSpecificQuestions.Select(eq => eq.QuestionId).ToList();                         
+                var questions = await _unitOfWork.QuestionRepository.GetByIdsAsync(questionIds);
+                var responses = new List<ExamQuestionDetailResponse>();
+                
+                foreach (var question in questions)
+                {
+                    var response = new ExamQuestionDetailResponse
+                    {
+                        Id = question.Id,
+                        ContentQuestion = question.Content,
+                        CorrectAnswer = question.CorrectAnswer,
+                        Options = ParseOptions(question.Options),
+                        Explanation = question.Explanation,
+                        ImageUrl = question.Image,
+                        Formula = question.Formula
+                    };
+                    
+                    responses.Add(response);
+                }
+
+                _logger.LogInformation($"Retrieved {responses.Count} questions for exam {examId}");
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving exam questions for exam {examId}");
+                throw;
+            }
+        }
+
+        private async Task<ExamHistoryResponse> MapToResponseAsync(ExamHistory examHistory)
         {
             List<AnswerDetailResponse>? answers = null;
             if (!string.IsNullOrEmpty(examHistory.Answers))
@@ -172,16 +230,37 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
                 try
                 {
                     var answerDetails = JsonConvert.DeserializeObject<List<AnswerDetail>>(examHistory.Answers);
-                    if (answerDetails != null)
+                    if (answerDetails != null && answerDetails.Any())
                     {
-                        answers = answerDetails.Select(a => new AnswerDetailResponse
+                        var questionIds = answerDetails.Select(a => int.Parse(a.QuestionId)).ToList();
+                        
+                        var questions = await _unitOfWork.QuestionRepository.GetByIdsAsync(questionIds);
+                        var questionDict = questions.ToDictionary(q => q.Id, q => q);
+                        
+                        answers = new List<AnswerDetailResponse>();
+                        
+                        foreach (var answerDetail in answerDetails)
                         {
-                            QuestionId = a.QuestionId,
-                            SelectedAnswer = a.SelectedAnswer,
-                            CorrectAnswer = a.CorrectAnswer,
-                            IsCorrect = a.IsCorrect,
-                            TimeSpent = a.TimeSpent
-                        }).ToList();
+                            var questionId = int.Parse(answerDetail.QuestionId);
+                            var question = questionDict.GetValueOrDefault(questionId);
+                            
+                            var answerResponse = new AnswerDetailResponse
+                            {
+                                QuestionId = answerDetail.QuestionId,
+                                SelectedAnswer = answerDetail.SelectedAnswer,
+                                CorrectAnswer = answerDetail.CorrectAnswer,
+                                IsCorrect = answerDetail.IsCorrect,
+                                TimeSpent = answerDetail.TimeSpent,
+                            
+                                ContentQuestion = question?.Content ?? string.Empty,
+                                Options = ParseOptions(question?.Options),
+                                Explanation = question?.Explanation,
+                                ImageUrl = question?.Image,
+                                Formula = question?.Formula
+                            };
+                            
+                            answers.Add(answerResponse);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -206,6 +285,32 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
                 CreatedAt = examHistory.CreatedAt,
                 UpdatedAt = examHistory.UpdatedAt
             };
+        }
+
+        private List<string> ParseOptions(string? optionsJson)
+        {
+            if (string.IsNullOrEmpty(optionsJson))
+                return new List<string>();
+
+            try
+            {
+                // Thử parse JSON array
+                var jsonArray = JsonConvert.DeserializeObject<List<string>>(optionsJson);
+                if (jsonArray != null)
+                    return jsonArray;
+
+                // Thử parse JSON object (key-value pairs)
+                var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(optionsJson);
+                if (jsonObject != null)
+                    return jsonObject.Values.ToList();
+
+                return new List<string>();
+            }
+            catch
+            {
+                // Nếu không parse được JSON, trả về empty list
+                return new List<string>();
+            }
         }
     }
 }
