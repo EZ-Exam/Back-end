@@ -5,10 +5,10 @@ namespace teamseven.EzExam.Services.Object.Requests
     public class CreateExamHistoryRequest
     {
         [Required]
-        public string ExamId { get; set; } = string.Empty;
+        public int ExamId { get; set; }
 
         [Required]
-        public string UserId { get; set; } = string.Empty;
+        public int UserId { get; set; }
 
         [Required]
         [Range(0, 100)]

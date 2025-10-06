@@ -7,11 +7,11 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public interface IExamHistoryRepository : IGenericRepository<ExamHistory>
     {
-        Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(string userId);
-        Task<IEnumerable<ExamHistory>> GetHistoryByExamIdAsync(string examId);
-        Task<ExamHistory?> GetLatestHistoryByUserAsync(string userId);
-        Task<decimal> GetAverageScoreByUserAsync(string userId);
-        Task<int> GetTotalExamsCompletedByUserAsync(string userId);
+        Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(int userId);
+        Task<IEnumerable<ExamHistory>> GetHistoryByExamIdAsync(int examId);
+        Task<ExamHistory?> GetLatestHistoryByUserAsync(int userId);
+        Task<decimal> GetAverageScoreByUserAsync(int userId);
+        Task<int> GetTotalExamsCompletedByUserAsync(int userId);
     }
 
     public class ExamHistoryRepository : GenericRepository<ExamHistory>, IExamHistoryRepository
@@ -20,7 +20,7 @@ namespace teamseven.EzExam.Repository.Repository
         {
         }
 
-        public async Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(string userId)
+        public async Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(int userId)
         {
             return await _context.ExamHistories
                 .Where(h => h.UserId == userId)
@@ -28,7 +28,7 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ExamHistory>> GetHistoryByExamIdAsync(string examId)
+        public async Task<IEnumerable<ExamHistory>> GetHistoryByExamIdAsync(int examId)
         {
             return await _context.ExamHistories
                 .Where(h => h.ExamId == examId)
@@ -36,7 +36,7 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
-        public async Task<ExamHistory?> GetLatestHistoryByUserAsync(string userId)
+        public async Task<ExamHistory?> GetLatestHistoryByUserAsync(int userId)
         {
             return await _context.ExamHistories
                 .Where(h => h.UserId == userId)
@@ -44,7 +44,7 @@ namespace teamseven.EzExam.Repository.Repository
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<decimal> GetAverageScoreByUserAsync(string userId)
+        public async Task<decimal> GetAverageScoreByUserAsync(int userId)
         {
             var histories = await _context.ExamHistories
                 .Where(h => h.UserId == userId)
@@ -53,7 +53,7 @@ namespace teamseven.EzExam.Repository.Repository
             return histories.Any() ? histories.Average(h => h.Score) : 0;
         }
 
-        public async Task<int> GetTotalExamsCompletedByUserAsync(string userId)
+        public async Task<int> GetTotalExamsCompletedByUserAsync(int userId)
         {
             return await _context.ExamHistories
                 .CountAsync(h => h.UserId == userId);

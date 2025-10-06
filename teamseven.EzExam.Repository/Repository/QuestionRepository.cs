@@ -64,6 +64,13 @@ namespace teamseven.EzExam.Repository.Repository
             return await RemoveAsync(question);
         }
 
+        public async Task<List<Question>> GetByIdsAsync(List<int> ids)
+        {
+            return await _context.Questions
+                .Where(q => ids.Contains(q.Id))
+                .ToListAsync();
+        }
+
         public async Task<(List<Question>, int)> GetPagedAsync(
     int pageNumber,
     int pageSize,

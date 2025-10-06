@@ -12,11 +12,11 @@ namespace teamseven.EzExam.Repository.Models
 
         [Required]
         [Column("ExamId")]
-        public string ExamId { get; set; } = string.Empty;
+        public int ExamId { get; set; }
 
         [Required]
         [Column("UserId")]
-        public string UserId { get; set; } = string.Empty;
+        public int UserId { get; set; }
 
         [Required]
         [Column("Score")]

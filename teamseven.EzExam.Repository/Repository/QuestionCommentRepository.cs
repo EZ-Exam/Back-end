@@ -34,7 +34,7 @@ namespace teamseven.EzExam.Repository.Repository
             return await _context.QuestionComments
                 .Include(c => c.User)
                 .Include(c => c.ParentComment)
-                .Where(c => c.QuestionId == questionId && c.IsApproved)
+                .Where(c => c.QuestionId == questionId && c.IsApproved && !c.IsDeleted)
                 .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
         }
@@ -46,7 +46,7 @@ namespace teamseven.EzExam.Repository.Repository
                 .Include(c => c.ParentComment)
                 .Include(c => c.Replies)
                     .ThenInclude(r => r.User)
-                .Where(c => c.QuestionId == questionId && c.IsApproved)
+                .Where(c => c.QuestionId == questionId && c.IsApproved && !c.IsDeleted)
                 .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
         }
@@ -58,7 +58,7 @@ namespace teamseven.EzExam.Repository.Repository
                 .Include(c => c.ParentComment)
                 .Include(c => c.Replies)
                     .ThenInclude(r => r.User)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         }
 
         public async Task<QuestionComment> CreateAsync(QuestionComment comment)
@@ -69,25 +69,25 @@ namespace teamseven.EzExam.Repository.Repository
         }
 
         public async Task<QuestionComment> UpdateAsync(QuestionComment comment)
-        {
-            // Tìm entity đã được track trong context
+        {           
             var existingComment = await _context.QuestionComments
                 .FirstOrDefaultAsync(c => c.Id == comment.Id);
             
             if (existingComment != null)
             {
-                // Chỉ update những field cần thiết, không touch navigation properties
                 existingComment.Content = comment.Content;
                 existingComment.Rating = comment.Rating;
                 existingComment.IsHelpful = comment.IsHelpful;
                 existingComment.IsApproved = comment.IsApproved;
+                existingComment.IsDeleted = comment.IsDeleted;
+                existingComment.DeletedAt = comment.DeletedAt;
+                existingComment.DeletedBy = comment.DeletedBy;
                 existingComment.UpdatedAt = DateTime.UtcNow;
                 
                 await _context.SaveChangesAsync();
                 return existingComment;
             }
             
-            // Fallback nếu không tìm thấy existing entity
             comment.UpdatedAt = DateTime.UtcNow;
             _context.QuestionComments.Update(comment);
             await _context.SaveChangesAsync();
@@ -109,7 +109,7 @@ namespace teamseven.EzExam.Repository.Repository
             return await _context.QuestionComments
                 .Include(c => c.User)
                 .Include(c => c.Question)
-                .Where(c => !c.IsApproved)
+                .Where(c => !c.IsApproved && !c.IsDeleted)
                 .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
         }
