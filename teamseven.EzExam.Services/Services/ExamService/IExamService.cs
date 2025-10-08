@@ -35,5 +35,18 @@ namespace teamseven.EzExam.Services.Services.ExamService
         Task DeleteExamHistoryAsync(ExamHistoryRequest historyRequest);
 
         Task<ExamHistoryResponseDto> GetExamHistoryResponseAsync(int id);
+         Task<PagedResponse<ExamResponse>> GetExamsAsync(
+                int? pageNumber = null,
+                int? pageSize = null,
+                string? search = null,
+                string? sort = null,
+                int? subjectId = null,
+                int? lessonId = null,
+                int? examTypeId = null,
+                int? createdByUserId = null,
+                int isSort = 0
+            );
+        
+
     }
 }
