@@ -13,6 +13,7 @@ namespace teamseven.EzExam.Repository.Repository
         Task<List<QuestionComment>> GetByQuestionIdAsync(int questionId);
         Task<List<QuestionComment>> GetByQuestionIdWithRepliesAsync(int questionId);
         Task<QuestionComment?> GetByIdAsync(int id);
+        Task<QuestionComment?> GetByIdIncludingDeletedAsync(int id);
         Task<QuestionComment> CreateAsync(QuestionComment comment);
         Task<QuestionComment> UpdateAsync(QuestionComment comment);
         Task DeleteAsync(int id);
@@ -61,10 +62,20 @@ namespace teamseven.EzExam.Repository.Repository
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         }
 
+        public async Task<QuestionComment?> GetByIdIncludingDeletedAsync(int id)
+        {
+            return await _context.QuestionComments
+                .Include(c => c.User)
+                .Include(c => c.ParentComment)
+                .Include(c => c.Replies)
+                    .ThenInclude(r => r.User)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
         public async Task<QuestionComment> CreateAsync(QuestionComment comment)
         {
             _context.QuestionComments.Add(comment);
-            await _context.SaveChangesAsync();
+            // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
             return comment;
         }
 
@@ -84,13 +95,18 @@ namespace teamseven.EzExam.Repository.Repository
                 existingComment.DeletedBy = comment.DeletedBy;
                 existingComment.UpdatedAt = DateTime.UtcNow;
                 
-                await _context.SaveChangesAsync();
+                // Force Entity Framework to detect changes
+                _context.Entry(existingComment).State = EntityState.Modified;
+                
+                // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
                 return existingComment;
             }
             
+            // Nếu không tìm thấy existing comment, attach entity mới
             comment.UpdatedAt = DateTime.UtcNow;
-            _context.QuestionComments.Update(comment);
-            await _context.SaveChangesAsync();
+            _context.QuestionComments.Attach(comment);
+            _context.Entry(comment).State = EntityState.Modified;
+            // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
             return comment;
         }
 
@@ -100,7 +116,7 @@ namespace teamseven.EzExam.Repository.Repository
             if (comment != null)
             {
                 _context.QuestionComments.Remove(comment);
-                await _context.SaveChangesAsync();
+                // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
             }
         }
 

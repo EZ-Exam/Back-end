@@ -143,7 +143,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
 
         public async Task SoftDeleteCommentAsync(int commentId, int deletedByUserId)
         {
-            var comment = await _unitOfWork.QuestionCommentRepository.GetByIdAsync(commentId);
+            var comment = await _unitOfWork.QuestionCommentRepository.GetByIdIncludingDeletedAsync(commentId);
             if (comment == null)
             {
                 _logger.LogWarning("Comment with ID {CommentId} not found.", commentId);
@@ -159,14 +159,21 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
 
             try
             {
+                _logger.LogInformation("Before soft delete - Comment ID {CommentId}, IsDeleted: {IsDeleted}, DeletedAt: {DeletedAt}", 
+                    commentId, comment.IsDeleted, comment.DeletedAt);
 
                 comment.IsDeleted = true;
                 comment.DeletedAt = DateTime.UtcNow;
                 comment.DeletedBy = deletedByUserId;
                 comment.UpdatedAt = DateTime.UtcNow;
 
+                _logger.LogInformation("After setting values - Comment ID {CommentId}, IsDeleted: {IsDeleted}, DeletedAt: {DeletedAt}", 
+                    commentId, comment.IsDeleted, comment.DeletedAt);
+
                 await _unitOfWork.QuestionCommentRepository.UpdateAsync(comment);
-                await _unitOfWork.SaveChangesWithTransactionAsync();
+                var saveResult = await _unitOfWork.SaveChangesWithTransactionAsync();
+                
+                _logger.LogInformation("Save result: {SaveResult} rows affected", saveResult);
                 _logger.LogInformation("Comment with ID {CommentId} soft deleted successfully by user {DeletedByUserId}.", commentId, deletedByUserId);
             }
             catch (Exception ex)
