@@ -148,7 +148,7 @@ namespace teamseven.EzExam.API.Controllers
                         id = questionResponse.Id,
                         content = questionResponse.Content,
                         questionSource = questionResponse.QuestionSource,
-                        difficultyLevel = questionResponse.DifficultyLevel,
+                        difficultyLevel = questionResponse.DifficultyLevelId,
                         lessonId = questionResponse.LessonId,
                         textbookId = questionResponse.TextbookId,
                         createdByUserId = questionResponse.CreatedByUserId,
