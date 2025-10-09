@@ -51,8 +51,8 @@ namespace teamseven.EzExam.API.Controllers
                     (int)request.Amount,
                     request.Description,
                     items,
-                    "https://fe-phy-gen.vercel.app/",
-                    "https://fe-phy-gen.vercel.app/"
+                    "http://localhost:5173/",
+                    "http://localhost:5173/"
                 );
 
                 // Create payment link
