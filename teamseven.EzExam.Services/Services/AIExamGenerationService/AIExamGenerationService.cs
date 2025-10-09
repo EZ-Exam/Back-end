@@ -142,7 +142,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                 var searchRequest = new QuestionSearchRequest
                 {
                     GradeId = request.GradeId,
-                    LessonId = request.LessonId,
+                    LessonId = request.LessonId, // null means get questions from all lessons in the grade
                     DifficultyLevel = request.DifficultyLevel
                 };
 
@@ -154,6 +154,9 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                     // Note: Subject filtering would need to be implemented in QuestionService
                     // For now, we'll return all questions
                 }
+
+                _logger.LogInformation("Retrieved {Count} questions for GradeId: {GradeId}, LessonId: {LessonId} (null = all lessons)", 
+                    questions.Count, request.GradeId, request.LessonId);
 
                 return questions;
             }
@@ -218,7 +221,15 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                 promptBuilder.AppendLine("   - Phát triển tư duy phân tích và giải quyết vấn đề");
             }
             promptBuilder.AppendLine("3. Đảm bảo đa dạng về độ khó và chủ đề");
-            promptBuilder.AppendLine("4. Trả về KẾT QUẢ DƯỚI DẠNG JSON với format sau:");
+            if (request.LessonId == null)
+            {
+                promptBuilder.AppendLine("4. CHÚ Ý: LessonId không được chỉ định - hãy chọn câu hỏi từ TẤT CẢ các bài học trong khối lớp để tạo đề thi tổng hợp (phù hợp cho thi học kỳ)");
+            }
+            else
+            {
+                promptBuilder.AppendLine("4. CHÚ Ý: LessonId được chỉ định - hãy tập trung chọn câu hỏi từ bài học cụ thể này");
+            }
+            promptBuilder.AppendLine("5. Trả về KẾT QUẢ DƯỚI DẠNG JSON với format sau:");
             promptBuilder.AppendLine();
             promptBuilder.AppendLine("```json");
             promptBuilder.AppendLine("{");

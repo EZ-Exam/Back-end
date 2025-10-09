@@ -30,7 +30,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpPost("generate")]
         [SwaggerOperation(
             Summary = "Generate AI-powered exam",
-            Description = "Tạo đề thi tự động bằng AI dựa trên lịch sử học tập và năng lực của học sinh"
+            Description = "Tạo đề thi tự động bằng AI dựa trên lịch sử học tập và năng lực của học sinh. LessonId là tùy chọn - nếu không cung cấp, AI sẽ chọn câu hỏi từ tất cả bài học trong khối lớp (phù hợp cho thi học kỳ)."
         )]
         [SwaggerResponse(200, "Exam generated successfully", typeof(GenerateAIExamResponse))]
         [SwaggerResponse(400, "Invalid request parameters")]
@@ -118,7 +118,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpGet("user/{userId}/history")]
         [SwaggerOperation(
             Summary = "Get user exam history",
-            Description = "Lấy lịch sử làm bài gần nhất của user để phục vụ AI analysis"
+            Description = "Lấy lịch sử làm bài gần nhất của user để phục vụ AI analysis. Mặc định lấy 5 lần gần nhất, có thể tùy chỉnh từ 1-10 lần."
         )]
         [SwaggerResponse(200, "History retrieved successfully", typeof(List<ExamHistoryResponse>))]
         [SwaggerResponse(400, "Invalid user ID")]
@@ -174,7 +174,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpGet("questions/available")]
         [SwaggerOperation(
             Summary = "Get available questions for AI selection",
-            Description = "Lấy danh sách câu hỏi có sẵn để AI có thể chọn lựa"
+            Description = "Lấy danh sách câu hỏi có sẵn để AI có thể chọn lựa. LessonId là tùy chọn - nếu không cung cấp, sẽ lấy câu hỏi từ tất cả bài học trong khối lớp."
         )]
         [SwaggerResponse(200, "Questions retrieved successfully", typeof(List<QuestionSimpleResponse>))]
         [SwaggerResponse(400, "Invalid parameters")]
@@ -225,7 +225,7 @@ namespace teamseven.EzExam.API.Controllers
         [HttpPost("validate-request")]
         [SwaggerOperation(
             Summary = "Validate AI exam generation request",
-            Description = "Kiểm tra tính hợp lệ của request trước khi gọi AI"
+            Description = "Kiểm tra tính hợp lệ của request trước khi gọi AI. LessonId là tùy chọn - nếu không cung cấp, AI sẽ chọn câu hỏi từ tất cả bài học trong khối lớp (phù hợp cho thi học kỳ)."
         )]
         [SwaggerResponse(200, "Request is valid")]
         [SwaggerResponse(400, "Invalid request")]
@@ -293,7 +293,10 @@ namespace teamseven.EzExam.API.Controllers
                             LessonId = request.LessonId,
                             DifficultyLevel = request.DifficultyLevel,
                             Subject = request.Subject
-                        }
+                        },
+                        Note = request.LessonId == null 
+                            ? "LessonId is optional. If not provided, AI will select questions from all lessons in the grade for comprehensive exam (e.g., semester exam)."
+                            : "LessonId is specified. AI will focus on questions from this specific lesson."
                     }
                 });
             }
