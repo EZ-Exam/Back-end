@@ -45,8 +45,8 @@ namespace teamseven.EzExam.Services.Services.Authentication
             // Set last login
             await _userRepository.SetLoginDateTime(user.Id);
 
-            // Generate and return token
-            var token = _authService.GenerateJwtToken(user);
+            // Generate and return token with subscription info
+            var token = await _authService.GenerateJwtTokenWithSubscriptionAsync(user);
 
             return (true, token);
         }
