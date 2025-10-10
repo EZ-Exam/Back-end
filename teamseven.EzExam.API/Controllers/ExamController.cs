@@ -5,6 +5,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 using teamseven.EzExam.Services.Object.Responses;
+using static teamseven.EzExam.Services.Services.ExamService.IExamService;
 
 namespace teamseven.EzExam.API.Controllers
 {
@@ -21,17 +22,60 @@ namespace teamseven.EzExam.API.Controllers
             _serviceProvider = serviceProvider;
             _logger = logger;
         }
-
-        // =================== GET ALL EXAMS ===================
-
+        // API/Controllers/ExamsController.cs
         [HttpGet]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get all exams", Description = "Retrieves all exams")]
-        public async Task<IActionResult> GetAllExams()
+        [SwaggerOperation(
+            Summary = "Get exams (paged & filtered)",
+            Description = "Search name/description; filter by subjectId, lessonId, examTypeId, createdByUserId; paging + sort."
+        )]
+        [SwaggerResponse(200, "OK", typeof(PagedResponse<ExamResponse>))]
+        public async Task<IActionResult> GetExams(
+            [FromQuery] string? search = null,
+            [FromQuery] string? sort = null,          // name|createdAt|updatedAt|totalQuestions|timeLimit : asc|desc
+            [FromQuery] int? subjectId = null,
+            [FromQuery] int? lessonId = null,
+            [FromQuery] int? examTypeId = null,
+            [FromQuery] int? createdByUserId = null,
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int isSort = 0
+        )
         {
-            var exams = await _serviceProvider.ExamService.GetAllExamAsync();
-            return Ok(exams);
+            if (pageNumber.HasValue && pageNumber < 1 || pageSize.HasValue && pageSize < 1)
+                return BadRequest(new { Message = "pageNumber and pageSize must be > 0." });
+
+            if (isSort is not (0 or 1))
+                return BadRequest(new { Message = "isSort must be 0 or 1." });
+
+            if (isSort == 1 && !string.IsNullOrWhiteSpace(sort) && !IsValidSort(sort))
+                return BadRequest(new { Message = "Invalid sort. Use: name|createdAt|updatedAt|totalQuestions|timeLimit with :asc|:desc" });
+
+            var data = await _serviceProvider.ExamService.GetExamsAsync(
+                pageNumber, pageSize, search, sort,
+                subjectId, lessonId, examTypeId, createdByUserId, isSort);
+
+            return Ok(data);
         }
+
+        private static bool IsValidSort(string sort)
+        {
+            var fields = new[] { "name", "createdat", "updatedat", "totalquestions", "timelimit" };
+            var orders = new[] { "asc", "desc" };
+            var p = sort.ToLower().Split(':');
+            return p.Length == 2 && fields.Contains(p[0]) && orders.Contains(p[1]);
+        }
+
+        //// =================== GET ALL EXAMS ===================
+
+        //[HttpGet]
+        //[AllowAnonymous]
+        //[SwaggerOperation(Summary = "Get all exams", Description = "Retrieves all exams")]
+        //public async Task<IActionResult> GetAllExams()
+        //{
+        //    var exams = await _serviceProvider.ExamService.GetAllExamAsync();
+        //    return Ok(exams);
+        //}
 
         // =================== GET EXAM BY ID ===================
 

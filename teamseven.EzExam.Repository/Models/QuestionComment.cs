@@ -35,6 +35,15 @@ namespace teamseven.EzExam.Repository.Models
         [Column("IsApproved")]
         public bool IsApproved { get; set; } = true;
 
+        [Column("IsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
+        [Column("DeletedAt")]
+        public DateTime? DeletedAt { get; set; }
+
+        [Column("DeletedBy")]
+        public int? DeletedBy { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

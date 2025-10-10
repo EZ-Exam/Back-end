@@ -350,5 +350,46 @@ namespace teamseven.EzExam.Services.Services.ExamService
             await _unitOfWork.ExamQuestionRepository.DeleteAsync(examQuestion);
             await _unitOfWork.SaveChangesWithTransactionAsync();
         }
+
+        // Services/Services/ExamService/ExamQueryService.cs
+        public async Task<PagedResponse<ExamResponse>> GetExamsAsync(
+            int? pageNumber = null,
+            int? pageSize = null,
+            string? search = null,
+            string? sort = null,
+            int? subjectId = null,
+            int? lessonId = null,
+            int? examTypeId = null,
+            int? createdByUserId = null,
+            int isSort = 0)
+        {
+            var pn = pageNumber.GetValueOrDefault(1);
+            var ps = pageSize.GetValueOrDefault(20);
+
+            var (items, total) = await _unitOfWork.ExamRepository.GetPagedAsync(
+                pn, ps, search, sort,
+                subjectId, lessonId, examTypeId, createdByUserId, isSort);
+
+            var list = items.Select(x => new ExamResponse
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                SubjectId = x.SubjectId,
+                LessonId = x.LessonId,
+                ExamTypeId = x.ExamTypeId,
+                CreatedByUserId = x.CreatedByUserId,
+                TimeLimit = x.TimeLimit,
+                Duration = x.Duration,
+				TotalQuestions = x.TotalQuestions,
+                IsActive = x.IsActive,
+                IsPublic = x.IsPublic,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            }).ToList();
+
+            return new PagedResponse<ExamResponse>(list, pn, ps, total);
+        }
+
     }
 }

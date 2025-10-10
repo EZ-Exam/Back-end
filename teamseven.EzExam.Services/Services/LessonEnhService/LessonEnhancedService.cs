@@ -141,5 +141,78 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
             }
             return result;
         }
+
+        public async Task<PagedResponse<LessonEnhancedResponse>> GetPagedAsync(
+           int? pageNumber = null,
+           int? pageSize = null,
+           string? search = null,
+           string? sort = null,
+           string? subjectId = null,
+           string? questionId = null,
+           int isSort = 0,
+           bool includeQuestions = false)
+        {
+            int? sid = null, qid = null;
+            if (!string.IsNullOrWhiteSpace(subjectId))
+            {
+                if (!int.TryParse(subjectId, out var s))
+                    throw new ArgumentException("subjectId must be integer");
+                sid = s;
+            }
+            if (!string.IsNullOrWhiteSpace(questionId))
+            {
+                if (!int.TryParse(questionId, out var q))
+                    throw new ArgumentException("questionId must be integer");
+                qid = q;
+            }
+
+            List<LessonEnhanced> items; int total;
+            if (pageNumber.HasValue && pageSize.HasValue && pageNumber > 0 && pageSize > 0)
+            {
+                (items, total) = await _repo.GetPagedAsync(pageNumber.Value, pageSize.Value, search, sort, sid, qid, isSort);
+            }
+            else
+            {
+                (items, total) = await _repo.GetPagedAsync(1, int.MaxValue, search, sort, sid, qid, isSort);
+                pageNumber ??= 1; pageSize ??= total;
+            }
+
+            var responses = items.Select(l => new LessonEnhancedResponse
+            {
+                id = l.Id.ToString(),
+                title = l.Title,
+                description = l.Description,
+                subjectId = l.SubjectId.ToString(),
+                pdfUrl = l.PdfUrl,
+                createdAt = l.CreatedAt,
+                updatedAt = l.UpdatedAt,
+                questions = new List<string>() // fill sau nếu includeQuestions
+            }).ToList();
+
+            if (includeQuestions && responses.Count > 0)
+            {
+                // Thu thập ID hợp lệ vào 1 List<int> chắc chắn non-null
+                var lessonIds = new List<int>();
+                foreach (var r in responses)
+                {
+                    if (int.TryParse(r.id, out var v))
+                        lessonIds.Add(v);
+                }
+
+                if (lessonIds.Count > 0)
+                {
+                    var map = await _repo.GetQuestionsForLessonsAsync(lessonIds); // <- giờ không còn cảnh báo
+                    foreach (var r in responses)
+                    {
+                        if (int.TryParse(r.id, out var lid) && map.TryGetValue(lid, out var qlist))
+                            r.questions = qlist.Select(x => x.ToString()).ToList();
+                    }
+                }
+            }
+
+
+            return new PagedResponse<LessonEnhancedResponse>(responses, pageNumber!.Value, pageSize!.Value, total);
+        }
     }
-}
+    }
+

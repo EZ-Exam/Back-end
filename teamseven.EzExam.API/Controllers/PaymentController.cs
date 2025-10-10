@@ -51,8 +51,8 @@ namespace teamseven.EzExam.API.Controllers
                     (int)request.Amount,
                     request.Description,
                     items,
-                    "https://fe-phy-gen.vercel.app/",
-                    "https://fe-phy-gen.vercel.app/"
+                    "http://localhost:5173/",
+                    "http://localhost:5173/"
                 );
 
                 // Create payment link
@@ -82,65 +82,84 @@ namespace teamseven.EzExam.API.Controllers
         }
 
         [HttpPost("payos-webhook")]
+        [AllowAnonymous]
         [SwaggerOperation(Summary = "Handle PayOS webhook", Description = "Handles payment webhook notifications from PayOS.")]
         [SwaggerResponse(200, "Webhook processed successfully.")]
         [SwaggerResponse(400, "Invalid webhook data.")]
-        [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> HandleWebhook([FromBody] PayOSWebhookEnvelope body)
         {
             _logger.LogInformation("Webhook received: {@Body}", body);
 
-            var webhookData = body?.data;
-            if (webhookData == null)
+            var d = body?.data;
+            if (d == null)
             {
-                _logger.LogWarning("Webhook received with no data");
+                // Ping/validate khi lưu Webhook URL có thể không đủ field -> luôn 200
+                _logger.LogInformation("Webhook: missing data (likely ping) -> OK");
                 return Ok();
             }
 
+            // BỎ QUA SAMPLE/PING: PayOS hay gửi orderCode=123 khi bạn lưu Webhook URL
+            if (d.orderCode == 123)
+            {
+                _logger.LogInformation("Webhook: ignore sample ping (orderCode=123) -> OK");
+                return Ok();
+            }
+
+            // Xác định thành công
             bool isSuccess =
                 string.Equals(body?.code, "00", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(webhookData.code, "00", StringComparison.OrdinalIgnoreCase);
+                string.Equals(d.code, "00", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d.desc, "success", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d.desc, "Thành công", StringComparison.OrdinalIgnoreCase);
 
             if (!isSuccess)
             {
-                _logger.LogWarning("Webhook received with unsuccessful payment status");
+                _logger.LogInformation("Webhook: not success (code/desc not OK) -> OK");
                 return Ok();
             }
 
-            long orderCode = webhookData.orderCode;
-            decimal amount = webhookData.amount;
+            long orderCode = d.orderCode;
+            decimal amount = d.amount;
 
             try
             {
-                // Find UserSubscription by orderCode
+                // Tìm subscription theo orderCode (đã lưu khi create-payment)
                 var subscription = await _serviceProvider.UserSubscriptionService
                     .GetByPaymentGatewayTransactionIdAsync(orderCode.ToString());
 
                 if (subscription == null)
                 {
-                    _logger.LogWarning("Webhook: subscription not found for order {OrderCode}", orderCode);
+                    // Không thấy -> có thể webhook đến trước khi bạn lưu pending, hoặc payload test
+                    _logger.LogWarning("Webhook: subscription not found for order {OrderCode} -> OK", orderCode);
                     return Ok();
                 }
 
-                // Get user by subscription
+                // Idempotent: đã COMPLETED thì bỏ qua
+                if (string.Equals(subscription.PaymentStatus, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Webhook: order {OrderCode} already COMPLETED -> OK", orderCode);
+                    return Ok();
+                }
+
+                // Lấy user và cập nhật balance
                 var user = await _serviceProvider.UserService.GetUserByIdAsync(subscription.UserId);
                 if (user == null)
                 {
-                    _logger.LogWarning("Webhook: user {UserId} not found for order {OrderCode}", subscription.UserId, orderCode);
+                    _logger.LogWarning("Webhook: user {UserId} not found for order {OrderCode} -> OK",
+                        subscription.UserId, orderCode);
                     return Ok();
                 }
 
-                // Update balance
                 user.Balance ??= 0m;
                 user.Balance += amount;
                 await _serviceProvider.UserService.UpdateUserAsync(user);
 
-                // Set subscription status to COMPLETED
+                // Đánh dấu subscription COMPLETED
                 subscription.PaymentStatus = "COMPLETED";
                 await _serviceProvider.UserSubscriptionService.UpdateAsync(subscription);
 
                 _logger.LogInformation(
-                    "Webhook: Order {OrderCode} completed. User {UserId} balance +{Amount}, new balance={Balance}",
+                    "Webhook OK: order {OrderCode}; user {UserId} +{Amount}; new balance={Balance}",
                     orderCode, user.Id, amount, user.Balance
                 );
 
@@ -148,10 +167,12 @@ namespace teamseven.EzExam.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing webhook for order {OrderCode}", orderCode);
-                return StatusCode(500, new { Message = "An error occurred while processing the webhook." });
+                // DEV: vẫn trả 200 để PayOS không fail khi validate Webhook URL; log để sửa
+                _logger.LogError(ex, "Webhook error for order {OrderCode} (dev -> return 200)", orderCode);
+                return Ok();
             }
         }
+
     }
 
     public class CreatePaymentRequest

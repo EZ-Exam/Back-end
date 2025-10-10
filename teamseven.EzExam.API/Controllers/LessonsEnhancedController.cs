@@ -118,5 +118,69 @@ namespace teamseven.EzExam.API.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+        [HttpGet("paged")]
+        [AllowAnonymous]
+        [SwaggerOperation(
+            Summary = "Get lesson-enhanced (paged & filtered)",
+            Description = "Phân trang + lọc theo subjectId (string) hoặc questionId (string); hỗ trợ search/sort; includeQuestions=true để trả thêm mảng câu hỏi theo Position."
+        )]
+        [SwaggerResponse(200, "OK", typeof(PagedResponse<LessonEnhancedResponse>))]
+        [SwaggerResponse(400, "Invalid parameters.")]
+        [SwaggerResponse(500, "Internal server error.")]
+        public async Task<IActionResult> GetPaged(
+            [FromQuery] string? subjectId = null,
+            [FromQuery] string? questionId = null,
+            [FromQuery] string? search = null,
+            [FromQuery] string? sort = null,              // title|createdAt|updatedAt : asc|desc
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int isSort = 0                   // 0 = default sort by Id asc; 1 = dùng 'sort'
+)
+        {
+            try
+            {
+                // Validate basic params
+                if ((pageNumber.HasValue && pageNumber < 1) ||
+                    (pageSize.HasValue && pageSize < 1))
+                {
+                    _logger.LogWarning("Invalid pagination: pageNumber={PageNumber}, pageSize={PageSize}", pageNumber, pageSize);
+                    return BadRequest(new { Message = "pageNumber and pageSize must be greater than 0." });
+                }
+
+                if (isSort is not (0 or 1))
+                {
+                    _logger.LogWarning("Invalid isSort: {IsSort}", isSort);
+                    return BadRequest(new { Message = "isSort must be 0 or 1." });
+                }
+
+                if (isSort == 1 && !string.IsNullOrWhiteSpace(sort) && !IsValidSort(sort))
+                {
+                    _logger.LogWarning("Invalid sort: {Sort}", sort);
+                    return BadRequest(new { Message = "Invalid sort. Use one of: title|createdAt|updatedAt with :asc or :desc (e.g. createdAt:desc)." });
+                }
+
+                var res = await _serviceProvider.LessonEnhancedService.GetPagedAsync(
+                    pageNumber, pageSize, search, sort, subjectId, questionId, isSort, true);
+
+                return Ok(res);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Bad query in LessonsEnhancedController.GetPaged");
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Get lesson-enhanced paged failed. subjectId={SubjectId}, questionId={QuestionId}", subjectId, questionId);
+                return StatusCode(500, new { Message = "Internal server error" });
+            }
+        }
+        private static bool IsValidSort(string sort)
+        {
+            var validFields = new[] { "title", "createdat", "updatedat" };
+            var validOrders = new[] { "asc", "desc" };
+            var parts = sort.ToLower().Split(':');
+            return parts.Length == 2 && validFields.Contains(parts[0]) && validOrders.Contains(parts[1]);
+        }
     }
 }

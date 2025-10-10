@@ -60,6 +60,24 @@ namespace teamseven.EzExam.Repository.Repository
                 .GroupBy(r => r.LessonId)
                 .ToDictionary(g => g.Key, g => g.Select(r => r.QuestionId).ToList());
         }
+        public async Task<Dictionary<int, List<int>>> GetQuestionsForLessonsAsync(IReadOnlyCollection<int> lessonIds)
+        {
+            // Chặn null rõ ràng (nếu đang bật nullable context)
+            ArgumentNullException.ThrowIfNull(lessonIds);
+
+            if (lessonIds.Count == 0)
+                return new();
+
+            var rows = await _context.LessonsEnhancedQuestions
+                .Where(x => lessonIds.Contains(x.LessonId))
+                .OrderBy(x => x.LessonId).ThenBy(x => x.Position)
+                .Select(x => new { x.LessonId, x.QuestionId })
+                .ToListAsync();
+
+            return rows
+                .GroupBy(r => r.LessonId)
+                .ToDictionary(g => g.Key, g => g.Select(r => r.QuestionId).ToList());
+        }
 
 
 
@@ -93,63 +111,65 @@ namespace teamseven.EzExam.Repository.Repository
         }
 
         // ===== Paged/Search/Sort theo Title & SubjectId =====
-        public async Task<(List<LessonEnhanced>, int)> GetPagedAsync(
-             int pageNumber,
-             int pageSize,
-             string? search = null,
-             string? sort = null,
-             int? subjectId = null,
-             int isSort = 0) // 0: mặc định theo Id; 1: áp dụng sort tham số
+        public async Task<(List<LessonEnhanced> Items, int Total)> GetPagedAsync(
+         int pageNumber,
+         int pageSize,
+         string? search = null,
+         string? sort = null,
+         int? subjectId = null,
+         int? questionId = null,
+         int isSort = 0)
         {
-            var query = _context.LessonsEnhanced.AsQueryable();
+            // base query
+            IQueryable<LessonEnhanced> q = _context.LessonsEnhanced.AsNoTracking();
 
-            // Search (accent-insensitive) theo Title
-            if (!string.IsNullOrEmpty(search))
+            // filter
+            if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.RemoveDiacritics().ToLower();
-                query = query.Where(l => (l.Title ?? string.Empty).RemoveDiacritics().ToLower().Contains(s));
+                q = q.Where(x =>
+                    (x.Title ?? "").RemoveDiacritics().ToLower().Contains(s) ||
+                    (x.Description ?? "").RemoveDiacritics().ToLower().Contains(s));
             }
-
-            // Filter theo SubjectId
             if (subjectId.HasValue)
+                q = q.Where(x => x.SubjectId == subjectId.Value);
+
+            if (questionId.HasValue)
             {
-                query = query.Where(l => l.SubjectId == subjectId.Value);
+                // join bảng phụ để lọc lesson chứa questionId
+                q = from le in q
+                    join leq in _context.LessonsEnhancedQuestions.AsNoTracking()
+                        on le.Id equals leq.LessonId
+                    where leq.QuestionId == questionId.Value
+                    select le;
+                q = q.Distinct();
             }
 
-            // Sort
+            // sort
             if (isSort == 1)
             {
-                if (!string.IsNullOrEmpty(sort))
+                q = (sort ?? "").ToLower() switch
                 {
-                    switch (sort.ToLower())
-                    {
-                        case "title:asc": query = query.OrderBy(l => l.Title); break;
-                        case "title:desc": query = query.OrderByDescending(l => l.Title); break;
-                        case "createdat:asc": query = query.OrderBy(l => l.CreatedAt); break;
-                        case "createdat:desc": query = query.OrderByDescending(l => l.CreatedAt); break;
-                        case "updatedat:asc": query = query.OrderBy(l => l.UpdatedAt); break;
-                        case "updatedat:desc": query = query.OrderByDescending(l => l.UpdatedAt); break;
-                        default: query = query.OrderByDescending(l => l.CreatedAt); break;
-                    }
-                }
-                else
-                {
-                    query = query.OrderByDescending(l => l.CreatedAt);
-                }
+                    "title:asc" => q.OrderBy(x => x.Title),
+                    "title:desc" => q.OrderByDescending(x => x.Title),
+                    "createdat:asc" => q.OrderBy(x => x.CreatedAt),
+                    "createdat:desc" => q.OrderByDescending(x => x.CreatedAt),
+                    "updatedat:asc" => q.OrderBy(x => x.UpdatedAt),
+                    "updatedat:desc" => q.OrderByDescending(x => x.UpdatedAt),
+                    _ => q.OrderByDescending(x => x.CreatedAt)
+                };
             }
             else
             {
-                query = query.OrderBy(l => l.Id);
+                q = q.OrderBy(x => x.Id);
             }
 
-            // Pagination
-            var totalItems = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            var total = await q.CountAsync();
+            var items = await q.Skip((pageNumber - 1) * pageSize)
+                               .Take(pageSize)
+                               .ToListAsync();
 
-            return (items, totalItems);
+            return (items, total);
         }
 
         // ===== Bảng nối: helpers =====
