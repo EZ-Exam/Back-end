@@ -78,6 +78,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 Content = request.Content,
                 ParentCommentId = request.ParentCommentId,
                 Rating = request.Rating,
+                IsDeleted = false,
                 IsHelpful = false,
                 IsApproved = true, // Auto-approve for now, can be changed to false for moderation
                 CreatedAt = DateTime.UtcNow,

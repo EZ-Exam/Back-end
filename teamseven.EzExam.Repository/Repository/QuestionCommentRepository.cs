@@ -75,7 +75,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<QuestionComment> CreateAsync(QuestionComment comment)
         {
             _context.QuestionComments.Add(comment);
-            // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
+            
             return comment;
         }
 
@@ -97,16 +97,12 @@ namespace teamseven.EzExam.Repository.Repository
                 
                 // Force Entity Framework to detect changes
                 _context.Entry(existingComment).State = EntityState.Modified;
-                
-                // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
                 return existingComment;
             }
             
-            // Nếu không tìm thấy existing comment, attach entity mới
             comment.UpdatedAt = DateTime.UtcNow;
             _context.QuestionComments.Attach(comment);
             _context.Entry(comment).State = EntityState.Modified;
-            // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
             return comment;
         }
 
@@ -116,7 +112,7 @@ namespace teamseven.EzExam.Repository.Repository
             if (comment != null)
             {
                 _context.QuestionComments.Remove(comment);
-                // Không gọi SaveChangesAsync ở đây, để UnitOfWork xử lý
+                
             }
         }
 
