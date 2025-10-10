@@ -151,7 +151,7 @@ namespace teamseven.EzExam.API.Controllers
                 }
 
                 user.Balance ??= 0m;
-                user.Balance += amount;
+                user.Balance -= amount; // Trừ tiền khi thanh toán thành công
                 await _serviceProvider.UserService.UpdateUserAsync(user);
 
                 // Đánh dấu subscription COMPLETED

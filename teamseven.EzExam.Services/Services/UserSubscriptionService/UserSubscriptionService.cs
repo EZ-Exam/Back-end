@@ -36,7 +36,7 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
                 SubscriptionTypeId = request.SubscriptionTypeId,
                 StartDate = DateTime.UtcNow,
                 EndDate = request.EndDate ?? DateTime.UtcNow.AddMonths(1),
-                IsActive = false,
+                IsActive = true, // Kích hoạt subscription ngay khi tạo
                 PaymentStatus = "Pending",
                 Amount = request.Amount,
                 PaymentGatewayTransactionId = request.PaymentGatewayTransactionId,

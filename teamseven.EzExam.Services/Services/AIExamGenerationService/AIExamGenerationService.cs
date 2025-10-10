@@ -122,7 +122,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
         {
             try
             {
-                var histories = await _examHistoryService.GetExamHistoriesByUserIdAsync(userId.ToString());
+                var histories = await _examHistoryService.GetExamHistoriesByUserIdAsync(userId);
                 return histories
                     .OrderByDescending(h => h.SubmittedAt)
                     .Take(count)
@@ -324,7 +324,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                             {
                                 QuestionId = questionDetail.Id,
                                 Content = questionDetail.Content,
-                                DifficultyLevel = questionDetail.DifficultyLevel ?? "Unknown",
+                                DifficultyLevel = questionDetail.DifficultyLevelId.ToString(),
                                 QuestionType = questionDetail.Type ?? "MULTIPLE_CHOICE",
                                 Options = questionDetail.Options ?? new List<string>(),
                                 CorrectAnswer = questionDetail.CorrectAnswer ?? "",

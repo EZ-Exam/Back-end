@@ -41,6 +41,17 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     throw new KeyNotFoundException($"Subscription type with ID {request.SubscriptionTypeId} not found.");
                 }
 
+                // Kiểm tra số dư nếu là subscription trả phí (không phải FREE)
+                if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
+                {
+                    if (user.Balance == null || user.Balance < subscriptionType.SubscriptionPrice)
+                    {
+                        _logger.LogWarning("User {UserId} has insufficient balance. Required: {Required}, Available: {Available}", 
+                            userId, subscriptionType.SubscriptionPrice, user.Balance ?? 0);
+                        throw new InvalidOperationException($"Insufficient balance. Required: {subscriptionType.SubscriptionPrice}, Available: {user.Balance ?? 0}");
+                    }
+                }
+
                 // Check if user has active subscription - OPTIMIZED QUERY
                 var existingSubscription = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
                 
@@ -89,6 +100,14 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                 };
 
                 await _unitOfWork.UserSubscriptionRepository.AddAsync(userSubscription);
+                
+                // Trừ tiền nếu là subscription trả phí
+                if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
+                {
+                    user.Balance -= subscriptionType.SubscriptionPrice;
+                    await _unitOfWork.UserRepository.UpdateAsync(user);
+                }
+                
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
                 _logger.LogInformation("User {UserId} subscribed to subscription type {SubscriptionTypeId}", userId, request.SubscriptionTypeId);
