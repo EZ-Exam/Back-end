@@ -10,6 +10,7 @@ namespace teamseven.EzExam.Repository.Dtos
         public string Content { get; set; } = string.Empty;
         public int? ParentCommentId { get; set; }
         public int Rating { get; set; }
+        public bool IsDeleted { get; set; }
         public bool IsHelpful { get; set; }
         public bool IsApproved { get; set; }
         public DateTime CreatedAt { get; set; }
