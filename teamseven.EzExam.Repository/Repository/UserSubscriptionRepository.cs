@@ -107,7 +107,27 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<int> UpdateAsync(UserSubscription subscription)
         {
-            return await base.UpdateAsync(subscription);
+            var existingSubscription = await _context.UserSubscriptions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == subscription.Id);
+                
+            if (existingSubscription == null)
+            {
+                throw new KeyNotFoundException($"Subscription with ID {subscription.Id} not found.");
+            }
+
+            // Update fields
+            existingSubscription.IsActive = subscription.IsActive;
+            existingSubscription.UpdatedAt = subscription.UpdatedAt;
+            existingSubscription.PaymentStatus = subscription.PaymentStatus;
+            existingSubscription.Amount = subscription.Amount;
+            existingSubscription.EndDate = subscription.EndDate;
+
+            // Attach và mark as modified
+            _context.UserSubscriptions.Attach(existingSubscription);
+            _context.Entry(existingSubscription).State = EntityState.Modified;
+
+            return await _context.SaveChangesAsync();
         }
 
         public async Task<bool> DeleteAsync(UserSubscription subscription)
