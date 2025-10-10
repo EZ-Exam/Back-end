@@ -41,37 +41,47 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     throw new KeyNotFoundException($"Subscription type with ID {request.SubscriptionTypeId} not found.");
                 }
 
+                // Kiểm tra số dư nếu là subscription trả phí (không phải FREE)
+                if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
+                {
+                    if (user.Balance == null || user.Balance < subscriptionType.SubscriptionPrice)
+                    {
+                        _logger.LogWarning("User {UserId} has insufficient balance. Required: {Required}, Available: {Available}", 
+                            userId, subscriptionType.SubscriptionPrice, user.Balance ?? 0);
+                        
+                        return new SubscribeResponse
+                        {
+                            UserId = userId,
+                            UserEmail = user.Email,
+                            SubscriptionTypeId = subscriptionType.Id,
+                            SubscriptionCode = subscriptionType.SubscriptionCode,
+                            SubscriptionName = subscriptionType.SubscriptionName,
+                            SubscriptionPrice = subscriptionType.SubscriptionPrice ?? 0,
+                            PaymentStatus = "INSUFFICIENT_BALANCE",
+                            IsActive = false,
+                            Message = $"Insufficient balance. Required: {subscriptionType.SubscriptionPrice}, Available: {user.Balance ?? 0}"
+                        };
+                    }
+                }
+
                 // Check if user has active subscription - OPTIMIZED QUERY
                 var existingSubscription = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
                 
-                // If user has paid subscription (not FREE), don't allow new subscription
-                if (existingSubscription != null && existingSubscription.SubscriptionTypeId != 1) // 1 = FREE plan
+                // Nếu có subscription cũ, xóa tất cả subscription active để đè lên gói mới
+                if (existingSubscription != null)
                 {
-                    _logger.LogWarning("User {UserId} already has an active paid subscription: {SubscriptionTypeId}", userId, existingSubscription.SubscriptionTypeId);
-                    
-                    return new SubscribeResponse
+                    var allActiveSubscriptions = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionsAsync((long)userId);
+                    if (allActiveSubscriptions != null && allActiveSubscriptions.Any())
                     {
-                        UserId = userId,
-                        UserEmail = user.Email,
-                        SubscriptionTypeId = existingSubscription.SubscriptionTypeId,
-                        SubscriptionCode = "EXISTING_PAID",
-                        SubscriptionName = "Existing Paid Plan",
-                        SubscriptionPrice = existingSubscription.Amount ?? 0,
-                        StartDate = existingSubscription.StartDate,
-                        EndDate = existingSubscription.EndDate,
-                        PaymentStatus = existingSubscription.PaymentStatus,
-                        IsActive = existingSubscription.IsActive,
-                        Message = "User already has an active paid subscription. Cannot subscribe to another plan."
-                    };
-                }
-
-                // If user has FREE subscription and wants to upgrade to paid plan, deactivate current FREE subscription
-                if (existingSubscription != null && existingSubscription.SubscriptionTypeId == 1 && request.SubscriptionTypeId != 1)
-                {
-                    existingSubscription.IsActive = false;
-                    existingSubscription.UpdatedAt = DateTime.UtcNow;
-                    // Batch update with new subscription to reduce database calls
-                    _logger.LogInformation("Marked FREE subscription for deactivation for user {UserId} to upgrade to paid plan", userId);
+                        foreach (var oldSubscription in allActiveSubscriptions)
+                        {
+                            oldSubscription.IsActive = false;
+                            oldSubscription.UpdatedAt = DateTime.UtcNow;
+                            await _unitOfWork.UserSubscriptionRepository.UpdateAsync(oldSubscription);
+                        }
+                        _logger.LogInformation("Deactivated {Count} old subscriptions for user {UserId} to replace with new subscription", 
+                            allActiveSubscriptions.Count, userId);
+                    }
                 }
 
                 // Create new subscription
@@ -89,6 +99,14 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                 };
 
                 await _unitOfWork.UserSubscriptionRepository.AddAsync(userSubscription);
+                
+                // Trừ tiền nếu là subscription trả phí
+                if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
+                {
+                    user.Balance -= subscriptionType.SubscriptionPrice;
+                    await _unitOfWork.UserRepository.UpdateAsync(user);
+                }
+                
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
                 _logger.LogInformation("User {UserId} subscribed to subscription type {SubscriptionTypeId}", userId, request.SubscriptionTypeId);
@@ -203,20 +221,28 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
         {
             try
             {
-                var subscription = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
-                if (subscription == null)
+                // get all instead of oneone
+                var activeSubscriptions = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionsAsync((long)userId);
+                _logger.LogInformation("Found {Count} active subscriptions for user {UserId}", activeSubscriptions?.Count ?? 0, userId);
+                
+                if (activeSubscriptions == null || !activeSubscriptions.Any())
                 {
                     _logger.LogWarning("No active subscription found for user {UserId}", userId);
                     return false;
                 }
 
-                subscription.IsActive = false;
-                subscription.UpdatedAt = DateTime.UtcNow;
+                // Cancel tất cả subscription active
+                foreach (var subscription in activeSubscriptions)
+                {
+                    _logger.LogInformation("Cancelling subscription ID {SubscriptionId} for user {UserId}", subscription.Id, userId);
+                    subscription.IsActive = false;
+                    subscription.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
+                }
 
-                await _unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                _logger.LogInformation("Cancelled subscription for user {UserId}", userId);
+                _logger.LogInformation("Cancelled {Count} active subscriptions for user {UserId}", activeSubscriptions.Count, userId);
                 return true;
             }
             catch (Exception ex)

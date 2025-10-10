@@ -51,8 +51,8 @@ namespace teamseven.EzExam.API.Controllers
                     (int)request.Amount,
                     request.Description,
                     items,
-                    "https://fe-phy-gen.vercel.app/",
-                    "https://fe-phy-gen.vercel.app/"
+                    "http://localhost:5173/",
+                    "http://localhost:5173/"
                 );
 
                 // Create payment link
@@ -151,7 +151,7 @@ namespace teamseven.EzExam.API.Controllers
                 }
 
                 user.Balance ??= 0m;
-                user.Balance += amount;
+                user.Balance -= amount; // Trừ tiền khi thanh toán thành công
                 await _serviceProvider.UserService.UpdateUserAsync(user);
 
                 // Đánh dấu subscription COMPLETED

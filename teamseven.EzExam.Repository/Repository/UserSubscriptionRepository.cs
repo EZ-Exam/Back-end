@@ -50,9 +50,11 @@ namespace teamseven.EzExam.Repository.Repository
 
         public new async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
         {
-            // Use hardcoded data instead of database query
-            var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId).ToList();
-            return subscriptions.Any() ? subscriptions : null;
+            // Sử dụng database thực tế thay vì hardcoded data
+            return await _context.UserSubscriptions
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
         }
         public async Task<UserSubscription> GetByPaymentGatewayTransactionIdAsync(string transactionId)
         {
@@ -66,19 +68,20 @@ namespace teamseven.EzExam.Repository.Repository
         }
         public new async Task<List<UserSubscription>?> GetActiveSubscriptionsAsync(long userId)
         {
-            // Use hardcoded data instead of database query
-            var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId && x.IsActive).ToList();
-            return subscriptions.Any() ? subscriptions : null;
+            // Use data 
+            return await _context.UserSubscriptions
+                .Where(x => x.UserId == userId && x.IsActive == true)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
         }
 
         public new async Task<UserSubscription?> GetActiveSubscriptionByUserIdAsync(int userId)
         {
-            // Use hardcoded data instead of database query
-            if (_hardcodedUserSubscriptions.ContainsKey(userId))
-            {
-                return _hardcodedUserSubscriptions[userId];
-            }
-            return null;
+            // Sử dụng database thực tế thay vì hardcoded data
+            return await _context.UserSubscriptions
+                .Where(x => x.UserId == userId && x.IsActive == true)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<List<UserSubscription>?> GetSubscriptionsByUserIdAsync(int userId)
@@ -104,7 +107,27 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<int> UpdateAsync(UserSubscription subscription)
         {
-            return await base.UpdateAsync(subscription);
+            var existingSubscription = await _context.UserSubscriptions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == subscription.Id);
+                
+            if (existingSubscription == null)
+            {
+                throw new KeyNotFoundException($"Subscription with ID {subscription.Id} not found.");
+            }
+
+            // Update fields
+            existingSubscription.IsActive = subscription.IsActive;
+            existingSubscription.UpdatedAt = subscription.UpdatedAt;
+            existingSubscription.PaymentStatus = subscription.PaymentStatus;
+            existingSubscription.Amount = subscription.Amount;
+            existingSubscription.EndDate = subscription.EndDate;
+
+            // Attach và mark as modified
+            _context.UserSubscriptions.Attach(existingSubscription);
+            _context.Entry(existingSubscription).State = EntityState.Modified;
+
+            return await _context.SaveChangesAsync();
         }
 
         public async Task<bool> DeleteAsync(UserSubscription subscription)
