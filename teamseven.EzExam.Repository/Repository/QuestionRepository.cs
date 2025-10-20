@@ -71,6 +71,11 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<int> GetTotalQuestionsAsync()
+        {
+            return await _context.Questions.CountAsync();
+        }
+
         public async Task<(List<Question>, int)> GetPagedAsync(
     int pageNumber,
     int pageSize,

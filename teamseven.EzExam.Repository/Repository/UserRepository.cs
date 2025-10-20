@@ -48,6 +48,11 @@ namespace teamseven.EzExam.Repository.Repository
 
         }
 
+        public async Task<int> GetTotalUserAsync()
+        {
+            return await _context.Users.CountAsync();
+        }
+
         public async Task AddUserAsync(User user)
         {
             _context.Users.Add(user);
@@ -76,6 +81,25 @@ namespace teamseven.EzExam.Repository.Repository
             user.UpdatedAt = DateTime.UtcNow;
             _context.Users.Update(user);
             return user; 
+        }
+
+        public async Task<User> RestoreUserAsync(int id)
+        {
+            var user = await GetByIdAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with ID {id} not found.");
+            }
+
+            if (user.IsActive)
+            {
+                return null;
+            }
+
+            user.IsActive = true;
+            user.UpdatedAt = DateTime.UtcNow;
+            _context.Users.Update(user);
+            return user;
         }
 
         public async Task UpdateUserAsync(User user)

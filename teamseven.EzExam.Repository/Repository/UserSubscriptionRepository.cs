@@ -38,7 +38,7 @@ namespace teamseven.EzExam.Repository.Repository
             _context = context;
         }
 
-        public async Task<List<UserSubscription>?> GetAllSubscriptionsAsync()
+        public async Task<IEnumerable<UserSubscription>?> GetAllSubscriptionsAsync()
         {
             return await GetAllAsync();
         }

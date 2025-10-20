@@ -23,6 +23,25 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
             _logger = logger;
         }
 
+        public async Task<IEnumerable<UserSubscriptionDataResponse>> GetAllSubscriptionsAsync()
+        {
+            var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsAsync();
+            return subscriptions.Select(s => new UserSubscriptionDataResponse
+            {
+                Id = s.Id,
+                UserId = s.UserId,
+                SubscriptionTypeId = s.SubscriptionTypeId,
+                StartDate = s.StartDate,
+                EndDate = s.EndDate,
+                IsActive = s.IsActive,
+                PaymentStatus = s.PaymentStatus,
+                Amount = s.Amount,
+                PaymentGatewayTransactionId = s.PaymentGatewayTransactionId,
+                CreatedAt = s.CreatedAt,
+                UpdatedAt = s.UpdatedAt
+            });
+        }
+
         public async Task AddSubscriptionAsync(UserSubscriptionRequest request)
         {
             if (request == null)

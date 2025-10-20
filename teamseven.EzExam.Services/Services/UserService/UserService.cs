@@ -15,10 +15,12 @@ namespace teamseven.EzExam.Services.Services.UserService
     public interface IUserService
     {
         Task<IEnumerable<User>> GetUsersAsync();
+        Task<TotalUserResponse> GetTotalUserAsync();
         Task<UserResponse> GetUserByIdAsync(int id);
         Task<UserResponse> GetMyProfileAsync(int userId);
         Task UpdateUserAsync(UserResponse user);
         Task<UserResponse> SoftDeleteUserAsync(int id);
+        Task<UserResponse> RestoreUserAsync(int id);
         Task<bool> UpgradeToPremiumAsync(int userId);
         Task<(bool IsSuccess, string ResultOrError)> UpdateUserProfileAsync(int id, UpdateUserProfileRequest request);
         Task<string?> GetOnlyUserNameById(int id);
@@ -55,6 +57,20 @@ namespace teamseven.EzExam.Services.Services.UserService
             };
         }
 
+        public async Task<TotalUserResponse> GetTotalUserAsync()
+        {
+            int totalUsers = await _unitOfWork.UserRepository.GetTotalUserAsync();
+            int totalQuestions = await _unitOfWork.QuestionRepository.GetTotalQuestionsAsync();
+            int totalExams = await _unitOfWork.ExamRepository.GetTotalExamsAsync();
+
+            return new TotalUserResponse
+            {
+                TotalUsers = totalUsers,
+                TotalQuestions = totalQuestions,
+                TotalExams = totalExams
+            };
+        }
+
         public async Task<UserResponse> GetMyProfileAsync(int userId)
         {
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId)
@@ -84,6 +100,33 @@ namespace teamseven.EzExam.Services.Services.UserService
             {
                 throw new InvalidOperationException("User is already soft deleted or not found.");
             }
+
+            int affectedRows = await _unitOfWork.SaveChangesWithTransactionAsync();
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("Failed to update user status in database");
+            }
+
+            return new UserResponse
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                AvatarUrl = user.AvatarUrl ?? string.Empty,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                RoleId = user.RoleId,
+                IsActive = user.IsActive,
+                EmailVerifiedAt = user.EmailVerifiedAt,
+                LastLoginAt = user.LastLoginAt,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            };
+        }
+
+        public async Task<UserResponse> RestoreUserAsync(int id)
+        {
+            var user = await _unitOfWork.UserRepository.RestoreUserAsync(id)
+                ?? throw new InvalidOperationException("User is already active or not found.");
 
             int affectedRows = await _unitOfWork.SaveChangesWithTransactionAsync();
             if (affectedRows == 0)
