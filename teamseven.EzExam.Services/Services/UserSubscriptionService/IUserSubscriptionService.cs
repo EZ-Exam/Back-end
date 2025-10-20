@@ -7,6 +7,7 @@ namespace teamseven.EzExam.Services.Interfaces
 {
     public interface IUserSubscriptionService
     {
+        Task<IEnumerable<UserSubscriptionDataResponse>> GetAllSubscriptionsAsync();
         Task AddSubscriptionAsync(UserSubscriptionRequest request);
         Task UpdateAsync(UserSubscriptionResponse subscription);
         Task<UserSubscriptionResponse> GetSubscriptionByIdAsync(int id);

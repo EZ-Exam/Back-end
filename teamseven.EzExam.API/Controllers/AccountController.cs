@@ -41,6 +41,18 @@ namespace teamseven.EzExam.API.Controllers
 
         }
 
+        [HttpGet("total-count")]
+        [Authorize(Policy = "DeliveringStaffPolicy")]
+        [SwaggerOperation(Summary = "Get total user, question, exam count", Description = "Retrieves the total number of users. Requires DeliveringStaffPolicy authorization.")]
+        [SwaggerResponse(200, "Total user count retrieved successfully.", typeof(TotalUserResponse))]
+        [SwaggerResponse(401, "Unauthorized - Invalid token or insufficient permissions.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error.", typeof(object))]
+        public async Task<IActionResult> GetTotalCount()
+        {
+            var totalCount = await _serviceProvider.UserService.GetTotalUserAsync();
+            return Ok(totalCount);
+        }
+
         [HttpGet("my-profile")]
         [Authorize] // Require authentication
         [SwaggerOperation(Summary = "Get current user profile", Description = "Retrieves the profile information of the currently authenticated user.")]
@@ -133,7 +145,7 @@ namespace teamseven.EzExam.API.Controllers
             }
         }
         [HttpPut("{id}/soft-delete")]
-        [AllowAnonymous]
+        [Authorize(Policy = "DeliveringStaffPolicy")]
         [SwaggerOperation(Summary = "Soft delete user", Description = "Performs a soft delete on a user by setting their status to inactive.")]
         [SwaggerResponse(200, "User soft deleted successfully.", typeof(UserResponse))]
         [SwaggerResponse(400, "Invalid user ID.", typeof(object))]
@@ -165,6 +177,42 @@ namespace teamseven.EzExam.API.Controllers
                 return StatusCode(500, "An error occurred while soft deleting the user");
             }
         }
+
+        [HttpPut("{id}/restore-user")]
+        [Authorize(Policy = "DeliveringStaffPolicy")]
+        [SwaggerOperation(Summary = "Restore user", Description = "Restore user by setting their status to active.")]
+        [SwaggerResponse(200, "User restored successfully", typeof(UserResponse))]
+        [SwaggerResponse(404, "User not found", typeof(object))]
+        [SwaggerResponse(400, "Invalid user ID", typeof(object))]
+        [SwaggerResponse(409, "User already restored.", typeof(object))]
+        [SwaggerResponse(500, "Internal server error", typeof(object))]
+        public async Task<IActionResult> RestoreUser(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest("Invalid user ID");
+            }
+
+            try
+            {
+                var userDto = await _serviceProvider.UserService.RestoreUserAsync(id);
+                return Ok(userDto);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while restoring the user");
+            }
+        }
+
+
         [HttpPut("{id}/profile")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Update user profile", Description = "Updates the profile information of a specific user.")]
