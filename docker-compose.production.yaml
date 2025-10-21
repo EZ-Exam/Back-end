@@ -1,0 +1,28 @@
+#use secrets in folder /~secret in server
+version: '3.8'
+
+services:
+  csharp-teamseven-ezexam-api:
+    image: myusername/my-api:latest  
+    container_name: csharp-teamseven.ezexam.api
+    restart: unless-stopped
+    init: true
+    ports:
+      - "5000:8080"
+    networks:
+      - ezexam-net
+      
+    
+    volumes:
+      
+      - ~/secrets/appsettings.json:/app/appsettings.json:ro
+      
+      - ~/secrets/ezexam-80d4b-firebase-adminsdk-fbsvc-40c0038443.json:/app/ezexam-80d4b-firebase-adminsdk-fbsvc-40c0038443.json:ro
+
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+
+networks:
+  ezexam-net:
+    driver: bridge
+
