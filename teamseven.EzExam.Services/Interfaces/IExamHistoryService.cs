@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Interfaces
         // Read
         Task<ExamHistoryResponse?> GetExamHistoryByIdAsync(int id);
         Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(int userId);
+        Task<IEnumerable<ExamHistoryMinimalResponse>> GetExamHistoriesMinimalByUserIdAsync(int userId);
         Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(int examId);
         Task<IEnumerable<ExamHistoryResponse>> GetAllExamHistoriesAsync();
 

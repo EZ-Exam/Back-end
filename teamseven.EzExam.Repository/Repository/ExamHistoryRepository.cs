@@ -8,6 +8,7 @@ namespace teamseven.EzExam.Repository.Repository
     public interface IExamHistoryRepository : IGenericRepository<ExamHistory>
     {
         Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(int userId);
+        Task<IEnumerable<ExamHistory>> GetHistoryByUserIdWithExamAsync(int userId);
         Task<IEnumerable<ExamHistory>> GetHistoryByExamIdAsync(int examId);
         Task<ExamHistory?> GetLatestHistoryByUserAsync(int userId);
         Task<decimal> GetAverageScoreByUserAsync(int userId);
@@ -18,6 +19,21 @@ namespace teamseven.EzExam.Repository.Repository
     {
         public ExamHistoryRepository(teamsevenezexamdbContext context) : base(context)
         {
+        }
+
+        public async Task<IEnumerable<ExamHistory>> GetHistoryByUserIdWithExamAsync(int userId)
+        {
+            return await _context.ExamHistories
+                .Include(eh => eh.Exam)
+                    .ThenInclude(e => e.Subject)
+                .Include(eh => eh.Exam)
+                    .ThenInclude(e => e.Grade)
+                .Include(eh => eh.Exam)
+                    .ThenInclude(e => e.Lesson)
+                        .ThenInclude(l => l.Chapter)
+                .Where(h => h.UserId == userId)
+                .OrderByDescending(h => h.SubmittedAt)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<ExamHistory>> GetHistoryByUserIdAsync(int userId)
