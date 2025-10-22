@@ -72,11 +72,10 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
         {
             try
             {
-                var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
-                var userHistories = examHistories.Where(h => h.UserId == userId).OrderByDescending(h => h.SubmittedAt);
+                var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdAsync(userId);
                 
                 var responses = new List<ExamHistoryResponse>();
-                foreach (var history in userHistories)
+                foreach (var history in examHistories)
                 {
                     responses.Add(await MapToResponseAsync(history));
                 }

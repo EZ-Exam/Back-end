@@ -80,7 +80,7 @@ namespace teamseven.EzExam.Repository.Context
         {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 .Build();
 
             string connectionString = config.GetConnectionString(connectionStringName);
