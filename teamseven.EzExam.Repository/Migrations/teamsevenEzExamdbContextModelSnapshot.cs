@@ -556,37 +556,83 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("Action");
+                    b.Property<string>("Answers")
+                        .HasMaxLength(10000)
+                        .HasColumnType("text")
+                        .HasColumnName("Answers");
 
-                    b.Property<int>("ActionByUserId")
+                    b.Property<int>("CorrectCount")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("ActionByUserId");
+                        .HasDefaultValue(0)
+                        .HasColumnName("CorrectCount");
 
-                    b.Property<DateTime>("ActionDate")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ActionDate")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("Description");
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("ExamId")
                         .HasColumnType("integer")
                         .HasColumnName("ExamId");
 
+                    b.Property<int>("IncorrectCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("IncorrectCount");
+
+                    b.Property<decimal>("Score")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("Score");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("SubmittedAt")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("TimeTaken")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("TimeTaken");
+
+                    b.Property<int>("TotalQuestions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("TotalQuestions");
+
+                    b.Property<int>("UnansweredCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("UnansweredCount");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("UserId");
+
                     b.HasKey("Id")
                         .HasName("pk_exam_histories");
 
-                    b.HasIndex(new[] { "ActionByUserId" }, "ix_exam_histories_action_by_user_id");
+                    b.HasIndex(new[] { "ExamId" }, "IX_ExamHistories_ExamId");
 
-                    b.HasIndex(new[] { "ExamId" }, "ix_exam_histories_exam_id");
+                    b.HasIndex(new[] { "Score" }, "IX_ExamHistories_Score");
+
+                    b.HasIndex(new[] { "SubmittedAt" }, "IX_ExamHistories_SubmittedAt");
+
+                    b.HasIndex(new[] { "UserId" }, "IX_ExamHistories_UserId");
 
                     b.ToTable("exam_histories", "public");
                 });
@@ -1031,11 +1077,25 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasColumnName("CreatedAt")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("DeletedAt");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("DeletedBy");
+
                     b.Property<bool>("IsApproved")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("IsApproved");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
 
                     b.Property<bool>("IsHelpful")
                         .ValueGeneratedOnAdd()
@@ -1071,6 +1131,8 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasName("pk_question_comments");
 
                     b.HasIndex(new[] { "IsApproved" }, "ix_question_comments_is_approved");
+
+                    b.HasIndex(new[] { "IsDeleted" }, "ix_question_comments_is_deleted");
 
                     b.HasIndex(new[] { "ParentCommentId" }, "ix_question_comments_parent_comment_id");
 
@@ -2120,6 +2182,10 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("Name");
 
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SubjectId");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -2130,6 +2196,8 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasName("pk_textbooks");
 
                     b.HasIndex(new[] { "GradeId" }, "ix_textbooks_grade_id");
+
+                    b.HasIndex(new[] { "SubjectId" }, "ix_textbooks_subject_id");
 
                     b.HasIndex(new[] { "Name", "GradeId" }, "uq_textbooks_name_grade")
                         .IsUnique();
@@ -3236,23 +3304,21 @@ namespace teamseven.EzExam.Repository.Migrations
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.ExamHistory", b =>
                 {
-                    b.HasOne("teamseven.EzExam.Repository.Models.User", "ActionByUser")
-                        .WithMany("ExamHistories")
-                        .HasForeignKey("ActionByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_exam_histories_action_by_user_id");
-
                     b.HasOne("teamseven.EzExam.Repository.Models.Exam", "Exam")
-                        .WithMany("ExamHistories")
+                        .WithMany()
                         .HasForeignKey("ExamId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_exam_histories_exam_id");
+                        .IsRequired();
 
-                    b.Navigation("ActionByUser");
+                    b.HasOne("teamseven.EzExam.Repository.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Exam");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.ExamQuestion", b =>
@@ -3976,8 +4042,6 @@ namespace teamseven.EzExam.Repository.Migrations
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Exam", b =>
                 {
-                    b.Navigation("ExamHistories");
-
                     b.Navigation("ExamQuestions");
                 });
 
@@ -4075,8 +4139,6 @@ namespace teamseven.EzExam.Repository.Migrations
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.User", b =>
                 {
                     b.Navigation("Chatbots");
-
-                    b.Navigation("ExamHistories");
 
                     b.Navigation("Exams");
 

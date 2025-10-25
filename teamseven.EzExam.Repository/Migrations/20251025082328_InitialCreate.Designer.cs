@@ -12,8 +12,8 @@ using teamseven.EzExam.Repository.Context;
 namespace teamseven.EzExam.Repository.Migrations
 {
     [DbContext(typeof(teamsevenezexamdbContext))]
-    [Migration("20250928085744_AddGradeIdToExamQuestionLesson")]
-    partial class AddGradeIdToExamQuestionLesson
+    [Migration("20251025082328_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -531,11 +531,11 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     b.HasIndex("ChapterId");
 
-                    b.HasIndex("GradeId");
-
                     b.HasIndex(new[] { "CreatedByUserId" }, "ix_exams_created_by_user_id");
 
                     b.HasIndex(new[] { "ExamTypeId" }, "ix_exams_exam_type_id");
+
+                    b.HasIndex(new[] { "GradeId" }, "ix_exams_grade_id");
 
                     b.HasIndex(new[] { "IsActive" }, "ix_exams_is_active");
 
@@ -559,37 +559,83 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("Action");
+                    b.Property<string>("Answers")
+                        .HasMaxLength(10000)
+                        .HasColumnType("text")
+                        .HasColumnName("Answers");
 
-                    b.Property<int>("ActionByUserId")
+                    b.Property<int>("CorrectCount")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("ActionByUserId");
+                        .HasDefaultValue(0)
+                        .HasColumnName("CorrectCount");
 
-                    b.Property<DateTime>("ActionDate")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ActionDate")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("Description");
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("ExamId")
                         .HasColumnType("integer")
                         .HasColumnName("ExamId");
 
+                    b.Property<int>("IncorrectCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("IncorrectCount");
+
+                    b.Property<decimal>("Score")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("Score");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("SubmittedAt")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("TimeTaken")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("TimeTaken");
+
+                    b.Property<int>("TotalQuestions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("TotalQuestions");
+
+                    b.Property<int>("UnansweredCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("UnansweredCount");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("UserId");
+
                     b.HasKey("Id")
                         .HasName("pk_exam_histories");
 
-                    b.HasIndex(new[] { "ActionByUserId" }, "ix_exam_histories_action_by_user_id");
+                    b.HasIndex(new[] { "ExamId" }, "IX_ExamHistories_ExamId");
 
-                    b.HasIndex(new[] { "ExamId" }, "ix_exam_histories_exam_id");
+                    b.HasIndex(new[] { "Score" }, "IX_ExamHistories_Score");
+
+                    b.HasIndex(new[] { "SubmittedAt" }, "IX_ExamHistories_SubmittedAt");
+
+                    b.HasIndex(new[] { "UserId" }, "IX_ExamHistories_UserId");
 
                     b.ToTable("exam_histories", "public");
                 });
@@ -780,11 +826,90 @@ namespace teamseven.EzExam.Repository.Migrations
                     b.HasKey("Id")
                         .HasName("pk_lessons");
 
-                    b.HasIndex("GradeId");
-
                     b.HasIndex(new[] { "ChapterId" }, "ix_lessons_chapter_id");
 
+                    b.HasIndex(new[] { "GradeId" }, "ix_lessons_grade_id");
+
                     b.ToTable("lessons", "public");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.LessonEnhanced", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("Description");
+
+                    b.Property<string>("PdfUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("PdfUrl");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SubjectId");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("Title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lessons_enhanced");
+
+                    b.HasIndex(new[] { "SubjectId" }, "idx_le_subject");
+
+                    b.ToTable("lessons_enhanced", "public");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.LessonEnhancedQuestion", b =>
+                {
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer")
+                        .HasColumnName("LessonId");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("QuestionId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("Position");
+
+                    b.HasKey("LessonId", "QuestionId")
+                        .HasName("pk_lessons_enhanced_questions");
+
+                    b.HasIndex(new[] { "LessonId" }, "idx_leq_lesson");
+
+                    b.HasIndex(new[] { "QuestionId" }, "idx_leq_question");
+
+                    b.ToTable("lessons_enhanced_questions", "public");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Question", b =>
@@ -911,13 +1036,13 @@ namespace teamseven.EzExam.Repository.Migrations
                     b.HasKey("Id")
                         .HasName("pk_questions");
 
-                    b.HasIndex("GradeId");
-
                     b.HasIndex(new[] { "ChapterId" }, "ix_questions_chapter_id");
 
                     b.HasIndex(new[] { "CreatedByUserId" }, "ix_questions_created_by_user_id");
 
                     b.HasIndex(new[] { "DifficultyLevelId" }, "ix_questions_difficulty_level_id");
+
+                    b.HasIndex(new[] { "GradeId" }, "ix_questions_grade_id");
 
                     b.HasIndex(new[] { "IsActive" }, "ix_questions_is_active");
 
@@ -955,11 +1080,25 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasColumnName("CreatedAt")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("DeletedAt");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("DeletedBy");
+
                     b.Property<bool>("IsApproved")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("IsApproved");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
 
                     b.Property<bool>("IsHelpful")
                         .ValueGeneratedOnAdd()
@@ -995,6 +1134,8 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasName("pk_question_comments");
 
                     b.HasIndex(new[] { "IsApproved" }, "ix_question_comments_is_approved");
+
+                    b.HasIndex(new[] { "IsDeleted" }, "ix_question_comments_is_deleted");
 
                     b.HasIndex(new[] { "ParentCommentId" }, "ix_question_comments_parent_comment_id");
 
@@ -1267,6 +1408,419 @@ namespace teamseven.EzExam.Repository.Migrations
                     b.HasIndex(new[] { "SolutionId" }, "ix_solution_reports_solution_id");
 
                     b.ToTable("solution_reports", "public");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentPerformanceSummary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AverageScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("AverageScore");
+
+                    b.Property<decimal>("AverageTimePerQuestion")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("AverageTimePerQuestion");
+
+                    b.Property<decimal>("AverageTimePerQuiz")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("AverageTimePerQuiz");
+
+                    b.Property<decimal>("ConfidenceLevel")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ConfidenceLevel");
+
+                    b.Property<decimal>("ConsistencyScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ConsistencyScore");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("DifficultyProfile")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("DifficultyProfile");
+
+                    b.Property<int?>("GradeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("GradeId");
+
+                    b.Property<string>("ImprovementTrend")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("ImprovementTrend");
+
+                    b.Property<DateTime>("LastAnalysisDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LastAnalysisDate")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("LastQuizDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LastQuizDate");
+
+                    b.Property<decimal>("LearningVelocity")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("LearningVelocity");
+
+                    b.Property<decimal>("OverallAccuracy")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("OverallAccuracy");
+
+                    b.Property<decimal?>("PredictedNextScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("PredictedNextScore");
+
+                    b.Property<string>("RecentQuizIds")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("RecentQuizIds");
+
+                    b.Property<int>("RecentQuizzesCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5)
+                        .HasColumnName("RecentQuizzesCount");
+
+                    b.Property<string>("RecommendedDifficulty")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("RecommendedDifficulty");
+
+                    b.Property<string>("StrongTopics")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("StrongTopics");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SubjectId");
+
+                    b.Property<decimal>("TimeManagementScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("TimeManagementScore");
+
+                    b.Property<int>("TotalQuizzesCompleted")
+                        .HasColumnType("integer")
+                        .HasColumnName("TotalQuizzesCompleted");
+
+                    b.Property<decimal?>("TrendPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("TrendPercentage");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("UserId");
+
+                    b.Property<string>("WeakTopics")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("WeakTopics");
+
+                    b.HasKey("Id")
+                        .HasName("pk_student_performance_summaries");
+
+                    b.HasIndex("GradeId");
+
+                    b.HasIndex(new[] { "SubjectId" }, "ix_student_performance_summaries_subject_id");
+
+                    b.HasIndex(new[] { "UserId" }, "ix_student_performance_summaries_user_id");
+
+                    b.HasIndex(new[] { "UserId", "SubjectId" }, "ix_student_performance_summaries_user_subject")
+                        .IsUnique();
+
+                    b.ToTable("student_performance_summaries", "public");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentQuestionAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnswerChangeCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("AnswerChangeCount");
+
+                    b.Property<int?>("ChapterId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ChapterId");
+
+                    b.Property<int?>("ConfidenceLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("ConfidenceLevel");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("DifficultyLevel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("DifficultyLevel");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsCorrect");
+
+                    b.Property<bool>("IsMarkedForReview")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsMarkedForReview");
+
+                    b.Property<bool>("IsSkipped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsSkipped");
+
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("integer")
+                        .HasColumnName("LessonId");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("QuestionId");
+
+                    b.Property<int>("QuestionOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("QuestionOrder");
+
+                    b.Property<int?>("SelectedAnswerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SelectedAnswerId");
+
+                    b.Property<int>("StudentQuizHistoryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("StudentQuizHistoryId");
+
+                    b.Property<int>("TimeSpent")
+                        .HasColumnType("integer")
+                        .HasColumnName("TimeSpent");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("Topic");
+
+                    b.Property<string>("UserAnswer")
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)")
+                        .HasColumnName("UserAnswer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id")
+                        .HasName("pk_student_question_attempts");
+
+                    b.HasIndex("ChapterId");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("SelectedAnswerId");
+
+                    b.HasIndex(new[] { "QuestionId" }, "ix_student_question_attempts_question_id");
+
+                    b.HasIndex(new[] { "StudentQuizHistoryId" }, "ix_student_question_attempts_quiz_history_id");
+
+                    b.HasIndex(new[] { "UserId" }, "ix_student_question_attempts_user_id");
+
+                    b.HasIndex(new[] { "UserId", "QuestionId" }, "ix_student_question_attempts_user_question");
+
+                    b.ToTable("student_question_attempts", "public");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentQuizHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AverageTimePerQuestion")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("AverageTimePerQuestion");
+
+                    b.Property<string>("CheatingDetails")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("CheatingDetails");
+
+                    b.Property<decimal?>("ComparedToPrevious")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ComparedToPrevious");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CompletedAt");
+
+                    b.Property<int>("CorrectAnswers")
+                        .HasColumnType("integer")
+                        .HasColumnName("CorrectAnswers");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("DeviceInfo");
+
+                    b.Property<string>("DifficultyBreakdown")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("DifficultyBreakdown");
+
+                    b.Property<int>("ExamId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ExamId");
+
+                    b.Property<string>("ImprovementAreas")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("ImprovementAreas");
+
+                    b.Property<int>("IncorrectAnswers")
+                        .HasColumnType("integer")
+                        .HasColumnName("IncorrectAnswers");
+
+                    b.Property<bool>("IsCheatingDetected")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsCheatingDetected");
+
+                    b.Property<bool?>("IsPassed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsPassed");
+
+                    b.Property<decimal?>("PassingScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("PassingScore");
+
+                    b.Property<string>("PerformanceRating")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("PerformanceRating");
+
+                    b.Property<string>("QuizStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("QuizStatus");
+
+                    b.Property<string>("SessionData")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("SessionData");
+
+                    b.Property<int>("SkippedQuestions")
+                        .HasColumnType("integer")
+                        .HasColumnName("SkippedQuestions");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("StartedAt");
+
+                    b.Property<string>("StrongAreas")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("StrongAreas");
+
+                    b.Property<int?>("TestSessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("TestSessionId");
+
+                    b.Property<int>("TimeSpent")
+                        .HasColumnType("integer")
+                        .HasColumnName("TimeSpent");
+
+                    b.Property<string>("TopicPerformance")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("TopicPerformance");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("integer")
+                        .HasColumnName("TotalQuestions");
+
+                    b.Property<decimal>("TotalScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("TotalScore");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("UserId");
+
+                    b.Property<string>("WeakAreas")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("WeakAreas");
+
+                    b.HasKey("Id")
+                        .HasName("pk_student_quiz_histories");
+
+                    b.HasIndex(new[] { "ExamId" }, "ix_student_quiz_histories_exam_id");
+
+                    b.HasIndex(new[] { "TestSessionId" }, "ix_student_quiz_histories_test_session_id");
+
+                    b.HasIndex(new[] { "UserId", "CompletedAt" }, "ix_student_quiz_histories_user_completed");
+
+                    b.HasIndex(new[] { "UserId" }, "ix_student_quiz_histories_user_id");
+
+                    b.ToTable("student_quiz_histories", "public");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Subject", b =>
@@ -1631,6 +2185,10 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("Name");
 
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SubjectId");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -1641,6 +2199,8 @@ namespace teamseven.EzExam.Repository.Migrations
                         .HasName("pk_textbooks");
 
                     b.HasIndex(new[] { "GradeId" }, "ix_textbooks_grade_id");
+
+                    b.HasIndex(new[] { "SubjectId" }, "ix_textbooks_subject_id");
 
                     b.HasIndex(new[] { "Name", "GradeId" }, "uq_textbooks_name_grade")
                         .IsUnique();
@@ -2717,7 +3277,8 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     b.HasOne("teamseven.EzExam.Repository.Models.Grade", "Grade")
                         .WithMany()
-                        .HasForeignKey("GradeId");
+                        .HasForeignKey("GradeId")
+                        .HasConstraintName("fk_exams_grade_id");
 
                     b.HasOne("teamseven.EzExam.Repository.Models.Lesson", "Lesson")
                         .WithMany("Exams")
@@ -2746,23 +3307,21 @@ namespace teamseven.EzExam.Repository.Migrations
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.ExamHistory", b =>
                 {
-                    b.HasOne("teamseven.EzExam.Repository.Models.User", "ActionByUser")
-                        .WithMany("ExamHistories")
-                        .HasForeignKey("ActionByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_exam_histories_action_by_user_id");
-
                     b.HasOne("teamseven.EzExam.Repository.Models.Exam", "Exam")
-                        .WithMany("ExamHistories")
+                        .WithMany()
                         .HasForeignKey("ExamId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_exam_histories_exam_id");
+                        .IsRequired();
 
-                    b.Navigation("ActionByUser");
+                    b.HasOne("teamseven.EzExam.Repository.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Exam");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.ExamQuestion", b =>
@@ -2797,11 +3356,31 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     b.HasOne("teamseven.EzExam.Repository.Models.Grade", "Grade")
                         .WithMany()
-                        .HasForeignKey("GradeId");
+                        .HasForeignKey("GradeId")
+                        .HasConstraintName("fk_lessons_grade_id");
 
                     b.Navigation("Chapter");
 
                     b.Navigation("Grade");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.LessonEnhancedQuestion", b =>
+                {
+                    b.HasOne("teamseven.EzExam.Repository.Models.LessonEnhanced", "Lesson")
+                        .WithMany("LessonQuestions")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Question", b =>
@@ -2827,7 +3406,8 @@ namespace teamseven.EzExam.Repository.Migrations
 
                     b.HasOne("teamseven.EzExam.Repository.Models.Grade", "Grade")
                         .WithMany()
-                        .HasForeignKey("GradeId");
+                        .HasForeignKey("GradeId")
+                        .HasConstraintName("fk_questions_grade_id");
 
                     b.HasOne("teamseven.EzExam.Repository.Models.Lesson", "Lesson")
                         .WithMany("Questions")
@@ -2976,6 +3556,111 @@ namespace teamseven.EzExam.Repository.Migrations
                     b.Navigation("ReportedByUser");
 
                     b.Navigation("Solution");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentPerformanceSummary", b =>
+                {
+                    b.HasOne("teamseven.EzExam.Repository.Models.Grade", "Grade")
+                        .WithMany()
+                        .HasForeignKey("GradeId")
+                        .HasConstraintName("fk_student_performance_summaries_grade_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .HasConstraintName("fk_student_performance_summaries_subject_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_performance_summaries_user_id");
+
+                    b.Navigation("Grade");
+
+                    b.Navigation("Subject");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentQuestionAttempt", b =>
+                {
+                    b.HasOne("teamseven.EzExam.Repository.Models.Chapter", "Chapter")
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .HasConstraintName("fk_student_question_attempts_chapter_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .HasConstraintName("fk_student_question_attempts_lesson_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_question_attempts_question_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.Answer", "SelectedAnswer")
+                        .WithMany()
+                        .HasForeignKey("SelectedAnswerId")
+                        .HasConstraintName("fk_student_question_attempts_selected_answer_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.StudentQuizHistory", "StudentQuizHistory")
+                        .WithMany()
+                        .HasForeignKey("StudentQuizHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_question_attempts_quiz_history_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_question_attempts_user_id");
+
+                    b.Navigation("Chapter");
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("Question");
+
+                    b.Navigation("SelectedAnswer");
+
+                    b.Navigation("StudentQuizHistory");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.StudentQuizHistory", b =>
+                {
+                    b.HasOne("teamseven.EzExam.Repository.Models.Exam", "Exam")
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_quiz_histories_exam_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.TestSession", "TestSession")
+                        .WithMany()
+                        .HasForeignKey("TestSessionId")
+                        .HasConstraintName("fk_student_quiz_histories_test_session_id");
+
+                    b.HasOne("teamseven.EzExam.Repository.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_quiz_histories_user_id");
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("TestSession");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.SubscriptionType", b =>
@@ -3360,8 +4045,6 @@ namespace teamseven.EzExam.Repository.Migrations
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Exam", b =>
                 {
-                    b.Navigation("ExamHistories");
-
                     b.Navigation("ExamQuestions");
                 });
 
@@ -3382,6 +4065,11 @@ namespace teamseven.EzExam.Repository.Migrations
                     b.Navigation("Exams");
 
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("teamseven.EzExam.Repository.Models.LessonEnhanced", b =>
+                {
+                    b.Navigation("LessonQuestions");
                 });
 
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.Question", b =>
@@ -3454,8 +4142,6 @@ namespace teamseven.EzExam.Repository.Migrations
             modelBuilder.Entity("teamseven.EzExam.Repository.Models.User", b =>
                 {
                     b.Navigation("Chatbots");
-
-                    b.Navigation("ExamHistories");
 
                     b.Navigation("Exams");
 
