@@ -20,6 +20,9 @@ namespace teamseven.EzExam.Repository.Repository
         {
             return await _context.Questions
                 .Include(q => q.Lesson)
+                    .ThenInclude(l => l.Chapter)
+                .Include(q => q.Grade)
+                .Include(q => q.DifficultyLevel)
                 .ToListAsync();
         }
 

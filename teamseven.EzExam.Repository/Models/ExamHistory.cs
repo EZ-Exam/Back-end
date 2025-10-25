@@ -55,5 +55,12 @@ namespace teamseven.EzExam.Repository.Models
 
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        [ForeignKey("ExamId")]
+        public virtual Exam Exam { get; set; } = null!;
+
+        [ForeignKey("UserId")]
+        public virtual User User { get; set; } = null!;
     }
 }

@@ -88,6 +88,44 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             }
         }
 
+        public async Task<IEnumerable<ExamHistoryMinimalResponse>> GetExamHistoriesMinimalByUserIdAsync(int userId)
+        {
+            try
+            {
+                // Lấy exam histories với Exam information để có SubjectId, GradeId, LessonId
+                var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdWithExamAsync(userId);
+                
+                var responses = new List<ExamHistoryMinimalResponse>();
+                foreach (var history in examHistories)
+                {
+                    responses.Add(new ExamHistoryMinimalResponse
+                    {
+                        ExamId = history.ExamId,
+                        UserId = history.UserId,
+                        Score = history.Score,
+                        CorrectCount = history.CorrectCount,
+                        TotalQuestions = history.TotalQuestions,
+                        SubmittedAt = history.SubmittedAt,
+                        TimeTaken = history.TimeTaken,
+                        SubjectId = history.Exam?.SubjectId ?? 0,
+                        SubjectName = history.Exam?.Subject?.Name ?? "Unknown",
+                        GradeId = history.Exam?.GradeId,
+                        GradeName = history.Exam?.Grade?.Name ?? "Unknown",
+                        ChapterId = history.Exam?.Lesson?.ChapterId,
+                        ChapterName = history.Exam?.Lesson?.Chapter?.Name ?? "Unknown",
+                        LessonId = history.Exam?.LessonId,
+                        LessonName = history.Exam?.Lesson?.Name ?? "Unknown"
+                    });
+                }
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving minimal exam histories for user {userId}");
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(int examId)
         {
             try

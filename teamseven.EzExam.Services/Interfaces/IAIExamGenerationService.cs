@@ -7,8 +7,11 @@ namespace teamseven.EzExam.Services.Interfaces
     {
         Task<GenerateAIExamResponse> GenerateExamAsync(GenerateAIExamRequest request);
         Task<List<ExamHistoryResponse>> GetUserExamHistoryAsync(int userId, int count = 5);
+        Task<List<ExamHistoryMinimalResponse>> GetUserExamHistoryMinimalAsync(int userId, int count = 5);
         Task<List<QuestionSimpleResponse>> GetAvailableQuestionsAsync(GenerateAIExamRequest request);
+        Task<List<QuestionMinimalResponse>> GetAvailableQuestionsMinimalAsync(GenerateAIExamRequest request);
         Task<string> BuildPromptAsync(GenerateAIExamRequest request, List<ExamHistoryResponse> history, List<QuestionSimpleResponse> questions);
+        Task<string> BuildPromptMinimalAsync(GenerateAIExamRequest request, List<ExamHistoryMinimalResponse> history, List<QuestionMinimalResponse> questions);
         Task<GenerateAIExamResponse> ParseAIResponseAsync(string aiResponse, GenerateAIExamRequest request);
     }
 }

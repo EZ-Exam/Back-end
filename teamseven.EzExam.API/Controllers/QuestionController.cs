@@ -274,7 +274,7 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerOperation(Summary = "Get all questions (simple)", Description = "Retrieves all questions with basic information and optional search filters")]
         public async Task<IActionResult> GetAllQuestionsSimple(
             [FromQuery] string? content = null,
-            [FromQuery] string? difficultyLevel = null,
+            [FromQuery] int? difficultyLevelId = null,
             [FromQuery] int? gradeId = null,
             [FromQuery] int? lessonId = null)
         {
@@ -283,9 +283,9 @@ namespace teamseven.EzExam.API.Controllers
                 var searchRequest = new QuestionSearchRequest
                 {
                     Content = content,
-                    DifficultyLevel = difficultyLevel,
-                    GradeId = gradeId,
-                    LessonId = lessonId
+                    DifficultyLevelId = difficultyLevelId,
+                    GradeIds = gradeId.HasValue ? new List<int> { gradeId.Value } : null,
+                    LessonIds = lessonId.HasValue ? new List<int> { lessonId.Value } : null
                 };
 
                 var questions = await _serviceProvider.QuestionsService.GetAllQuestionsSimpleAsync(searchRequest);

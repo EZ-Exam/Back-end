@@ -28,6 +28,7 @@ namespace teamseven.EzExam.Services.Object.Responses
 
     public class AIExamMetadata
     {
+        public int ExamId { get; set; } // ID của exam đã lưu trong DB
         public int TotalQuestions { get; set; }
         public string Mode { get; set; } = string.Empty;
         public int UserId { get; set; }
@@ -35,6 +36,7 @@ namespace teamseven.EzExam.Services.Object.Responses
         public string AIModel { get; set; } = string.Empty;
         public int TokensUsed { get; set; }
         public double ProcessingTimeSeconds { get; set; }
+        public string Analysis { get; set; } = string.Empty; // Phân tích từ AI
         public Dictionary<string, int> DifficultyDistribution { get; set; } = new Dictionary<string, int>();
         public Dictionary<string, int> SubjectDistribution { get; set; } = new Dictionary<string, int>();
     }
