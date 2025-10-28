@@ -1,36 +1,83 @@
-## Running the Project with Docker
+# 🚀 EzExam – Back End API
 
-This project provides Docker support for the `teamseven.EzExam.API` ASP.NET Core service. Below are the steps and requirements to build and run the project using Docker Compose.
-
-### Project-Specific Requirements
-- **.NET Version:** The Dockerfile uses `.NET 7.0` (set via `ARG DOTNET_VERSION=7.0`).
-- **Dependencies:** All dependencies are restored and built as part of the Docker build process. No manual installation is required.
-
-### Environment Variables
-- **ASPNETCORE_URLS:** Set to `http://+:80` by default in the Dockerfile. You can override this at runtime if needed.
-- **.env File:** If you have a `.env` file in `./teamseven.EzExam.API/`, you can uncomment the `env_file` line in the compose file to load environment variables automatically.
-
-### Build and Run Instructions
-1. Ensure Docker and Docker Compose are installed on your system.
-2. From the project root, run:
-   ```sh
-   docker compose up --build
-   ```
-   This will build the API service and start the container.
-
-### Special Configuration
-- The Dockerfile creates a non-root user (`ezexamuser`) for improved security.
-- If your API requires a database or other external services, add them as additional services in the `docker-compose.yml` and configure `depends_on` as needed.
-- The build process uses cache mounts for NuGet and MSBuild to speed up builds.
-
-### Ports
-- **API Service (`csharp-teamseven.ezexam.api`):**
-  - Exposes port `80` (mapped to host port `80` by default).
-
-### Networks
-- All services are connected to the `ezexam-net` bridge network for inter-service communication.
+### 🌐 English | 🇻🇳 Tiếng Việt
 
 ---
-**Note:**
-- If you need to customize environment variables, add them to a `.env` file in the API directory and uncomment the `env_file` line in the compose file.
-- For additional services (e.g., databases), extend the `docker-compose.yml` accordingly.
+
+## 🧩 Overview | Tổng quan
+
+**EzExam** is an intelligent backend system designed for a modern online examination and learning platform.  
+It leverages the power of **AI**, **secure authentication**, and **cloud scalability** to provide a fast, secure, and extensible API infrastructure.
+
+**EzExam** là hệ thống backend thông minh dành cho nền tảng thi và học trực tuyến hiện đại.  
+Dự án tận dụng sức mạnh của **trí tuệ nhân tạo**, **xác thực bảo mật**, và **hạ tầng đám mây mở rộng** để cung cấp API nhanh, an toàn và dễ mở rộng.
+
+---
+
+## ⚙️ Core Technologies | Công nghệ cốt lõi
+
+| Category | Technology Stack | Mô tả |
+|-----------|------------------|--------|
+| **Framework** | **ASP.NET Core API** | Nền tảng chính xây dựng hệ thống RESTful API hiệu năng cao, mạnh mẽ và dễ mở rộng. |
+| **Database** | **Supabase (PostgreSQL)** | Cung cấp cơ sở dữ liệu quan hệ, realtime và authentication tích hợp. |
+| **Storage** | **Supabase Storage** | Lưu trữ file tài liệu, đề thi, hình ảnh người dùng, ... một cách an toàn và nhanh chóng. |
+| **Authentication** | **Google OAuth2, Firebase OAuth2** | Cho phép người dùng đăng nhập an toàn qua Google và Firebase. |
+| **Encryption & Security** | **JWT + Bcrypt** | Bảo mật API với token JWT và mã hóa mật khẩu bằng Bcrypt. |
+| **AI Integration** | **OpenAI API, Gemini API, DeepSeek R1 API** | Tích hợp đa mô hình AI cho gợi ý câu hỏi, chấm điểm tự động, tạo đề thi và phản hồi thông minh. |
+| **Payment Gateway** | **PayOS** | Hỗ trợ thanh toán trực tiếp qua VietQR và API PayOS. |
+| **Deployment** | **Docker + Linux Server + SSL + Domain** | Đóng gói, triển khai tự động, bảo mật với chứng chỉ SSL và domain riêng. |
+
+---
+
+## 🤖 AI-Powered Features | Tính năng hỗ trợ AI
+
+- 🧠 **Automatic Question Generation** – Sinh câu hỏi từ văn bản, tài liệu hoặc chủ đề học tập.  
+- 🧾 **AI Exam Creator** – AI tự động tạo đề thi dựa trên **lịch sử làm bài và mức độ năng lực của người học**.  
+- 💬 **Smart Chat Tutor** – Trợ lý học tập sử dụng OpenAI, Gemini và DeepSeek R1.  
+- 🧩 **Answer Explanation** – Giải thích đáp án tự động cho người học.  
+
+---
+
+## 🔐 Security Highlights | Bảo mật hệ thống
+
+- JWT-based Authentication for every request.  
+- Passwords hashed with **Bcrypt**.  
+- OAuth2 for external login (Google, Firebase).  
+- HTTPS enforced via SSL certificate.  
+- Dockerized environment for process isolation and scaling.
+
+Hệ thống bảo mật gồm:
+- Xác thực bằng JWT cho từng request.  
+- Mã hóa mật khẩu bằng Bcrypt.  
+- Đăng nhập an toàn qua Google và Firebase.  
+- Kết nối HTTPS bảo vệ dữ liệu bằng SSL.  
+- Môi trường Docker độc lập, an toàn và dễ mở rộng.
+
+
+---
+
+## ☁️ Deployment Architecture | Kiến trúc triển khai
+
+```plaintext
+Client (Mobile / Web)
+        │
+        ▼
+ASP.NET Core API ──► Supabase (DB + Storage)
+        │
+        ├──► OpenAI / Gemini / DeepSeek R1 (AI Services)
+        ├──► PayOS (Payment)
+        ├──► Firebase (Auth + Notification)
+        ▼
+Dockerized Linux Server (SSL + Domain)
+```
+
+## ✍️ Liên hệ | Contact
+
+**EzExam Development Team**  
+📧 **minhtrifptu@gmail.com** (Trí Nguyễn)  
+📧 **nguyenkien264038@gmail.com** (Kiên)  
+
+---
+
+Made with ❤️ by the UnitedTeam  
+© 2025 EzExam. All Rights Reserved.
