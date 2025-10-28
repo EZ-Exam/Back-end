@@ -34,6 +34,14 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Chapter>> GetBySemesterAndSubjectAsync(int semesterId, int subjectId)
+        {
+            return await _context.Chapters
+                .Where(c => c.SemesterId == semesterId && c.SubjectId == subjectId)
+                .ToListAsync();
+        }
+
+
         public async Task<int> AddAsync(Chapter chapter)
         {
             return await CreateAsync(chapter);

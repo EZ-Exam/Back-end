@@ -13,6 +13,8 @@ namespace teamseven.EzExam.Services.Services.ChapterService
         Task<IEnumerable<ChapterDataResponse>> GetAllChaptersAsync();
         Task<ChapterDataResponse> GetChapterByIdAsync(int id);
         Task<IEnumerable<ChapterDataResponse>> GetChaptersBySemesterIdAsync(int semesterId);
+        Task<IEnumerable<ChapterDataResponse>> GetChaptersBySemesterAndSubjectAsync(int semesterId, int subjectId);
+
         Task UpdateChapterAsync(ChapterDataRequest request);
         Task CreateChapterAsync(CreateChapterRequest request);
         Task DeleteChapterAsync(int id);
