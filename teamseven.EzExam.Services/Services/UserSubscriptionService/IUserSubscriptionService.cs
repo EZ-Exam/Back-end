@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Interfaces
         Task AddSubscriptionAsync(UserSubscriptionRequest request);
         Task UpdateAsync(UserSubscriptionResponse subscription);
         Task<UserSubscriptionResponse> GetSubscriptionByIdAsync(int id);
+        Task<IEnumerable<UserSubscriptionResponse>> GetAllByUserIdAsync(int userId);
         Task<UserSubscriptionResponse> GetByPaymentGatewayTransactionIdAsync(string transactionId);
     }
 }

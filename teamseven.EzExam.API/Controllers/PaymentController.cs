@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Net.payOS.Types;
 using Swashbuckle.AspNetCore.Annotations;
+using teamseven.EzExam.Services.Extensions;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Services.ServiceProvider;
 
@@ -90,6 +91,35 @@ namespace teamseven.EzExam.API.Controllers
             {
                 _logger.LogError(ex, "Error creating payment link for user {UserId}", request.UserId);
                 return StatusCode(500, new { Message = "An error occurred while creating the payment link." });
+            }
+        }
+        // GET: /api/payments/user-subscriptions/{userId}?onlyActive=true
+        [HttpGet("user-subscriptions/{userId:int}")]
+        [Authorize] // hoặc [AllowAnonymous] nếu bạn muốn public
+        [SwaggerOperation(
+            Summary = "Get user subscriptions",
+            Description = "Lấy danh sách subscription của user theo UserId. Thêm ?onlyActive=true để chỉ lấy gói còn hạn & đã thanh toán."
+        )]
+        [SwaggerResponse(200, "Danh sách subscription")]
+        [SwaggerResponse(404, "User không tồn tại hoặc không có subscription")]
+        public async Task<IActionResult> GetUserSubscriptionsByUserId(
+            [FromRoute] int userId)
+        {
+            try
+            {
+                var subs = await _serviceProvider.UserSubscriptionService.GetAllByUserIdAsync(userId);
+
+                // Trả mảng rỗng thay vì 404 để FE xử lý dễ hơn
+                return Ok(subs);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting subscriptions for user {UserId}", userId);
+                return StatusCode(500, new { message = "Internal server error" });
             }
         }
 
