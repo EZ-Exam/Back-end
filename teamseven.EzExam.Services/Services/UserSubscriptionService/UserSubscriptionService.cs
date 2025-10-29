@@ -130,5 +130,29 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
                 throw new ApplicationException("An error occurred while updating the subscription.", ex);
             }
         }
+        public async Task<IEnumerable<UserSubscriptionResponse>> GetAllByUserIdAsync(int userId)
+        {
+            var subscriptions = await _unitOfWork.UserSubscriptionRepository
+                .GetByUserIdAsync(userId);
+
+            if (subscriptions == null || !subscriptions.Any())
+                throw new NotFoundException($"No subscriptions found for user with ID {userId}.");
+
+            return subscriptions.Select(s => new UserSubscriptionResponse
+            {
+                Id = s.Id,
+                UserId = s.UserId,
+                SubscriptionTypeId = s.SubscriptionTypeId,
+                StartDate = s.StartDate,
+                EndDate = s.EndDate,
+                IsActive = s.IsActive,
+                PaymentStatus = s.PaymentStatus,
+                Amount = s.Amount,
+                PaymentGatewayTransactionId = s.PaymentGatewayTransactionId,
+                CreatedAt = s.CreatedAt,
+                UpdatedAt = s.UpdatedAt
+            }).ToList();
+        }
+
     }
 }

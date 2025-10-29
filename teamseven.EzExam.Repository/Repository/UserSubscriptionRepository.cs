@@ -48,11 +48,18 @@ namespace teamseven.EzExam.Repository.Repository
             return await base.GetByIdAsync(id);
         }
 
-        public new async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
+        //public new async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
+        //{
+        //    // Use hardcoded data instead of database query
+        //    var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId).ToList();
+        //    return subscriptions.Any() ? subscriptions : null;
+        //}
+        public async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
         {
-            // Use hardcoded data instead of database query
-            var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId).ToList();
-            return subscriptions.Any() ? subscriptions : null;
+            return await _context.UserSubscriptions
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
         }
         public async Task<UserSubscription> GetByPaymentGatewayTransactionIdAsync(string transactionId)
         {
