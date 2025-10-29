@@ -71,11 +71,16 @@ namespace teamseven.EzExam.Repository.Context
         public virtual DbSet<UserQuestionAttempt> UserQuestionAttempts { get; set; }
         public virtual DbSet<UserOverallCompetency> UserOverallCompetencies { get; set; }
 
+        // Student History and Performance Tracking
+        public virtual DbSet<StudentQuizHistory> StudentQuizHistories { get; set; }
+        public virtual DbSet<StudentPerformanceSummary> StudentPerformanceSummaries { get; set; }
+        public virtual DbSet<StudentQuestionAttempt> StudentQuestionAttempts { get; set; }
+
         public static string GetConnectionString(string connectionStringName)
         {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 .Build();
 
             string connectionString = config.GetConnectionString(connectionStringName);
@@ -209,9 +214,11 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasKey(e => e.Id).HasName("pk_lessons");
                 entity.ToTable("lessons", "public");
                 entity.HasIndex(e => e.ChapterId, "ix_lessons_chapter_id");
+                entity.HasIndex(e => e.GradeId, "ix_lessons_grade_id");
                 entity.Property(e => e.Id).HasColumnName("Id");
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.Document).HasColumnName("Document").HasMaxLength(5000);
                 entity.Property(e => e.DocumentType).HasColumnName("DocumentType").HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -219,6 +226,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Chapter).WithMany(p => p.Lessons)
                     .HasForeignKey(d => d.ChapterId)
                     .HasConstraintName("fk_lessons_chapter_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_lessons_grade_id");
             });
             // ===== Lessons Enhanced (bảng chính) =====
             modelBuilder.Entity<LessonEnhanced>(entity =>
@@ -323,6 +333,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.CreatedByUserId, "ix_questions_created_by_user_id");
                 entity.HasIndex(e => e.SubjectId, "ix_questions_subject_id");
                 entity.HasIndex(e => e.DifficultyLevelId, "ix_questions_difficulty_level_id");
+                entity.HasIndex(e => e.GradeId, "ix_questions_grade_id");
                 entity.HasIndex(e => e.ChapterId, "ix_questions_chapter_id");
                 entity.HasIndex(e => e.LessonId, "ix_questions_lesson_id");
                 entity.HasIndex(e => e.TextbookId, "ix_questions_textbook_id");
@@ -334,6 +345,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.QuestionSource).HasColumnName("QuestionSource").HasMaxLength(500);
                 entity.Property(e => e.DifficultyLevelId).HasColumnName("DifficultyLevelId");
                 entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
                 entity.Property(e => e.LessonId).HasColumnName("LessonId");
                 entity.Property(e => e.TextbookId).HasColumnName("TextbookId");
@@ -355,6 +367,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Subject).WithMany(p => p.Questions)
                     .HasForeignKey(d => d.SubjectId)
                     .HasConstraintName("fk_questions_subject_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_questions_grade_id");
                 entity.HasOne(d => d.DifficultyLevel).WithMany(p => p.Questions)
                     .HasForeignKey(d => d.DifficultyLevelId)
                     .HasConstraintName("fk_questions_difficulty_level_id");
@@ -403,6 +418,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.UserId, "ix_question_comments_user_id");
                 entity.HasIndex(e => e.ParentCommentId, "ix_question_comments_parent_comment_id");
                 entity.HasIndex(e => e.IsApproved, "ix_question_comments_is_approved");
+                entity.HasIndex(e => e.IsDeleted, "ix_question_comments_is_deleted");
                 entity.Property(e => e.Id).HasColumnName("Id");
                 entity.Property(e => e.QuestionId).HasColumnName("QuestionId");
                 entity.Property(e => e.UserId).HasColumnName("UserId");
@@ -411,6 +427,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Rating).HasColumnName("Rating").HasDefaultValue(0);
                 entity.Property(e => e.IsHelpful).HasColumnName("IsHelpful").HasDefaultValue(false);
                 entity.Property(e => e.IsApproved).HasColumnName("IsApproved").HasDefaultValue(true);
+                entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
+                entity.Property(e => e.DeletedAt).HasColumnName("DeletedAt");
+                entity.Property(e => e.DeletedBy).HasColumnName("DeletedBy");
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.HasOne(d => d.Question).WithMany(p => p.QuestionComments)
@@ -471,6 +490,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasIndex(e => e.CreatedByUserId, "ix_exams_created_by_user_id");
                 entity.HasIndex(e => e.ExamTypeId, "ix_exams_exam_type_id");
                 entity.HasIndex(e => e.SubjectId, "ix_exams_subject_id");
+                entity.HasIndex(e => e.GradeId, "ix_exams_grade_id");
                 entity.HasIndex(e => e.LessonId, "ix_exams_lesson_id");
                 entity.HasIndex(e => e.IsDeleted, "ix_exams_is_deleted");
                 entity.HasIndex(e => e.IsActive, "ix_exams_is_active");
@@ -479,6 +499,7 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Name).HasColumnName("Name").IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(1000);
                 entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
                 entity.Property(e => e.LessonId).HasColumnName("LessonId");
                 entity.Property(e => e.ExamTypeId).HasColumnName("ExamTypeId");
                 entity.Property(e => e.CreatedByUserId).HasColumnName("CreatedByUserId");
@@ -506,6 +527,9 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Subject).WithMany(p => p.Exams)
                     .HasForeignKey(d => d.SubjectId)
                     .HasConstraintName("fk_exams_subject_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_exams_grade_id");
                 entity.HasOne(d => d.Lesson).WithMany(p => p.Exams)
                     .HasForeignKey(d => d.LessonId)
                     .HasConstraintName("fk_exams_lesson_id");
@@ -539,20 +563,24 @@ namespace teamseven.EzExam.Repository.Context
             {
                 entity.HasKey(e => e.Id).HasName("pk_exam_histories");
                 entity.ToTable("exam_histories", "public");
-                entity.HasIndex(e => e.ExamId, "ix_exam_histories_exam_id");
-                entity.HasIndex(e => e.ActionByUserId, "ix_exam_histories_action_by_user_id");
+                entity.HasIndex(e => e.ExamId, "IX_ExamHistories_ExamId");
+                entity.HasIndex(e => e.UserId, "IX_ExamHistories_UserId");
+                entity.HasIndex(e => e.SubmittedAt, "IX_ExamHistories_SubmittedAt");
+                entity.HasIndex(e => e.Score, "IX_ExamHistories_Score");
+                
                 entity.Property(e => e.Id).HasColumnName("Id");
-                entity.Property(e => e.ExamId).HasColumnName("ExamId");
-                entity.Property(e => e.ActionByUserId).HasColumnName("ActionByUserId");
-                entity.Property(e => e.Action).HasColumnName("Action").IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Description).HasColumnName("Description").HasMaxLength(500);
-                entity.Property(e => e.ActionDate).HasColumnName("ActionDate").HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.HasOne(d => d.Exam).WithMany(p => p.ExamHistories)
-                    .HasForeignKey(d => d.ExamId)
-                    .HasConstraintName("fk_exam_histories_exam_id");
-                entity.HasOne(d => d.ActionByUser).WithMany(p => p.ExamHistories)
-                    .HasForeignKey(d => d.ActionByUserId)
-                    .HasConstraintName("fk_exam_histories_action_by_user_id");
+                entity.Property(e => e.ExamId).HasColumnName("ExamId").IsRequired();
+                entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired();
+                entity.Property(e => e.Score).HasColumnName("Score").HasColumnType("decimal(5,2)").HasDefaultValue(0);
+                entity.Property(e => e.CorrectCount).HasColumnName("CorrectCount").HasDefaultValue(0);
+                entity.Property(e => e.IncorrectCount).HasColumnName("IncorrectCount").HasDefaultValue(0);
+                entity.Property(e => e.UnansweredCount).HasColumnName("UnansweredCount").HasDefaultValue(0);
+                entity.Property(e => e.TotalQuestions).HasColumnName("TotalQuestions").HasDefaultValue(0);
+                entity.Property(e => e.SubmittedAt).HasColumnName("SubmittedAt").HasDefaultValueSql("NOW()");
+                entity.Property(e => e.TimeTaken).HasColumnName("TimeTaken").HasDefaultValue(0);
+                entity.Property(e => e.Answers).HasColumnName("Answers").HasColumnType("text");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("NOW()");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("NOW()");
             });
 
             // Solutions
@@ -1075,6 +1103,153 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Subject).WithMany()
                     .HasForeignKey(d => d.SubjectId)
                     .HasConstraintName("fk_user_overall_competencies_subject_id");
+            });
+
+            // Student Quiz History
+            modelBuilder.Entity<StudentQuizHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_student_quiz_histories");
+                entity.ToTable("student_quiz_histories", "public");
+                entity.HasIndex(e => e.UserId, "ix_student_quiz_histories_user_id");
+                entity.HasIndex(e => e.ExamId, "ix_student_quiz_histories_exam_id");
+                entity.HasIndex(e => e.TestSessionId, "ix_student_quiz_histories_test_session_id");
+                entity.HasIndex(e => new { e.UserId, e.CompletedAt }, "ix_student_quiz_histories_user_completed");
+                
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.UserId).HasColumnName("UserId");
+                entity.Property(e => e.ExamId).HasColumnName("ExamId");
+                entity.Property(e => e.TestSessionId).HasColumnName("TestSessionId");
+                entity.Property(e => e.StartedAt).HasColumnName("StartedAt");
+                entity.Property(e => e.CompletedAt).HasColumnName("CompletedAt");
+                entity.Property(e => e.TimeSpent).HasColumnName("TimeSpent");
+                entity.Property(e => e.TotalQuestions).HasColumnName("TotalQuestions");
+                entity.Property(e => e.CorrectAnswers).HasColumnName("CorrectAnswers");
+                entity.Property(e => e.IncorrectAnswers).HasColumnName("IncorrectAnswers");
+                entity.Property(e => e.SkippedQuestions).HasColumnName("SkippedQuestions");
+                entity.Property(e => e.TotalScore).HasColumnName("TotalScore").HasPrecision(5, 2);
+                entity.Property(e => e.PassingScore).HasColumnName("PassingScore").HasPrecision(5, 2);
+                entity.Property(e => e.IsPassed).HasColumnName("IsPassed");
+                entity.Property(e => e.QuizStatus).HasColumnName("QuizStatus").HasMaxLength(50);
+                entity.Property(e => e.AverageTimePerQuestion).HasColumnName("AverageTimePerQuestion").HasPrecision(8, 2);
+                entity.Property(e => e.DifficultyBreakdown).HasColumnName("DifficultyBreakdown").HasMaxLength(1000);
+                entity.Property(e => e.TopicPerformance).HasColumnName("TopicPerformance").HasMaxLength(2000);
+                entity.Property(e => e.WeakAreas).HasColumnName("WeakAreas").HasMaxLength(1000);
+                entity.Property(e => e.StrongAreas).HasColumnName("StrongAreas").HasMaxLength(1000);
+                entity.Property(e => e.ImprovementAreas).HasColumnName("ImprovementAreas").HasMaxLength(1000);
+                entity.Property(e => e.PerformanceRating).HasColumnName("PerformanceRating").HasMaxLength(20);
+                entity.Property(e => e.ComparedToPrevious).HasColumnName("ComparedToPrevious").HasPrecision(5, 2);
+                entity.Property(e => e.DeviceInfo).HasColumnName("DeviceInfo").HasMaxLength(500);
+                entity.Property(e => e.SessionData).HasColumnName("SessionData").HasMaxLength(10000);
+                entity.Property(e => e.IsCheatingDetected).HasColumnName("IsCheatingDetected").HasDefaultValue(false);
+                entity.Property(e => e.CheatingDetails).HasColumnName("CheatingDetails").HasMaxLength(1000);
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(d => d.User).WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("fk_student_quiz_histories_user_id");
+                entity.HasOne(d => d.Exam).WithMany()
+                    .HasForeignKey(d => d.ExamId)
+                    .HasConstraintName("fk_student_quiz_histories_exam_id");
+                entity.HasOne(d => d.TestSession).WithMany()
+                    .HasForeignKey(d => d.TestSessionId)
+                    .HasConstraintName("fk_student_quiz_histories_test_session_id");
+            });
+
+            // Student Performance Summary
+            modelBuilder.Entity<StudentPerformanceSummary>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_student_performance_summaries");
+                entity.ToTable("student_performance_summaries", "public");
+                entity.HasIndex(e => e.UserId, "ix_student_performance_summaries_user_id");
+                entity.HasIndex(e => e.SubjectId, "ix_student_performance_summaries_subject_id");
+                entity.HasIndex(e => new { e.UserId, e.SubjectId }, "ix_student_performance_summaries_user_subject").IsUnique();
+                
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.UserId).HasColumnName("UserId");
+                entity.Property(e => e.SubjectId).HasColumnName("SubjectId");
+                entity.Property(e => e.GradeId).HasColumnName("GradeId");
+                entity.Property(e => e.TotalQuizzesCompleted).HasColumnName("TotalQuizzesCompleted");
+                entity.Property(e => e.RecentQuizzesCount).HasColumnName("RecentQuizzesCount").HasDefaultValue(5);
+                entity.Property(e => e.RecentQuizIds).HasColumnName("RecentQuizIds").HasMaxLength(200);
+                entity.Property(e => e.AverageScore).HasColumnName("AverageScore").HasPrecision(5, 2);
+                entity.Property(e => e.AverageTimePerQuiz).HasColumnName("AverageTimePerQuiz").HasPrecision(8, 2);
+                entity.Property(e => e.AverageTimePerQuestion).HasColumnName("AverageTimePerQuestion").HasPrecision(8, 2);
+                entity.Property(e => e.OverallAccuracy).HasColumnName("OverallAccuracy").HasPrecision(5, 2);
+                entity.Property(e => e.ImprovementTrend).HasColumnName("ImprovementTrend").HasMaxLength(20);
+                entity.Property(e => e.TrendPercentage).HasColumnName("TrendPercentage").HasPrecision(5, 2);
+                entity.Property(e => e.StrongTopics).HasColumnName("StrongTopics").HasMaxLength(1000);
+                entity.Property(e => e.WeakTopics).HasColumnName("WeakTopics").HasMaxLength(1000);
+                entity.Property(e => e.DifficultyProfile).HasColumnName("DifficultyProfile").HasMaxLength(500);
+                entity.Property(e => e.RecommendedDifficulty).HasColumnName("RecommendedDifficulty").HasMaxLength(20);
+                entity.Property(e => e.LearningVelocity).HasColumnName("LearningVelocity").HasPrecision(5, 2);
+                entity.Property(e => e.ConsistencyScore).HasColumnName("ConsistencyScore").HasPrecision(5, 2);
+                entity.Property(e => e.PredictedNextScore).HasColumnName("PredictedNextScore").HasPrecision(5, 2);
+                entity.Property(e => e.ConfidenceLevel).HasColumnName("ConfidenceLevel").HasPrecision(5, 2);
+                entity.Property(e => e.TimeManagementScore).HasColumnName("TimeManagementScore").HasPrecision(5, 2);
+                entity.Property(e => e.LastQuizDate).HasColumnName("LastQuizDate");
+                entity.Property(e => e.LastAnalysisDate).HasColumnName("LastAnalysisDate").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(d => d.User).WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("fk_student_performance_summaries_user_id");
+                entity.HasOne(d => d.Subject).WithMany()
+                    .HasForeignKey(d => d.SubjectId)
+                    .HasConstraintName("fk_student_performance_summaries_subject_id");
+                entity.HasOne(d => d.Grade).WithMany()
+                    .HasForeignKey(d => d.GradeId)
+                    .HasConstraintName("fk_student_performance_summaries_grade_id");
+            });
+
+            // Student Question Attempts
+            modelBuilder.Entity<StudentQuestionAttempt>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("pk_student_question_attempts");
+                entity.ToTable("student_question_attempts", "public");
+                entity.HasIndex(e => e.StudentQuizHistoryId, "ix_student_question_attempts_quiz_history_id");
+                entity.HasIndex(e => e.QuestionId, "ix_student_question_attempts_question_id");
+                entity.HasIndex(e => e.UserId, "ix_student_question_attempts_user_id");
+                entity.HasIndex(e => new { e.UserId, e.QuestionId }, "ix_student_question_attempts_user_question");
+                
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.StudentQuizHistoryId).HasColumnName("StudentQuizHistoryId");
+                entity.Property(e => e.QuestionId).HasColumnName("QuestionId");
+                entity.Property(e => e.UserId).HasColumnName("UserId");
+                entity.Property(e => e.SelectedAnswerId).HasColumnName("SelectedAnswerId");
+                entity.Property(e => e.UserAnswer).HasColumnName("UserAnswer").HasMaxLength(5000);
+                entity.Property(e => e.IsCorrect).HasColumnName("IsCorrect");
+                entity.Property(e => e.DifficultyLevel).HasColumnName("DifficultyLevel").HasMaxLength(20);
+                entity.Property(e => e.TimeSpent).HasColumnName("TimeSpent");
+                entity.Property(e => e.Topic).HasColumnName("Topic").HasMaxLength(200);
+                entity.Property(e => e.ChapterId).HasColumnName("ChapterId");
+                entity.Property(e => e.LessonId).HasColumnName("LessonId");
+                entity.Property(e => e.QuestionOrder).HasColumnName("QuestionOrder");
+                entity.Property(e => e.ConfidenceLevel).HasColumnName("ConfidenceLevel");
+                entity.Property(e => e.IsMarkedForReview).HasColumnName("IsMarkedForReview").HasDefaultValue(false);
+                entity.Property(e => e.IsSkipped).HasColumnName("IsSkipped").HasDefaultValue(false);
+                entity.Property(e => e.AnswerChangeCount).HasColumnName("AnswerChangeCount").HasDefaultValue(0);
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(d => d.StudentQuizHistory).WithMany()
+                    .HasForeignKey(d => d.StudentQuizHistoryId)
+                    .HasConstraintName("fk_student_question_attempts_quiz_history_id");
+                entity.HasOne(d => d.Question).WithMany()
+                    .HasForeignKey(d => d.QuestionId)
+                    .HasConstraintName("fk_student_question_attempts_question_id");
+                entity.HasOne(d => d.User).WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("fk_student_question_attempts_user_id");
+                entity.HasOne(d => d.SelectedAnswer).WithMany()
+                    .HasForeignKey(d => d.SelectedAnswerId)
+                    .HasConstraintName("fk_student_question_attempts_selected_answer_id");
+                entity.HasOne(d => d.Chapter).WithMany()
+                    .HasForeignKey(d => d.ChapterId)
+                    .HasConstraintName("fk_student_question_attempts_chapter_id");
+                entity.HasOne(d => d.Lesson).WithMany()
+                    .HasForeignKey(d => d.LessonId)
+                    .HasConstraintName("fk_student_question_attempts_lesson_id");
             });
         }
 

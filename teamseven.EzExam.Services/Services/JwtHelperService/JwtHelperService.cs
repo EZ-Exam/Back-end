@@ -94,6 +94,174 @@ namespace teamseven.EzExam.Services.Services.JwtHelperService
             }
         }
 
+        public string? GetCurrentUserBalanceFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var balanceClaim = principal.FindFirst("balance")?.Value;
+                if (string.IsNullOrEmpty(balanceClaim))
+                {
+                    _logger.LogWarning("Balance claim not found in token.");
+                    return null;
+                }
+
+                return balanceClaim;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting balance from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public string? GetCurrentUserSubscriptionTypeFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var subscriptionTypeClaim = principal.FindFirst("subscriptionTypeId")?.Value;
+                if (string.IsNullOrEmpty(subscriptionTypeClaim))
+                {
+                    _logger.LogWarning("Subscription Type ID claim not found in token.");
+                    return null;
+                }
+
+                return subscriptionTypeClaim;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting subscription type from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public string? GetCurrentUserSubscriptionCodeFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var subscriptionCodeClaim = principal.FindFirst("subscriptionCode")?.Value;
+                if (string.IsNullOrEmpty(subscriptionCodeClaim))
+                {
+                    _logger.LogWarning("Subscription Code claim not found in token.");
+                    return null;
+                }
+
+                return subscriptionCodeClaim;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting subscription code from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public string? GetCurrentUserSubscriptionNameFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var subscriptionNameClaim = principal.FindFirst("subscriptionName")?.Value;
+                if (string.IsNullOrEmpty(subscriptionNameClaim))
+                {
+                    _logger.LogWarning("Subscription Name claim not found in token.");
+                    return null;
+                }
+
+                return subscriptionNameClaim;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting subscription name from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public string? GetCurrentUserSubscriptionEndDateFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var subscriptionEndDateClaim = principal.FindFirst("subscriptionEndDate")?.Value;
+                if (string.IsNullOrEmpty(subscriptionEndDateClaim))
+                {
+                    _logger.LogWarning("Subscription End Date claim not found in token.");
+                    return null;
+                }
+
+                return subscriptionEndDateClaim;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting subscription end date from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public bool? GetCurrentUserSubscriptionIsActiveFromToken(string authHeader)
+        {
+            try
+            {
+                var token = ExtractTokenFromHeader(authHeader);
+                if (string.IsNullOrEmpty(token))
+                    return null;
+
+                var principal = ValidateToken(token);
+                if (principal == null)
+                    return null;
+
+                var isActiveClaim = principal.FindFirst("subscriptionIsActive")?.Value;
+                if (string.IsNullOrEmpty(isActiveClaim) || !bool.TryParse(isActiveClaim, out bool isActive))
+                {
+                    _logger.LogWarning("Subscription IsActive claim not found or invalid in token.");
+                    return null;
+                }
+
+                return isActive;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting subscription IsActive from token: {Message}", ex.Message);
+                return null;
+            }
+        }
+
         public bool IsTokenValid(string token)
         {
             try

@@ -16,9 +16,11 @@ public class QuestionDataResponse
 
     public string QuestionSource { get; set; }
 
-    public string DifficultyLevel { get; set; }
+	public int DifficultyLevelId { get; set; }
 
-    public int? LessonId { get; set; }
+	public int? LessonId { get; set; }
+
+    public int? GradeId { get; set; }
 
     public int? ChapterId { get; set; }
     public int? TextbookId { get; set; }

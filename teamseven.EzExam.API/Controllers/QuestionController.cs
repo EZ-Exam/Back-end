@@ -31,7 +31,7 @@ namespace teamseven.EzExam.API.Controllers
         [AllowAnonymous]
         [SwaggerOperation(
              Summary = "Get questions",
-             Description = "Retrieves a list of questions with optional search, sort, filter, and pagination. Use 'search' to filter by content or source (accent-insensitive, e.g., 'lam' matches 'l�m'), 'lessonId' to filter by lesson, 'difficultyLevel' to filter by difficulty, 'chapterId' to filter by chapter, 'isSort' (0 = no sort, 1 = sort), 'sort' (e.g., 'content:asc', 'createdAt:desc'), and 'pageNumber'/'pageSize' for pagination. If 'isSort' is 0 or not provided, questions are sorted by 'Id' (ascending). If 'isSort' is 1, 'sort' parameter is used, defaulting to 'createdAt:desc' if 'sort' is invalid or not provided."
+             Description = "Retrieves a list of questions with optional search, sort, filter, and pagination. Use 'search' to filter by content or source (accent-insensitive, e.g., 'lam' matches 'l�m'), 'lessonId' to filter by lesson, 'difficultyLevel' to filter by difficulty, 'chapterId' to filter by chapter, 'gradeId' to filter by grade, 'isSort' (0 = no sort, 1 = sort), 'sort' (e.g., 'content:asc', 'createdAt:desc'), and 'pageNumber'/'pageSize' for pagination. If 'isSort' is 0 or not provided, questions are sorted by 'Id' (ascending). If 'isSort' is 1, 'sort' parameter is used, defaulting to 'createdAt:desc' if 'sort' is invalid or not provided."
          )]
         [SwaggerResponse(200, "Questions retrieved successfully.", typeof(PagedResponse<QuestionDataResponse>))]
         [SwaggerResponse(400, "Invalid parameters.", typeof(ProblemDetails))]
@@ -42,6 +42,7 @@ namespace teamseven.EzExam.API.Controllers
              [FromQuery] int? lessonId = null,
              [FromQuery] string? difficultyLevel = null,
              [FromQuery] int? chapterId = null,
+             [FromQuery] int? gradeId = null,
              [FromQuery] int? pageNumber = null,
              [FromQuery] int? pageSize = null,
              [FromQuery] int isSort = 0,
@@ -96,6 +97,29 @@ namespace teamseven.EzExam.API.Controllers
             return parts.Length == 2 && validFields.Contains(parts[0]) && validOrders.Contains(parts[1]);
         }
 
+        [HttpGet("by-subject/{subjectId}")]
+        [AllowAnonymous]
+        [SwaggerOperation(
+            Summary = "Get questions by subject ID",
+            Description = "Retrieves all questions belonging to a specific subject ID."
+        )]
+        [SwaggerResponse(200, "Questions retrieved successfully.", typeof(List<QuestionDataResponse>))]
+        [SwaggerResponse(404, "Subject not found.", typeof(ProblemDetails))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
+        public async Task<IActionResult> GetBySubjectId(int subjectId)
+        {
+            try
+            {
+                var result = await _serviceProvider.QuestionsService.GetQuestionBySubjectIdAsync(subjectId);
+                _logger.LogInformation("Retrieved {Count} questions for SubjectId {SubjectId}.", result.Count, subjectId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving questions for the subject." });
+            }
+        }
 
 
         [HttpPost]
@@ -124,7 +148,7 @@ namespace teamseven.EzExam.API.Controllers
                         id = questionResponse.Id,
                         content = questionResponse.Content,
                         questionSource = questionResponse.QuestionSource,
-                        difficultyLevel = questionResponse.DifficultyLevel,
+                        difficultyLevel = questionResponse.DifficultyLevelId,
                         lessonId = questionResponse.LessonId,
                         textbookId = questionResponse.TextbookId,
                         createdByUserId = questionResponse.CreatedByUserId,
@@ -242,6 +266,42 @@ namespace teamseven.EzExam.API.Controllers
             {
                 _logger.LogError(ex, "Error retrieving question with ID {QuestionId}: {Message}", id, ex.Message);
                 return StatusCode(500, new { Message = "An error occurred while retrieving question." });
+            }
+        }
+
+        [HttpGet("simple")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get all questions (simple)", Description = "Retrieves all questions with basic information and optional search filters")]
+        public async Task<IActionResult> GetAllQuestionsSimple(
+            [FromQuery] string? content = null,
+            [FromQuery] int? difficultyLevelId = null,
+            [FromQuery] int? gradeId = null,
+            [FromQuery] int? lessonId = null)
+        {
+            try
+            {
+                var searchRequest = new QuestionSearchRequest
+                {
+                    Content = content,
+                    DifficultyLevelId = difficultyLevelId,
+                    GradeIds = gradeId.HasValue ? new List<int> { gradeId.Value } : null,
+                    LessonIds = lessonId.HasValue ? new List<int> { lessonId.Value } : null
+                };
+
+                var questions = await _serviceProvider.QuestionsService.GetAllQuestionsSimpleAsync(searchRequest);
+                
+                return Ok(new
+                {
+                    Success = true,
+                    Data = questions,
+                    Total = questions.Count,
+                    Message = "Questions retrieved successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving simple questions: {Message}", ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving questions." });
             }
         }
     }

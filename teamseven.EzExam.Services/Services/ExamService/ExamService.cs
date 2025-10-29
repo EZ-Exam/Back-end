@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
+using teamseven.EzExam.Repository.Dtos;
 
 namespace teamseven.EzExam.Services.Services.ExamService
 {
@@ -26,9 +28,11 @@ namespace teamseven.EzExam.Services.Services.ExamService
             var exam = new Exam
             {
                 Name = examRequest.Name,
+                Description = examRequest.Description,
                 SubjectId = examRequest.SubjectId,
                 LessonId = examRequest.LessonId,
                 ExamTypeId = examRequest.ExamTypeId,
+                Duration = examRequest.Duration,
                 CreatedByUserId = examRequest.CreatedByUserId,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
@@ -179,6 +183,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 Id = e.Id,
                 Name = e.Name,
                 LessonId = e.LessonId,
+                SubjectId = e.SubjectId,
                 ExamTypeId = e.ExamTypeId,
                 CreatedByUserId = e.CreatedByUserId,
                 IsDeleted = e.IsDeleted,
@@ -187,8 +192,9 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 CreatedByUserName = e.CreatedByUser?.Email,
                 ExamTypeName = e.ExamType?.Name,
                 LessonName = e.Lesson?.Name,
+                Duration = e.Duration,
                 QuestionCount = e.ExamQuestions?.Count ?? 0,
-                HistoryCount = e.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             }).ToList();
         }
 
@@ -211,8 +217,9 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 CreatedByUserName = exam.CreatedByUser?.Email,
                 ExamTypeName = exam.ExamType?.Name,
                 LessonName = exam.Lesson?.Name,
+                Duration = exam.Duration,
                 QuestionCount = exam.ExamQuestions?.Count ?? 0,
-                HistoryCount = exam.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             };
         }
 
@@ -253,6 +260,58 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 QuestionContent = eq.Question?.Content
             }).ToList();
         }
+
+        public async Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId)
+        {
+            var examQuestions = await _unitOfWork.ExamQuestionRepository.GetByExamIdAsync(examId);
+            if (!examQuestions.Any())
+                return new List<ExamQuestionDetailResponse>();
+
+            var questionResponses = new List<ExamQuestionDetailResponse>();
+
+            foreach (var examQuestion in examQuestions.OrderBy(eq => eq.Order))
+            {
+                var question = examQuestion.Question;
+                if (question == null) continue;
+
+                // Get answers for options fallback if Options field is empty
+                var options = new List<string>();
+                if (!string.IsNullOrEmpty(question.Options))
+                {
+                    try
+                    {
+                        options = JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        // Fallback to answers if JSON parsing fails
+                        var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                        options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                    }
+                }
+                else
+                {
+                    // Fallback to answers if Options is empty
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(question.Id);
+                    options = answers?.Select(a => a.Content).ToList() ?? new List<string>();
+                }
+
+                var questionResponse = new ExamQuestionDetailResponse
+                {
+                    Id = question.Id,
+                    ContentQuestion = question.Content ?? string.Empty,
+                    CorrectAnswer = question.CorrectAnswer,
+                    Options = options,
+                    Explanation = question.Explanation,
+                    ImageUrl = question.Image,
+                    Formula = question.Formula
+                };
+
+                questionResponses.Add(questionResponse);
+            }
+
+            return questionResponses;
+        }
         public async Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId)
         {
             var exams = await _unitOfWork.ExamRepository.GetByCreatorAsync(userId);
@@ -270,7 +329,7 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 ExamTypeName = e.ExamType?.Name,
                 LessonName = e.Lesson?.Name,
                 QuestionCount = e.ExamQuestions?.Count ?? 0,
-                HistoryCount = e.ExamHistories?.Count ?? 0
+                HistoryCount = 0 
             }).ToList();
         }
 
@@ -321,7 +380,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
                 ExamTypeId = x.ExamTypeId,
                 CreatedByUserId = x.CreatedByUserId,
                 TimeLimit = x.TimeLimit,
-                TotalQuestions = x.TotalQuestions,
+                Duration = x.Duration,
+				TotalQuestions = x.TotalQuestions,
                 IsActive = x.IsActive,
                 IsPublic = x.IsPublic,
                 CreatedAt = x.CreatedAt,

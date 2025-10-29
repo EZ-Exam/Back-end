@@ -68,7 +68,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     Id = question.Id,
                     Content = question.Content,
                     QuestionSource = question.QuestionSource,
-                    DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
+                    DifficultyLevelId = question.DifficultyLevelId,
                     LessonId = question.LessonId,
                     TextbookId = question.TextbookId,
                     ChapterId = question.ChapterId,
@@ -120,7 +120,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 Id = question.Id,
                 Content = question.Content,
                 QuestionSource = question.QuestionSource,
-                DifficultyLevel = question.DifficultyLevel?.Name ?? "Unknown",
+                DifficultyLevelId = question.DifficultyLevelId,
                 Image = question.Image,
                 LessonId = question.LessonId,
                 ChapterId = question.ChapterId,
@@ -183,7 +183,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     Id = existingQuestion.Id,
                     Content = existingQuestion.Content,
                     QuestionSource = existingQuestion.QuestionSource,
-                    DifficultyLevel = existingQuestion.DifficultyLevel?.Name ?? "Unknown",
+                    DifficultyLevelId = existingQuestion.DifficultyLevelId,
                     Image = existingQuestion.Image,
                     LessonId = existingQuestion.LessonId,
                     ChapterId = existingQuestion.ChapterId,
@@ -311,7 +311,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         Id = q.Id,
                         Content = q.Content,
                         QuestionSource = q.QuestionSource,
-                        DifficultyLevel = q.DifficultyLevel?.Name ?? "Unknown",
+                        DifficultyLevelId = q.DifficultyLevelId,
                         LessonId = q.LessonId,
                         ChapterId = q.ChapterId,
                         TextbookId = q.TextbookId,
@@ -342,6 +342,167 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
         }
 
+        public async Task<List<QuestionDataResponse>> GetQuestionBySubjectIdAsync(int subjectId)
+        {
+            try
+            {
+                var questions = await _unitOfWork.QuestionRepository.GetBySubjectIdAsync(subjectId);
+                if (questions == null || !questions.Any())
+                {
+                    _logger.LogWarning("No questions found for SubjectId {SubjectId}", subjectId);
+                    return new List<QuestionDataResponse>();
+                }
+
+                var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
+                var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
+                var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
+
+                var responses = new List<QuestionDataResponse>();
+
+                foreach (var q in questions)
+                {
+                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
+
+                    responses.Add(new QuestionDataResponse
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        QuestionSource = q.QuestionSource,
+                        DifficultyLevelId = q.DifficultyLevelId,
+                        LessonId = q.LessonId,
+                        ChapterId = q.ChapterId,
+                        CreatedByUserId = q.CreatedByUserId,
+                        CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt,
+                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
+                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
+                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
+                        Formula = q.Formula,
+                        CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation,
+                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
+                        Options = q.Options != null
+                            ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>()
+                            : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
+                    });
+                }
+
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
+                throw new ApplicationException($"Error retrieving questions for subject {subjectId}.", ex);
+            }
+        }
+
+        public async Task<List<QuestionSimpleResponse>> GetAllQuestionsSimpleAsync(QuestionSearchRequest? searchRequest = null)
+        {
+            try
+            {
+                _logger.LogInformation("🔍 [QuestionsService] START - Fetching all questions from database...");
+                
+                var questions = await _unitOfWork.QuestionRepository.GetAllAsync();
+                
+                if (questions == null)
+                {
+                    _logger.LogWarning("⚠️ [QuestionsService] Repository returned NULL!");
+                    return new List<QuestionSimpleResponse>();
+                }
+
+                _logger.LogInformation("🔍 [QuestionsService] Total questions from DB: {Count}", questions.Count);
+
+                var query = questions.AsQueryable();
+                var initialCount = query.Count();
+
+                // Apply search filters if provided
+                if (searchRequest != null)
+                {
+                    _logger.LogInformation("🔍 [QuestionsService] Applying filters - GradeIds: [{GradeIds}], SubjectIds: [{SubjectIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}",
+                        searchRequest.GradeIds != null && searchRequest.GradeIds.Any() ? string.Join(", ", searchRequest.GradeIds) : "null",
+                        searchRequest.SubjectIds != null && searchRequest.SubjectIds.Any() ? string.Join(", ", searchRequest.SubjectIds) : "null",
+                        searchRequest.ChapterIds != null && searchRequest.ChapterIds.Any() ? string.Join(", ", searchRequest.ChapterIds) : "null",
+                        searchRequest.LessonIds != null && searchRequest.LessonIds.Any() ? string.Join(", ", searchRequest.LessonIds) : "null",
+                        searchRequest.DifficultyLevelId?.ToString() ?? "null");
+
+                    if (!string.IsNullOrEmpty(searchRequest.Content))
+                    {
+                        query = query.Where(q => q.Content.Contains(searchRequest.Content, StringComparison.OrdinalIgnoreCase));
+                        _logger.LogInformation("  ✅ After Content filter: {Count} questions", query.Count());
+                    }
+
+                    // Lọc theo ID độ khó
+                    if (searchRequest.DifficultyLevelId.HasValue)
+                    {
+                        query = query.Where(q => q.DifficultyLevelId == searchRequest.DifficultyLevelId.Value);
+                        _logger.LogInformation("  ✅ After DifficultyLevel filter: {Count} questions", query.Count());
+                    }
+
+                    // Lọc theo nhiều khối lớp
+                    if (searchRequest.GradeIds != null && searchRequest.GradeIds.Any())
+                    {
+                        var beforeCount = query.Count();
+                        query = query.Where(q => q.GradeId.HasValue && searchRequest.GradeIds.Contains(q.GradeId.Value));
+                        _logger.LogInformation("  ✅ After GradeIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                    }
+
+                    // Lọc theo nhiều môn học (thông qua Lesson → Chapter → Subject)
+                    if (searchRequest.SubjectIds != null && searchRequest.SubjectIds.Any())
+                    {
+                        var beforeCount = query.Count();
+                        // Đếm bao nhiêu questions có Lesson và Chapter
+                        var questionsWithLessonAndChapter = query.Count(q => q.Lesson != null && q.Lesson.Chapter != null);
+                        _logger.LogInformation("  📊 Questions with Lesson and Chapter: {Count}/{Total}", questionsWithLessonAndChapter, beforeCount);
+                        
+                        query = query.Where(q => q.Lesson != null && 
+                            q.Lesson.Chapter != null && 
+                            searchRequest.SubjectIds.Contains(q.Lesson.Chapter.SubjectId));
+                        _logger.LogInformation("  ✅ After SubjectIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                    }
+
+                    // Lọc theo nhiều chương (thông qua Lesson → Chapter)
+                    if (searchRequest.ChapterIds != null && searchRequest.ChapterIds.Any())
+                    {
+                        var beforeCount = query.Count();
+                        query = query.Where(q => q.Lesson != null && 
+                            searchRequest.ChapterIds.Contains(q.Lesson.ChapterId));
+                        _logger.LogInformation("  ✅ After ChapterIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                    }
+
+                    // Lọc theo nhiều bài học
+                    if (searchRequest.LessonIds != null && searchRequest.LessonIds.Any())
+                    {
+                        var beforeCount = query.Count();
+                        query = query.Where(q => q.LessonId.HasValue && searchRequest.LessonIds.Contains(q.LessonId.Value));
+                        _logger.LogInformation("  ✅ After LessonIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                    }
+                }
+
+                var result = query.Select(q => new QuestionSimpleResponse
+                {
+                    Id = q.Id,
+                    Content = q.Content,
+                    DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
+                    GradeId = q.GradeId,
+                    GradeName = q.Grade != null ? q.Grade.Name : null,
+                    LessonId = q.LessonId,
+                    LessonName = q.Lesson != null ? q.Lesson.Name : null
+                }).ToList();
+
+                _logger.LogInformation("🔍 [QuestionsService] Final result: {Count} questions (filtered from {Initial})", result.Count, initialCount);
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [QuestionsService] CRITICAL ERROR retrieving simple questions: {Message}", ex.Message);
+                _logger.LogError(ex, "❌ [QuestionsService] Exception Type: {ExceptionType}", ex.GetType().Name);
+                _logger.LogError(ex, "❌ [QuestionsService] Stack Trace: {StackTrace}", ex.StackTrace);
+                
+                // Return empty list instead of throwing to prevent cascading failures
+                return new List<QuestionSimpleResponse>();
+            }
+        }
 
     }
 }

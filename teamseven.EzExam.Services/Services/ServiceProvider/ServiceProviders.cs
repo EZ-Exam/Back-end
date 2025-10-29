@@ -18,6 +18,9 @@ using teamseven.EzExam.Services.Services.JwtHelperService;
 using teamseven.EzExam.Services.Services.SubscriptionService;
 using teamseven.EzExam.Services.Services.TestSystemServices;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
+using teamseven.EzExam.Services.Services.QuestionCommentService;
+using teamseven.EzExam.Services.Services.StudentHistoryService;
+using teamseven.EzExam.Services.Services.ExamHistoryService;
 
 namespace teamseven.EzExam.Services.Services.ServiceProvider
 {
@@ -46,10 +49,17 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         private readonly IJwtHelperService _jwtHelperService;
         private readonly ISubscriptionService _subscriptionService;
         private readonly ILessonEnhancedService _lessonEnhancedService;
+        private readonly IQuestionCommentService _questionCommentService;
 
         // Test System Services
         private readonly IUserQuestionCartService _userQuestionCartService;
         private readonly ITestSessionService _testSessionService;
+        
+        // Student History Services
+        private readonly IStudentHistoryService _studentHistoryService;
+        
+        // Exam History Services
+        private readonly IExamHistoryService _examHistoryService;
 
         public ServiceProviders(
             IAuthService authService,
@@ -76,7 +86,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             ISubscriptionService subscriptionService,
             IUserQuestionCartService userQuestionCartService,
             ITestSessionService testSessionService,
-            ILessonEnhancedService lessonEnhancedService)
+            ILessonEnhancedService lessonEnhancedService,
+            IQuestionCommentService questionCommentService,
+
+            IStudentHistoryService studentHistoryService,
+            IExamHistoryService examHistoryService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
@@ -101,9 +115,16 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             _jwtHelperService = jwtHelperService ?? throw new ArgumentNullException(nameof(jwtHelperService));
             _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
             _lessonEnhancedService = lessonEnhancedService ?? throw new ArgumentNullException(nameof(lessonEnhancedService));
+            _questionCommentService = questionCommentService ?? throw new ArgumentNullException(nameof(questionCommentService));
             // Test System Services
             _userQuestionCartService = userQuestionCartService ?? throw new ArgumentNullException(nameof(userQuestionCartService));
             _testSessionService = testSessionService ?? throw new ArgumentNullException(nameof(testSessionService));
+            
+            // Student History Services
+            _studentHistoryService = studentHistoryService ?? throw new ArgumentNullException(nameof(studentHistoryService));
+            
+            // Exam History Services
+            _examHistoryService = examHistoryService ?? throw new ArgumentNullException(nameof(examHistoryService));
         }
 
         public IAuthService AuthService => _authService;
@@ -129,14 +150,17 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         public IJwtHelperService JwtHelperService => _jwtHelperService;
         public ISubscriptionService SubscriptionService => _subscriptionService;
         public ILessonEnhancedService LessonEnhancedService => _lessonEnhancedService;
+        public IQuestionCommentService QuestionCommentService => _questionCommentService;
 
 
         // Test System Services
         public IUserQuestionCartService UserQuestionCartService => _userQuestionCartService;
         public ITestSessionService TestSessionService => _testSessionService;
-
-        IUserQuestionCartService IServiceProviders.UserQuestionCartService => throw new NotImplementedException();
-
-        ITestSessionService IServiceProviders.TestSessionService => throw new NotImplementedException();
+        
+        // Student History Services
+        public IStudentHistoryService StudentHistoryService => _studentHistoryService;
+        
+        // Exam History Services
+        public IExamHistoryService ExamHistoryService => _examHistoryService;
     }
 }

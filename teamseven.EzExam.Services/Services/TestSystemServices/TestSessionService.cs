@@ -29,10 +29,12 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
     public class TestSessionService : ITestSessionService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ITestSessionIntegrationService _integrationService;
 
-        public TestSessionService(IUnitOfWork unitOfWork)
+        public TestSessionService(IUnitOfWork unitOfWork, ITestSessionIntegrationService integrationService = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _integrationService = integrationService; // Optional dependency to avoid circular reference
         }
 
         public async Task<TestSessionResponse?> StartSessionAsync(StartTestSessionRequest request)
@@ -91,6 +93,22 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
 
                 await _unitOfWork.TestSessionRepository.UpdateAsync(session);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
+
+                // Trigger integration to create quiz history
+                if (_integrationService != null)
+                {
+                    try
+                    {
+                        await _integrationService.HandleTestSessionCompletedAsync(sessionId);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but don't fail the session completion
+                        // This will be handled by a background service or manual trigger
+                        System.Diagnostics.Debug.WriteLine($"Error in test session integration: {ex.Message}");
+                    }
+                }
+
                 return true;
             }
             catch

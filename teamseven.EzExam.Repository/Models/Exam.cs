@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -22,6 +22,9 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [Column("SubjectId")]
         public int SubjectId { get; set; }
+
+        [Column("GradeId")]
+        public int? GradeId { get; set; }
 
         [Column("LessonId")]
         public int? LessonId { get; set; }
@@ -93,6 +96,9 @@ namespace teamseven.EzExam.Repository.Models
         [ForeignKey("SubjectId")]
         public virtual Subject Subject { get; set; } = null!;
 
+        [ForeignKey("GradeId")]
+        public virtual Grade? Grade { get; set; }
+
         [ForeignKey("LessonId")]
         public virtual Lesson? Lesson { get; set; }
 
@@ -100,6 +106,5 @@ namespace teamseven.EzExam.Repository.Models
         public virtual AITestRecommendation? AITestRecommendation { get; set; }
 
         public virtual ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
-        public virtual ICollection<ExamHistory> ExamHistories { get; set; } = new List<ExamHistory>();
     }
 }

@@ -17,6 +17,9 @@ namespace teamseven.EzExam.Services.Object.Requests
 
         public int ChapterId { get; set; }
 
+        [Range(1, int.MaxValue, ErrorMessage = "Grade ID must be a positive integer.")]
+        public int? GradeId { get; set; }
+
         [StringLength(5000, ErrorMessage = "Document cannot exceed 5000 characters.")]
         public string? Document { get; set; }
 

@@ -15,26 +15,52 @@ namespace teamseven.EzExam.Repository.Models
         public int ExamId { get; set; }
 
         [Required]
-        [Column("ActionByUserId")]
-        public int ActionByUserId { get; set; }
+        [Column("UserId")]
+        public int UserId { get; set; }
 
         [Required]
-        [MaxLength(50)]
-        [Column("Action")]
-        public string Action { get; set; } = string.Empty;
+        [Column("Score")]
+        public decimal Score { get; set; } = 0;
 
-        [MaxLength(500)]
-        [Column("Description")]
-        public string? Description { get; set; }
+        [Required]
+        [Column("CorrectCount")]
+        public int CorrectCount { get; set; } = 0;
 
-        [Column("ActionDate")]
-        public DateTime ActionDate { get; set; } = DateTime.UtcNow;
+        [Required]
+        [Column("IncorrectCount")]
+        public int IncorrectCount { get; set; } = 0;
+
+        [Required]
+        [Column("UnansweredCount")]
+        public int UnansweredCount { get; set; } = 0;
+
+        [Required]
+        [Column("TotalQuestions")]
+        public int TotalQuestions { get; set; } = 0;
+
+        [Required]
+        [Column("SubmittedAt")]
+        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        [Column("TimeTaken")]
+        public int TimeTaken { get; set; } = 0; // seconds
+
+        [Column("Answers")]
+        [MaxLength(10000)]
+        public string? Answers { get; set; } // JSON array of answer objects
+
+        [Column("CreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("UpdatedAt")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
         [ForeignKey("ExamId")]
         public virtual Exam Exam { get; set; } = null!;
 
-        [ForeignKey("ActionByUserId")]
-        public virtual User ActionByUser { get; set; } = null!;
+        [ForeignKey("UserId")]
+        public virtual User User { get; set; } = null!;
     }
 }

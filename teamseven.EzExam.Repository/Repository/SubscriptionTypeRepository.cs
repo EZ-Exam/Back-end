@@ -11,9 +11,9 @@ namespace teamseven.EzExam.Repository.Repository
         // BASIC and FREE are merged as one subscription type
         private static readonly Dictionary<int, SubscriptionType> _hardcodedSubscriptionTypes = new()
         {
-            { 1, new SubscriptionType { Id = 1, SubscriptionName = "FREE", SubscriptionCode = "FREE", SubscriptionPrice = 0, MaxAIRequests = 100, MaxSolutionViews = 500, IsActive = true, IsAIEnabled = true, Features = "Free/Basic features with moderate limits", Description = "Free subscription with basic features - same as BASIC" } },
-            { 2, new SubscriptionType { Id = 2, SubscriptionName = "BASIC", SubscriptionCode = "BASIC", SubscriptionPrice = 0, MaxAIRequests = 100, MaxSolutionViews = 500, IsActive = true, IsAIEnabled = true, Features = "Free/Basic features with moderate limits", Description = "Basic subscription - same as FREE, no cost" } },
-            { 3, new SubscriptionType { Id = 3, SubscriptionName = "PREMIUM", SubscriptionCode = "PREMIUM", SubscriptionPrice = 199000, MaxAIRequests = 500, MaxSolutionViews = 2000, IsActive = true, IsAIEnabled = true, Features = "Premium features with high limits", Description = "Premium subscription with advanced features" } },
+            { 1, new SubscriptionType { Id = 1, SubscriptionName = "FREE", SubscriptionCode = "FREE", SubscriptionPrice = 0, MaxAIRequests = 0, MaxSolutionViews = 5, IsActive = true, IsAIEnabled = false, Features = "Free/Basic features with moderate limits", Description = "Free subscription with basic features - same as BASIC" } },
+            { 2, new SubscriptionType { Id = 2, SubscriptionName = "BASIC", SubscriptionCode = "BASIC", SubscriptionPrice = 99000, MaxAIRequests = 10, MaxSolutionViews = 50, IsActive = true, IsAIEnabled = true, Features = "Free/Basic features with moderate limits", Description = "Basic subscription - same as FREE, no cost" } },
+            { 3, new SubscriptionType { Id = 3, SubscriptionName = "PREMIUM", SubscriptionCode = "PREMIUM", SubscriptionPrice = 199000, MaxAIRequests = 100, MaxSolutionViews = -1, IsActive = true, IsAIEnabled = true, Features = "Premium features with high limits", Description = "Premium subscription with advanced features" } },
             { 4, new SubscriptionType { Id = 4, SubscriptionName = "UNLIMITED", SubscriptionCode = "UNLIMITED", SubscriptionPrice = 399000, MaxAIRequests = -1, MaxSolutionViews = -1, IsActive = true, IsAIEnabled = true, Features = "Unlimited features", Description = "Unlimited subscription with no limits" } }
         };
 

@@ -11,6 +11,7 @@ namespace teamseven.EzExam.Services.Object.Responses
         public int Id { get; set; }
         public string Name { get; set; }
         public int ChapterId { get; set; }
+        public int? GradeId { get; set; }
         public string? Document { get; set; }
         public string? DocumentType { get; set; }
         public DateTime CreatedAt { get; set; }

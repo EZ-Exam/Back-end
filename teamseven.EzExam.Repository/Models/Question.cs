@@ -27,6 +27,9 @@ namespace teamseven.EzExam.Repository.Models
         [Column("SubjectId")]
         public int SubjectId { get; set; }
 
+        [Column("GradeId")]
+        public int? GradeId { get; set; }
+
         [Column("ChapterId")]
         public int? ChapterId { get; set; }
 
@@ -92,6 +95,9 @@ namespace teamseven.EzExam.Repository.Models
 
         [ForeignKey("SubjectId")]
         public virtual Subject Subject { get; set; } = null!;
+
+        [ForeignKey("GradeId")]
+        public virtual Grade? Grade { get; set; }
 
         [ForeignKey("DifficultyLevelId")]
         public virtual DifficultyLevel DifficultyLevel { get; set; } = null!;

@@ -41,6 +41,11 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<int> GetTotalExamsAsync()
+        {
+            return await _context.Exams.CountAsync();
+        }
+
         public async Task<int> AddAsync(Exam exam)
         {
             return await CreateAsync(exam);

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Interfaces;
+using teamseven.EzExam.Services.Services.SubscriptionService;
 
 namespace teamseven.EzExam.Services.Services.Authentication
 {
@@ -18,11 +19,13 @@ namespace teamseven.EzExam.Services.Services.Authentication
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration)
+        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, ISubscriptionService subscriptionService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
         }
 
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
@@ -88,7 +91,47 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 new Claim("id", user.Id.ToString()),
                 new Claim("fullname", user.FullName ?? string.Empty),
                 new Claim("email", user.Email),
-                new Claim("roleId", user.RoleId.ToString())
+                new Claim("roleId", user.RoleId.ToString()),
+                new Claim("balance", (user.Balance ?? 0).ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(120),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<string> GenerateJwtTokenWithSubscriptionAsync(User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user), "User cannot be null when generating token.");
+
+            var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration.");
+
+            // Lấy thông tin subscription hiện tại
+            var subscriptionInfo = await _subscriptionService.GetUserCurrentSubscriptionAsync(user.Id);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("id", user.Id.ToString()),
+                new Claim("fullname", user.FullName ?? string.Empty),
+                new Claim("email", user.Email),
+                new Claim("roleId", user.RoleId.ToString()),
+                new Claim("balance", (user.Balance ?? 0).ToString()),
+                new Claim("subscriptionTypeId", subscriptionInfo?.SubscriptionTypeId.ToString() ?? "0"),
+                new Claim("subscriptionCode", subscriptionInfo?.SubscriptionCode ?? "NONE"),
+                new Claim("subscriptionName", subscriptionInfo?.SubscriptionName ?? "No Subscription"),
+                new Claim("subscriptionEndDate", subscriptionInfo?.EndDate?.ToString("yyyy-MM-ddTHH:mm:ssZ") ?? ""),
+                new Claim("subscriptionIsActive", subscriptionInfo?.IsActive.ToString() ?? "false")
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
@@ -167,8 +210,8 @@ namespace teamseven.EzExam.Services.Services.Authentication
                     await _unitOfWork.SaveChangesWithTransactionAsync();
                 }
 
-                // Generate JWT
-                return GenerateJwtToken(user);
+                // Generate JWT with subscription info
+                return await GenerateJwtTokenWithSubscriptionAsync(user);
             }
             catch (Exception ex)
             {

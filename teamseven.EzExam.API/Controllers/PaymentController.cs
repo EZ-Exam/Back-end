@@ -23,6 +23,18 @@ namespace teamseven.EzExam.API.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        [HttpGet]
+        [Authorize("DeliveringStaffPolicy")]
+        [SwaggerOperation(Summary = "Get all payments", Description = "Retrieves all payment records.")]
+        [SwaggerResponse(200, "Payments retrieved successfully.")]
+        [SwaggerResponse(401, "Unauthorized - Invalid token or insufficient permissions.")]
+        [SwaggerResponse(500, "Internal server error")]
+        public async Task<IActionResult> GetAllPayments()
+        {
+            var payments = await _serviceProvider.UserSubscriptionService.GetAllSubscriptionsAsync();
+            return Ok(payments);
+        }
+
         [HttpPost("create-payment")]
         [Authorize]
         [SwaggerOperation(Summary = "Create payment", Description = "Creates a new payment link for subscription purchase.")]
@@ -181,7 +193,7 @@ namespace teamseven.EzExam.API.Controllers
                 }
 
                 user.Balance ??= 0m;
-                user.Balance += amount;
+                user.Balance -= amount; // Trừ tiền khi thanh toán thành công
                 await _serviceProvider.UserService.UpdateUserAsync(user);
 
                 // Đánh dấu subscription COMPLETED

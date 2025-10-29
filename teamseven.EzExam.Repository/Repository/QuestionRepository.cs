@@ -20,6 +20,9 @@ namespace teamseven.EzExam.Repository.Repository
         {
             return await _context.Questions
                 .Include(q => q.Lesson)
+                    .ThenInclude(l => l.Chapter)
+                .Include(q => q.Grade)
+                .Include(q => q.DifficultyLevel)
                 .ToListAsync();
         }
 
@@ -42,6 +45,13 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<Question>?> GetBySubjectIdAsync(int subjectId)
+        {
+            return await _context.Questions
+                .Where(q => q.SubjectId == subjectId)
+                .ToListAsync();
+        }
+
         public async Task<int> AddAsync(Question question)
         {
             return await CreateAsync(question);
@@ -55,6 +65,18 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<bool> DeleteAsync(Question question)
         {
             return await RemoveAsync(question);
+        }
+
+        public async Task<List<Question>> GetByIdsAsync(List<int> ids)
+        {
+            return await _context.Questions
+                .Where(q => ids.Contains(q.Id))
+                .ToListAsync();
+        }
+
+        public async Task<int> GetTotalQuestionsAsync()
+        {
+            return await _context.Questions.CountAsync();
         }
 
         public async Task<(List<Question>, int)> GetPagedAsync(
