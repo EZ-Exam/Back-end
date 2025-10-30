@@ -25,5 +25,16 @@ namespace teamseven.EzExam.Services.Services.LessonService
         Task CreateLessonAsync(CreateLessonRequest request);
         Task UpdateLessonAsync(LessonDataRequest request);
         Task DeleteLessonAsync(int id);
+
+        // Optimized endpoints (labelled 'optimized') for lessons
+        Task<PagedResponse<LessonFeedResponse>> GetOptimizedLessonsFeedAsync(
+            int currentUserId,
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? chapterId = null,
+            int isSort = 0);
+
+        Task<LessonDetailOptimizedResponse> GetOptimizedLessonDetailsAsync(int lessonId, int currentUserId = 0);
     }
 }

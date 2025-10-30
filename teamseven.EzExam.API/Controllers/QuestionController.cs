@@ -80,7 +80,6 @@ namespace teamseven.EzExam.API.Controllers
                     isSort,
                     userId,
                     textbookId);
-                _logger.LogInformation("Retrieved {Count} questions for page {PageNumber}.", pagedQuestions.Items.Count, pagedQuestions.PageNumber);
                 return Ok(pagedQuestions);
             }
             catch (Exception ex)
@@ -111,7 +110,6 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 var result = await _serviceProvider.QuestionsService.GetQuestionBySubjectIdAsync(subjectId);
-                _logger.LogInformation("Retrieved {Count} questions for SubjectId {SubjectId}.", result.Count, subjectId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -140,7 +138,6 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 var questionResponse = await _serviceProvider.QuestionsService.AddQuestionAsync(questionDataRequest);
-                _logger.LogInformation("Question created successfully with ID {QuestionId}.", questionResponse.Id);
                 var result = new
                 {
                     question = new
@@ -201,7 +198,6 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 var updatedQuestion = await _serviceProvider.QuestionsService.ModifyQuestionAsync(request);
-                _logger.LogInformation("Question with ID {QuestionId} updated successfully.", request.Id);
                 return Ok(updatedQuestion);
             }
             catch (NotFoundException ex)
@@ -228,7 +224,6 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 await _serviceProvider.QuestionsService.DeleteQuestionAsync(id);
-                _logger.LogInformation("Question with ID {QuestionId} deleted successfully.", id);
                 return NoContent();
             }
             catch (NotFoundException ex)
@@ -254,7 +249,6 @@ namespace teamseven.EzExam.API.Controllers
             try
             {
                 var question = await _serviceProvider.QuestionsService.GetQuestionById(id);
-                _logger.LogInformation("Question with ID {QuestionId} retrieved successfully.", id);
                 return Ok(question);
             }
             catch (NotFoundException ex)
@@ -302,6 +296,43 @@ namespace teamseven.EzExam.API.Controllers
             {
                 _logger.LogError(ex, "Error retrieving simple questions: {Message}", ex.Message);
                 return StatusCode(500, new { Message = "An error occurred while retrieving questions." });
+            }
+        }
+
+        [HttpGet("feed")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get optimized questions feed", Description = "Retrieves a paged, optimized feed of questions (metadata-only) to avoid N+1 queries. Accepts currentUserId, page, pageSize, search, lessonId, difficultyLevelId as query parameters.")]
+        [SwaggerResponse(200, "Feed retrieved successfully.", typeof(PagedResponse<QuestionFeedResponse>))]
+        [SwaggerResponse(400, "Invalid parameters.", typeof(ProblemDetails))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
+        public async Task<IActionResult> GetOptimizedQuestionsFeed(
+            [FromQuery] int currentUserId = 0,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null,
+            [FromQuery] int? lessonId = null,
+            [FromQuery] int? difficultyLevelId = null)
+        {
+            try
+            {
+                if (page < 1 || pageSize < 1)
+                {
+                    return BadRequest(new { Message = "page and pageSize must be greater than 0." });
+                }
+
+                var feed = await _serviceProvider.QuestionsService.GetOptimizedQuestionsFeedAsync(
+                    currentUserId,
+                    page,
+                    pageSize,
+                    search,
+                    lessonId,
+                    difficultyLevelId);
+
+                return Ok(feed);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving the questions feed." });
             }
         }
     }

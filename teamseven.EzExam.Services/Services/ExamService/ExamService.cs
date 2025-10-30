@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
@@ -389,6 +390,132 @@ namespace teamseven.EzExam.Services.Services.ExamService
             }).ToList();
 
             return new PagedResponse<ExamResponse>(list, pn, ps, total);
+        }
+
+        // =================== OPTIMIZED: Exams Feed ===================
+        // Lightweight projection using single query to avoid N+1. Suitable for catalog listing.
+        public async Task<PagedResponse<ExamFeedResponse>> GetOptimizedExamsFeedAsync(
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? subjectId = null,
+            int? lessonId = null,
+            int? examTypeId = null,
+            int? createdByUserId = null,
+            int isSort = 0)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 20;
+            var skip = (page - 1) * pageSize;
+
+            var ctx = _unitOfWork.Context;
+
+            // Do not restrict to public exams only in the optimized feed — return all non-deleted exams
+            // (the caller can still filter by createdByUserId or other criteria). This ensures the
+            // optimized feed returns results consistent with GetAll/GetExams when appropriate.
+            var baseQuery = ctx.Exams.AsQueryable().Where(e => e.IsDeleted == false);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                baseQuery = baseQuery.Where(e => e.Name.ToLower().Contains(s) || (e.Description != null && e.Description.ToLower().Contains(s)));
+            }
+
+            if (subjectId.HasValue) baseQuery = baseQuery.Where(e => e.SubjectId == subjectId.Value);
+            if (lessonId.HasValue) baseQuery = baseQuery.Where(e => e.LessonId == lessonId.Value);
+            if (examTypeId.HasValue) baseQuery = baseQuery.Where(e => e.ExamTypeId == examTypeId.Value);
+            if (createdByUserId.HasValue) baseQuery = baseQuery.Where(e => e.CreatedByUserId == createdByUserId.Value);
+
+            var totalItems = await baseQuery.CountAsync();
+
+            var query = baseQuery.OrderByDescending(e => e.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(e => new ExamFeedResponse
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Description = e.Description,
+                    SubjectId = e.SubjectId,
+                    SubjectName = e.Subject != null ? e.Subject.Name : null,
+                    LessonId = e.LessonId,
+                    LessonName = e.Lesson != null ? e.Lesson.Name : null,
+                    ExamTypeName = e.ExamType != null ? e.ExamType.Name : null,
+                    CreatedByUserId = e.CreatedByUserId,
+                    CreatedByUserName = e.CreatedByUser != null ? e.CreatedByUser.Email : null,
+                    CreatedAt = e.CreatedAt,
+                    UpdatedAt = e.UpdatedAt,
+                    TimeLimit = e.TimeLimit,
+                    Duration = e.Duration,
+
+                    TotalQuestions = e.TotalQuestions != 0 ? e.TotalQuestions : ctx.ExamQuestions.Count(eq => eq.ExamId == e.Id),
+                    AttemptCount = ctx.ExamHistories.Count(h => h.ExamId == e.Id),
+                    AverageScore = ctx.ExamHistories.Where(h => h.ExamId == e.Id).Select(h => (decimal?)h.Score).Average() ?? 0m,
+                    // Optimized feed is intentionally anonymous / user-agnostic. Per request, do not compute per-user flags here.
+                    IsAttemptedByCurrentUser = false
+                })
+                .AsNoTracking();
+
+            var items = await query.ToListAsync();
+            return new PagedResponse<ExamFeedResponse>(items, page, pageSize, totalItems);
+        }
+
+        // =================== OPTIMIZED: Exam Details ===================
+        // Returns lightweight details for a single exam including question ids and metadata (no full question payloads).
+        public async Task<ExamDetailOptimizedResponse> GetOptimizedExamDetailsAsync(int examId, int currentUserId = 0)
+        {
+            var ctx = _unitOfWork.Context;
+
+            var exam = await ctx.Exams.AsNoTracking()
+                .Where(e => e.Id == examId && e.IsDeleted == false)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Name,
+                    e.Description,
+                    e.SubjectId,
+                    e.LessonId,
+                    ExamTypeName = e.ExamType != null ? e.ExamType.Name : null,
+                    e.CreatedByUserId,
+                    CreatedByUserName = e.CreatedByUser != null ? e.CreatedByUser.Email : null,
+                    e.CreatedAt,
+                    e.UpdatedAt,
+                    e.TimeLimit,
+                    e.Duration
+                }).FirstOrDefaultAsync();
+
+            if (exam == null) throw new ArgumentException("Exam not found");
+
+            var questionIds = await ctx.ExamQuestions.AsNoTracking()
+                .Where(eq => eq.ExamId == examId)
+                .OrderBy(eq => eq.Order)
+                .Select(eq => eq.QuestionId)
+                .ToListAsync();
+
+            var attemptCount = await ctx.ExamHistories.CountAsync(h => h.ExamId == examId);
+            var averageScore = await ctx.ExamHistories.Where(h => h.ExamId == examId).Select(h => (decimal?)h.Score).AverageAsync() ?? 0m;
+            var isAttempted = currentUserId > 0 && await ctx.ExamHistories.AnyAsync(h => h.ExamId == examId && h.UserId == currentUserId);
+
+            return new ExamDetailOptimizedResponse
+            {
+                Id = exam.Id,
+                Name = exam.Name,
+                Description = exam.Description,
+                SubjectId = exam.SubjectId,
+                LessonId = exam.LessonId,
+                ExamTypeName = exam.ExamTypeName,
+                CreatedByUserId = exam.CreatedByUserId,
+                CreatedByUserName = exam.CreatedByUserName,
+                CreatedAt = exam.CreatedAt,
+                UpdatedAt = exam.UpdatedAt,
+                TimeLimit = exam.TimeLimit,
+                Duration = exam.Duration,
+                TotalQuestions = questionIds.Count,
+                QuestionIds = questionIds,
+                AttemptCount = attemptCount,
+                AverageScore = averageScore,
+                IsAttemptedByCurrentUser = isAttempted
+            };
         }
 
     }

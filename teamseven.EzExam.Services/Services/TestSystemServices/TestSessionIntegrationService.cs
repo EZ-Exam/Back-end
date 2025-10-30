@@ -33,12 +33,11 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         {
             try
             {
-                _logger.LogInformation($"Handling completed test session {testSessionId}");
                 
                 // Create quiz history from test session
                 await CreateQuizHistoryFromCompletedSessionAsync(testSessionId);
                 
-                _logger.LogInformation($"Successfully handled completed test session {testSessionId}");
+                
             }
             catch (Exception ex)
             {
@@ -69,7 +68,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                 var existingHistory = allHistories.FirstOrDefault(h => h.TestSessionId == testSessionId);
                 if (existingHistory != null)
                 {
-                    _logger.LogInformation($"Quiz history already exists for test session {testSessionId}");
                     return;
                 }
 
@@ -119,7 +117,7 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                 // Create the quiz history
                 var historyId = await _studentHistoryService.CreateQuizHistoryAsync(request);
                 
-                _logger.LogInformation($"Created quiz history {historyId} from test session {testSessionId}");
+                
             }
             catch (Exception ex)
             {

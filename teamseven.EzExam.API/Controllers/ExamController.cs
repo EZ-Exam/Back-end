@@ -95,6 +95,97 @@ namespace teamseven.EzExam.API.Controllers
                 return NotFound(new { Message = ex.Message });
             }
         }
+        // =================== OPTIMIZED: Exams Feed (catalog) ===================
+        [HttpGet("optimized/feed")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get optimized exams feed", Description = "Lightweight, metadata-only feed for exams (optimized). Use for catalog lists.")]
+        public async Task<IActionResult> GetOptimizedExamsFeed(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null,
+            [FromQuery] int? subjectId = null,
+            [FromQuery] int? lessonId = null,
+            [FromQuery] int? examTypeId = null,
+            [FromQuery] int? createdByUserId = null)
+        {
+            try
+            {
+                if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
+
+                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedAsync(page, pageSize, search, subjectId, lessonId, examTypeId, createdByUserId);
+
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized exams feed");
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
+
+        // =================== OPTIMIZED: Exam Details (lightweight) ===================
+        [HttpGet("optimized/{id}/details")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get optimized exam details", Description = "Lightweight exam details (question ids + metadata) to minimize payload.")]
+        public async Task<IActionResult> GetOptimizedExamDetails(int id, [FromQuery] int currentUserId = 0)
+        {
+            try
+            {
+                var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
+                return Ok(data);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized exam details for {ExamId}", id);
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
+
+        // =================== OPTIMIZED: Exams Feed BY USER (catalog owned by user) ===================
+        [HttpGet("optimized/user/{userId}/feed")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOptimizedExamsFeedByUser(int userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedAsync(page, pageSize, null, null, null, null, userId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized exams feed for user {UserId}", userId);
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
+
+        // =================== OPTIMIZED: Exam Details BY USER ===================
+        [HttpGet("optimized/user/{userId}/{id}/details")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOptimizedExamDetailsByUser(int userId, int id, [FromQuery] int currentUserId = 0)
+        {
+            try
+            {
+                var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
+                if (data.CreatedByUserId != userId)
+                    return NotFound(new { Message = "Exam not found for user." });
+                return Ok(data);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized exam details for exam {ExamId} by user {UserId}", id, userId);
+                return StatusCode(500, new { Message = "Internal server error." });
+            }
+        }
         // =================== GET EXAM BY USERID ===================
         [HttpGet("user/{userId}")]
         [AllowAnonymous]

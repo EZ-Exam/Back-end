@@ -28,6 +28,19 @@ namespace teamseven.EzExam.Services.Services.ExamService
         
         Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId);
 
+        // Optimized endpoints (labelled "optimized") - lightweight projections to avoid N+1 and reduce bandwidth.
+        Task<PagedResponse<ExamFeedResponse>> GetOptimizedExamsFeedAsync(
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? subjectId = null,
+            int? lessonId = null,
+            int? examTypeId = null,
+            int? createdByUserId = null,
+            int isSort = 0);
+
+        Task<ExamDetailOptimizedResponse> GetOptimizedExamDetailsAsync(int examId, int currentUserId = 0);
+
         Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest);
 
         Task CreateExamHistoryAsync(ExamHistoryRequest examHistoryRequest);

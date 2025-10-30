@@ -113,6 +113,54 @@ namespace teamseven.EzExam.API.Controllers
             }
         }
 
+        // =================== OPTIMIZED: Lessons Feed ===================
+        [HttpGet("optimized/feed")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get optimized lessons feed", Description = "Lightweight lessons feed with metadata (questionCount, examCount, attempts). Use for catalog lists.")]
+        public async Task<IActionResult> GetOptimizedLessonsFeed(
+            [FromQuery] int currentUserId = 0,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null,
+            [FromQuery] int? chapterId = null)
+        {
+            try
+            {
+                if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
+
+                var data = await _serviceProvider.LessonService.GetOptimizedLessonsFeedAsync(currentUserId, page, pageSize, search, chapterId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized lessons feed");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        // =================== OPTIMIZED: Lesson Details ===================
+        [HttpGet("optimized/{id}/details")]
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get optimized lesson details", Description = "Lightweight lesson details with question and exam ids plus metadata.")]
+        public async Task<IActionResult> GetOptimizedLessonDetails(int id, [FromQuery] int currentUserId = 0)
+        {
+            try
+            {
+                var data = await _serviceProvider.LessonService.GetOptimizedLessonDetailsAsync(id, currentUserId);
+                return Ok(data);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized lesson details for {LessonId}", id);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         // =================== CREATE LESSON ===================
 
         [HttpPost]

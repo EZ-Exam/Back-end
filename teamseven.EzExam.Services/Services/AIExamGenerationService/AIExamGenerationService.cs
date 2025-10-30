@@ -46,41 +46,23 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
 
             try
             {
-                _logger.LogInformation("🚀 Starting AI exam generation for UserId: {UserId}, Mode: {Mode}, QuestionCount: {QuestionCount}", 
-                    request.UserId, request.Mode, request.QuestionCount);
-
-                // 1. Lấy lịch sử làm bài của user (minimal data)
-                _logger.LogInformation("📚 Step 1: Retrieving exam history for user {UserId}...", request.UserId);
                 var examHistory = await GetUserExamHistoryMinimalAsync(request.UserId, request.HistoryCount);
-                _logger.LogInformation("✅ Retrieved {Count} minimal exam history records for user {UserId}", examHistory.Count, request.UserId);
 
-                // Log chi tiết lịch sử thi
-                if (examHistory.Any())
+                if (examHistory == null)
                 {
-                    _logger.LogInformation("📊 Exam History Analysis for User {UserId}:", request.UserId);
-                    foreach (var h in examHistory)
-                    {
-                        _logger.LogInformation("  📝 Exam {ExamId}: Score {Score}/100, Correct {CorrectCount}/{TotalQuestions}, Time {TimeTaken}s, Subject: {SubjectName}, Grade: {GradeName}, Lesson: {LessonName}, Date: {SubmittedAt:dd/MM/yyyy HH:mm}", 
-                            h.ExamId, h.Score, h.CorrectCount, h.TotalQuestions, h.TimeTaken, h.SubjectName, h.GradeName, h.LessonName, h.SubmittedAt);
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("⚠️ No exam history found for user {UserId}", request.UserId);
+                    examHistory = new List<ExamHistoryMinimalResponse>();
                 }
 
-                // 2. Lấy danh sách câu hỏi có sẵn (minimal data) - CÓ RETRY LOGIC BÊN TRONG
-                _logger.LogInformation("🔍 Step 2: Retrieving available questions (with auto-retry if needed)...");
                 var availableQuestions = await GetAvailableQuestionsMinimalAsync(request);
-                _logger.LogInformation("✅ Retrieved {Count} minimal available questions (after auto-retry if triggered)", availableQuestions.Count);
+
+                if (availableQuestions == null)
+                {
+                    availableQuestions = new List<QuestionMinimalResponse>();
+                }
 
                 if (availableQuestions.Count == 0)
                 {
-                    _logger.LogError("❌ FINAL RESULT: No available questions found after all retry attempts");
-                    _logger.LogError("   → Auto-detect from history: FAILED");
-                    _logger.LogError("   → User request filters: FAILED");
-                    _logger.LogError("   → Fallback to all questions: FAILED");
-                    _logger.LogError("   → Please check if database has any questions!");
+                    _logger.LogError("No available questions found after all retry attempts");
                     
                     return new GenerateAIExamResponse
                     {
@@ -101,46 +83,44 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                 }
 
                 // Log chi tiết câu hỏi có sẵn
-                _logger.LogInformation("📋 Available Questions Summary:");
                 var difficultyGroups = availableQuestions.GroupBy(q => q.DifficultyLevel);
                 foreach (var group in difficultyGroups)
                 {
-                    _logger.LogInformation("  🎯 Difficulty {Difficulty}: {Count} questions", group.Key, group.Count());
+                    // summary suppressed in production
                 }
 
                 var gradeGroups = availableQuestions.GroupBy(q => q.GradeName);
                 foreach (var group in gradeGroups)
                 {
-                    _logger.LogInformation("  🏫 Grade {Grade}: {Count} questions", group.Key, group.Count());
+                    // summary suppressed in production
                 }
 
                 // Lọc lịch sử theo yêu cầu của user để AI hiểu đúng context
                 var filteredHistory = FilterExamHistoryByRequest(examHistory, request);
-                _logger.LogInformation("📊 Filtered exam history for AI: {FilteredCount} records (from {TotalCount} total)", 
-                    filteredHistory.Count, examHistory.Count);
+                // Filtered history summary suppressed in production
 
                 // 3. Xây dựng prompt với data tối thiểu
-                _logger.LogInformation("📝 Step 3: Building AI prompt...");
+                // building prompt (log suppressed)
                 var prompt = await BuildPromptMinimalAsync(request, filteredHistory, availableQuestions);
-                _logger.LogInformation("✅ Prompt built successfully. Length: {Length} characters", prompt.Length);
+                // prompt built (length suppressed)
 
                 // Log prompt preview (first 500 chars)
                 var promptPreview = prompt.Length > 500 ? prompt.Substring(0, 500) + "..." : prompt;
-                _logger.LogInformation("📄 Prompt Preview: {PromptPreview}", promptPreview);
+                // prompt preview suppressed
 
                 // 4. Gọi OpenAI API
-                _logger.LogInformation("🤖 Step 4: Calling OpenAI API...");
+                // calling OpenAI (log suppressed)
                 var aiResponse = await CallOpenAIAsync(prompt);
-                _logger.LogInformation("✅ OpenAI API response received. Length: {Length} characters", aiResponse.Length);
+                // OpenAI response received (size suppressed)
 
                 // Log AI response preview
                 var responsePreview = aiResponse.Length > 300 ? aiResponse.Substring(0, 300) + "..." : aiResponse;
-                _logger.LogInformation("🤖 AI Response Preview: {ResponsePreview}", responsePreview);
+                // AI response preview suppressed
 
                 // 5. Parse response từ AI
-                _logger.LogInformation("🔍 Step 5: Parsing AI response...");
+                // parsing AI response (log suppressed)
                 var result = await ParseAIResponseAsync(aiResponse, request);
-                _logger.LogInformation("✅ AI response parsed successfully. Generated {Count} questions", result.Questions.Count);
+                // AI parsed successfully (summary suppressed)
 
                 stopwatch.Stop();
 
@@ -150,30 +130,20 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                 result.Metadata.TotalQuestions = result.Questions.Count;
 
                 // 7. Lưu exam vào database
-                _logger.LogInformation("💾 Step 6: Saving exam to database...");
+                // saving exam to database (log suppressed)
                 var examId = await SaveAIExamToDatabaseAsync(request, result);
                 if (examId > 0)
                 {
                     result.Metadata.ExamId = examId;
                     result.Message = $"Tạo đề thi thành công với {result.Questions.Count} câu hỏi. Exam ID: {examId}";
-                    _logger.LogInformation("✅ Exam saved successfully with ID: {ExamId}", examId);
+                    // exam saved successfully (log suppressed)
                 }
                 else
                 {
                     _logger.LogWarning("⚠️ Failed to save exam to database, but questions were generated");
                 }
 
-                _logger.LogInformation("🎉 AI exam generation completed successfully for UserId: {UserId}. Generated {Count} questions in {Time}ms", 
-                    request.UserId, result.Questions.Count, stopwatch.ElapsedMilliseconds);
-
-                // Log chi tiết kết quả
-                _logger.LogInformation("📊 Final Result Summary:");
-                _logger.LogInformation("  ✅ Success: {Success}", result.Success);
-                _logger.LogInformation("  📝 Questions Generated: {Count}", result.Questions.Count);
-                _logger.LogInformation("  💾 Exam ID: {ExamId}", examId);
-                _logger.LogInformation("  ⏱️ Processing Time: {Time}s", stopwatch.Elapsed.TotalSeconds);
-                _logger.LogInformation("  🎯 Mode: {Mode}", request.Mode);
-                _logger.LogInformation("  📚 History Used: {HistoryCount} records", examHistory.Count);
+                // AI exam generation completed (summary suppressed)
 
                 return result;
             }
@@ -207,13 +177,13 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
             {
                 var histories = await _examHistoryService.GetExamHistoriesMinimalByUserIdAsync(userId);
                 
-                // Convert to minimal response - chỉ lấy các trường cần thiết
+                        // Convert to minimal response - only necessary fields
                 var minimalHistories = histories
                     .OrderByDescending(h => h.SubmittedAt)
                     .Take(count)
                     .ToList();
 
-                _logger.LogInformation("Retrieved {Count} minimal exam history records for user {UserId}", minimalHistories.Count, userId);
+                        _logger.LogInformation("Retrieved {Count} minimal exam history records for user {UserId}", minimalHistories.Count, userId);
                 return minimalHistories;
             }
             catch (Exception ex)
@@ -244,12 +214,12 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
         {
             try
             {
-                _logger.LogInformation("🔍 Starting question retrieval for UserId: {UserId}", request.UserId);
-                _logger.LogInformation("📝 Initial request - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}]", 
-                    request.SubjectIds != null && request.SubjectIds.Any() ? string.Join(", ", request.SubjectIds) : "null",
-                    request.GradeIds != null && request.GradeIds.Any() ? string.Join(", ", request.GradeIds) : "null",
-                    request.ChapterIds != null && request.ChapterIds.Any() ? string.Join(", ", request.ChapterIds) : "null",
-                    request.LessonIds != null && request.LessonIds.Any() ? string.Join(", ", request.LessonIds) : "null");
+                        _logger.LogInformation("🔍 Starting question retrieval for UserId: {UserId}", request.UserId);
+                        _logger.LogInformation("📝 Initial request - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}]", 
+                            request.SubjectIds != null && request.SubjectIds.Any() ? string.Join(", ", request.SubjectIds) : "null",
+                            request.GradeIds != null && request.GradeIds.Any() ? string.Join(", ", request.GradeIds) : "null",
+                            request.ChapterIds != null && request.ChapterIds.Any() ? string.Join(", ", request.ChapterIds) : "null",
+                            request.LessonIds != null && request.LessonIds.Any() ? string.Join(", ", request.LessonIds) : "null");
                 
                 // Lấy lịch sử để phân tích (luôn lấy để có context cho AI)
                 var examHistory = await GetUserExamHistoryMinimalAsync(request.UserId, request.HistoryCount);
@@ -276,7 +246,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                         .FirstOrDefault()?.Key;
 
                     var mostRecentHistory = examHistory.First();
-                    _logger.LogInformation("🎯 History shows student mainly studies: Subject {SubjectId} ({SubjectName}), Grade {GradeId} ({GradeName})", 
+                            _logger.LogInformation("🎯 History shows student mainly studies: Subject {SubjectId} ({SubjectName}), Grade {GradeId} ({GradeName})", 
                         mostCommonSubject, mostRecentHistory.SubjectName, mostCommonGrade, mostRecentHistory.GradeName);
 
                     // Xác định PHẠM VI gen câu hỏi
@@ -285,30 +255,30 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                     if (finalSubjectIds == null || !finalSubjectIds.Any())
                     {
                         finalSubjectIds = new List<int> { mostCommonSubject };
-                        _logger.LogInformation("✅ Scope: Auto-detected SubjectIds [{SubjectIds}] from history", 
+                                _logger.LogInformation("✅ Scope: Auto-detected SubjectIds [{SubjectIds}] from history", 
                             string.Join(", ", finalSubjectIds));
                     }
                     else
                     {
-                        _logger.LogInformation("👤 Scope: User selected SubjectIds [{SubjectIds}]", 
+                                _logger.LogInformation("👤 Scope: User selected SubjectIds [{SubjectIds}]", 
                             string.Join(", ", finalSubjectIds));
                     }
                     
                     if ((finalGradeIds == null || !finalGradeIds.Any()) && mostCommonGrade.HasValue)
                     {
                         finalGradeIds = new List<int> { mostCommonGrade.Value };
-                        _logger.LogInformation("✅ Scope: Auto-detected GradeIds [{GradeIds}] from history", 
+                                _logger.LogInformation("✅ Scope: Auto-detected GradeIds [{GradeIds}] from history", 
                             string.Join(", ", finalGradeIds));
                     }
                     else if (finalGradeIds != null && finalGradeIds.Any())
                     {
-                        _logger.LogInformation("👤 Scope: User selected GradeIds [{GradeIds}]", 
+                                _logger.LogInformation("👤 Scope: User selected GradeIds [{GradeIds}]", 
                             string.Join(", ", finalGradeIds));
                     }
 
                     if (finalLessonIds != null && finalLessonIds.Any())
                     {
-                        _logger.LogInformation("👤 Scope: User selected LessonIds [{LessonIds}]", 
+                                _logger.LogInformation("👤 Scope: User selected LessonIds [{LessonIds}]", 
                             string.Join(", ", finalLessonIds));
                     }
                 }
@@ -322,13 +292,13 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                     }
                     else
                     {
-                        _logger.LogInformation("✅ No history, but using user-provided filters: SubjectIds [{SubjectIds}], GradeIds [{GradeIds}]",
+                                _logger.LogInformation("✅ No history, but using user-provided filters: SubjectIds [{SubjectIds}], GradeIds [{GradeIds}]",
                             string.Join(", ", finalSubjectIds ?? new List<int>()),
                             string.Join(", ", finalGradeIds ?? new List<int>()));
                     }
                 }
 
-                _logger.LogInformation("🔍 [ATTEMPT 1] Final search criteria - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}", 
+                        _logger.LogInformation("🔍 [ATTEMPT 1] Final search criteria - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}", 
                     finalSubjectIds != null ? string.Join(", ", finalSubjectIds) : "null",
                     finalGradeIds != null ? string.Join(", ", finalGradeIds) : "null",
                     request.ChapterIds != null && request.ChapterIds.Any() ? string.Join(", ", request.ChapterIds) : "null",
@@ -344,9 +314,9 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                     DifficultyLevelId = request.DifficultyLevelId
                 };
 
-                _logger.LogInformation("📡 [ATTEMPT 1] Calling QuestionService with auto-detect from history...");
+                        _logger.LogInformation("📡 [ATTEMPT 1] Calling QuestionService with auto-detect from history...");
                 var questions = await _questionsService.GetAllQuestionsSimpleAsync(searchRequest);
-                _logger.LogInformation("📥 [ATTEMPT 1] Received {Count} questions from QuestionService", questions.Count);
+                        _logger.LogInformation("📥 [ATTEMPT 1] Received {Count} questions from QuestionService", questions.Count);
                 
                 // ⚠️ RETRY LOGIC: Nếu không tìm thấy câu hỏi nào → Thử lại CHỈ dựa vào request của user
                 if (questions.Count == 0)
@@ -374,7 +344,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                             DifficultyLevelId = request.DifficultyLevelId
                         };
 
-                        _logger.LogInformation("🔍 [ATTEMPT 2] Retry with ONLY user filters - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}",
+                                _logger.LogInformation("🔍 [ATTEMPT 2] Retry with ONLY user filters - SubjectIds: [{SubjectIds}], GradeIds: [{GradeIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}",
                             request.SubjectIds != null && request.SubjectIds.Any() ? string.Join(", ", request.SubjectIds) : "null",
                             request.GradeIds != null && request.GradeIds.Any() ? string.Join(", ", request.GradeIds) : "null",
                             request.ChapterIds != null && request.ChapterIds.Any() ? string.Join(", ", request.ChapterIds) : "null",
@@ -388,9 +358,9 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                         retrySearchRequest = null; // null = lấy tất cả
                     }
 
-                    _logger.LogInformation("📡 [ATTEMPT 2] Calling QuestionService...");
+                            _logger.LogInformation("📡 [ATTEMPT 2] Calling QuestionService...");
                     questions = await _questionsService.GetAllQuestionsSimpleAsync(retrySearchRequest);
-                    _logger.LogInformation("📥 [ATTEMPT 2] Received {Count} questions from QuestionService", questions.Count);
+                            _logger.LogInformation("📥 [ATTEMPT 2] Received {Count} questions from QuestionService", questions.Count);
 
                     if (questions.Count == 0)
                     {
@@ -412,7 +382,7 @@ namespace teamseven.EzExam.Services.Services.AIExamGenerationService
                     LessonName = q.LessonName ?? "Unknown"
                 }).ToList();
 
-                _logger.LogInformation("✅ Converted to {Count} minimal questions", minimalQuestions.Count);
+                        _logger.LogInformation("✅ Converted to {Count} minimal questions", minimalQuestions.Count);
                 _logger.LogInformation("📊 Question Distribution:");
                 
                 var difficultyGroups = minimalQuestions.GroupBy(q => q.DifficultyLevel);

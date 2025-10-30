@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -62,7 +63,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             {
                 await _unitOfWork.QuestionRepository.CreateAsync(question);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
-                _logger.LogInformation("Question with ID {QuestionId} created successfully.", question.Id);
                 var response = new QuestionDataResponse
                 {
                     Id = question.Id,
@@ -103,7 +103,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
 
             await _unitOfWork.QuestionRepository.RemoveAsync(target);
             await _unitOfWork.SaveChangesWithTransactionAsync();
-            _logger.LogInformation("Question with ID {QuestionId} deleted successfully.", id);
         }
 
         public async Task<QuestionDataResponse> GetQuestionById(int id)
@@ -174,8 +173,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             {
                 await _unitOfWork.QuestionRepository.UpdateAsync(existingQuestion);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
-
-                _logger.LogInformation("Question with ID {QuestionId} updated successfully.", existingQuestion.Id);
 
                 // Return updated data
                 return new QuestionDataResponse
@@ -342,6 +339,81 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
         }
 
+        /// <summary>
+        /// Optimized feed for questions: single query projection that only retrieves metadata (counts) and shallow fields.
+        /// Avoids N+1 by using subqueries in projection and DbContext for efficient SQL translation.
+        /// </summary>
+        public async Task<PagedResponse<QuestionFeedResponse>> GetOptimizedQuestionsFeedAsync(
+            int currentUserId,
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? lessonId = null,
+            int? difficultyLevelId = null)
+        {
+            // Basic validation / normalize paging
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 20;
+            var skip = (page - 1) * pageSize;
+
+            try
+            {
+                var ctx = _unitOfWork.Context;
+
+                // Base query: only active questions
+                var baseQuery = ctx.Questions.AsQueryable().Where(q => q.IsActive == true);
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var lowered = search.Trim();
+                    baseQuery = baseQuery.Where(q => q.Content.ToLower().Contains(lowered.ToLower()));
+                }
+
+                if (lessonId.HasValue)
+                    baseQuery = baseQuery.Where(q => q.LessonId == lessonId.Value);
+
+                if (difficultyLevelId.HasValue)
+                    baseQuery = baseQuery.Where(q => q.DifficultyLevelId == difficultyLevelId.Value);
+
+                var totalItems = await baseQuery.CountAsync();
+
+                var projected = await baseQuery
+                    .OrderByDescending(q => q.CreatedAt)
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .Select(q => new QuestionFeedResponse
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt,
+                        LessonId = q.LessonId,
+                        LessonName = q.Lesson != null ? q.Lesson.Name : null,
+                        ChapterName = q.Chapter != null ? q.Chapter.Name : null,
+                        CreatedByUserId = q.CreatedByUserId,
+                        CreatedByUserName = q.CreatedByUser != null ? q.CreatedByUser.FullName : null,
+                        DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
+                        Type = q.QuestionType != null ? q.QuestionType.ToLower() : "multiple-choice",
+
+                        // metadata counts are translated to subqueries in SQL by EF Core
+                        AnswerCount = ctx.Answers.Count(a => a.QuestionId == q.Id),
+                        CommentCount = ctx.QuestionComments.Count(c => c.QuestionId == q.Id && (c.IsDeleted == false || c.IsDeleted == null)),
+
+                        // whether the current user has any recorded attempt / answered this question
+                        IsAnsweredByCurrentUser = ctx.UserQuestionAttempts.Any(uqa => uqa.QuestionId == q.Id && uqa.UserId == currentUserId)
+                    })
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                return new PagedResponse<QuestionFeedResponse>(projected, page, pageSize, totalItems);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving optimized questions feed: {Message}", ex.Message);
+                throw new ApplicationException("Error retrieving optimized questions feed.", ex);
+            }
+        }
+
         public async Task<List<QuestionDataResponse>> GetQuestionBySubjectIdAsync(int subjectId)
         {
             try
@@ -400,7 +472,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
         {
             try
             {
-                _logger.LogInformation("🔍 [QuestionsService] START - Fetching all questions from database...");
                 
                 var questions = await _unitOfWork.QuestionRepository.GetAllAsync();
                 
@@ -410,7 +481,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     return new List<QuestionSimpleResponse>();
                 }
 
-                _logger.LogInformation("🔍 [QuestionsService] Total questions from DB: {Count}", questions.Count);
+                
 
                 var query = questions.AsQueryable();
                 var initialCount = query.Count();
@@ -418,24 +489,19 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 // Apply search filters if provided
                 if (searchRequest != null)
                 {
-                    _logger.LogInformation("🔍 [QuestionsService] Applying filters - GradeIds: [{GradeIds}], SubjectIds: [{SubjectIds}], ChapterIds: [{ChapterIds}], LessonIds: [{LessonIds}], DifficultyLevelId: {DifficultyLevelId}",
-                        searchRequest.GradeIds != null && searchRequest.GradeIds.Any() ? string.Join(", ", searchRequest.GradeIds) : "null",
-                        searchRequest.SubjectIds != null && searchRequest.SubjectIds.Any() ? string.Join(", ", searchRequest.SubjectIds) : "null",
-                        searchRequest.ChapterIds != null && searchRequest.ChapterIds.Any() ? string.Join(", ", searchRequest.ChapterIds) : "null",
-                        searchRequest.LessonIds != null && searchRequest.LessonIds.Any() ? string.Join(", ", searchRequest.LessonIds) : "null",
-                        searchRequest.DifficultyLevelId?.ToString() ?? "null");
+                    
 
                     if (!string.IsNullOrEmpty(searchRequest.Content))
                     {
                         query = query.Where(q => q.Content.Contains(searchRequest.Content, StringComparison.OrdinalIgnoreCase));
-                        _logger.LogInformation("  ✅ After Content filter: {Count} questions", query.Count());
+                        
                     }
 
                     // Lọc theo ID độ khó
                     if (searchRequest.DifficultyLevelId.HasValue)
                     {
                         query = query.Where(q => q.DifficultyLevelId == searchRequest.DifficultyLevelId.Value);
-                        _logger.LogInformation("  ✅ After DifficultyLevel filter: {Count} questions", query.Count());
+                        
                     }
 
                     // Lọc theo nhiều khối lớp
@@ -443,7 +509,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     {
                         var beforeCount = query.Count();
                         query = query.Where(q => q.GradeId.HasValue && searchRequest.GradeIds.Contains(q.GradeId.Value));
-                        _logger.LogInformation("  ✅ After GradeIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                        
                     }
 
                     // Lọc theo nhiều môn học (thông qua Lesson → Chapter → Subject)
@@ -452,12 +518,12 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         var beforeCount = query.Count();
                         // Đếm bao nhiêu questions có Lesson và Chapter
                         var questionsWithLessonAndChapter = query.Count(q => q.Lesson != null && q.Lesson.Chapter != null);
-                        _logger.LogInformation("  📊 Questions with Lesson and Chapter: {Count}/{Total}", questionsWithLessonAndChapter, beforeCount);
+                        
                         
                         query = query.Where(q => q.Lesson != null && 
                             q.Lesson.Chapter != null && 
                             searchRequest.SubjectIds.Contains(q.Lesson.Chapter.SubjectId));
-                        _logger.LogInformation("  ✅ After SubjectIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                        
                     }
 
                     // Lọc theo nhiều chương (thông qua Lesson → Chapter)
@@ -466,7 +532,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         var beforeCount = query.Count();
                         query = query.Where(q => q.Lesson != null && 
                             searchRequest.ChapterIds.Contains(q.Lesson.ChapterId));
-                        _logger.LogInformation("  ✅ After ChapterIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                        
                     }
 
                     // Lọc theo nhiều bài học
@@ -474,7 +540,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     {
                         var beforeCount = query.Count();
                         query = query.Where(q => q.LessonId.HasValue && searchRequest.LessonIds.Contains(q.LessonId.Value));
-                        _logger.LogInformation("  ✅ After LessonIds filter: {Count} questions (was {Before})", query.Count(), beforeCount);
+                        
                     }
                 }
 
@@ -489,7 +555,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                     LessonName = q.Lesson != null ? q.Lesson.Name : null
                 }).ToList();
 
-                _logger.LogInformation("🔍 [QuestionsService] Final result: {Count} questions (filtered from {Initial})", result.Count, initialCount);
+                
                 
                 return result;
             }

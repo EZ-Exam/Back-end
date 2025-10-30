@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Extensions;
@@ -24,7 +25,7 @@ namespace teamseven.EzExam.Services.Services.LessonService
 
         public async Task<IEnumerable<LessonDataResponse>> GetAllLessonAsync()
         {
-            var lessons = await _unitOfWork.LessonRepository.GetAllAsync();
+            var lessons = await _unitOfWork.LessonRepository.GetAllAsync() ?? new List<Lesson>();
             return lessons.Select(l => new LessonDataResponse
             {
                 Id = l.Id,
@@ -171,8 +172,6 @@ namespace teamseven.EzExam.Services.Services.LessonService
 
             await _unitOfWork.LessonRepository.CreateAsync(lesson);
             await _unitOfWork.SaveChangesWithTransactionAsync();
-
-            _logger.LogInformation("Created lesson with ID {Id}.", lesson.Id);
         }
 
         public async Task UpdateLessonAsync(LessonDataRequest request)
@@ -186,8 +185,6 @@ namespace teamseven.EzExam.Services.Services.LessonService
 
             await _unitOfWork.LessonRepository.UpdateAsync(lesson);
             await _unitOfWork.SaveChangesWithTransactionAsync();
-
-            _logger.LogInformation("Updated lesson with ID {Id}.", lesson.Id);
         }
 
         public async Task DeleteLessonAsync(int id)
@@ -201,8 +198,105 @@ namespace teamseven.EzExam.Services.Services.LessonService
 
             await _unitOfWork.LessonRepository.RemoveAsync(lesson);
             await _unitOfWork.SaveChangesWithTransactionAsync();
+        }
 
-            _logger.LogInformation("Deleted lesson with ID {Id}.", lesson.Id);
+        // =================== OPTIMIZED: Lesson feed ===================
+        public async Task<PagedResponse<LessonFeedResponse>> GetOptimizedLessonsFeedAsync(
+            int currentUserId,
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? chapterId = null,
+            int isSort = 0)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 20;
+            var skip = (page - 1) * pageSize;
+
+            var ctx = _unitOfWork.Context;
+
+            var baseQuery = ctx.Lessons.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                baseQuery = baseQuery.Where(l => l.Name.ToLower().Contains(s) || (l.Document != null && l.Document.ToLower().Contains(s)));
+            }
+            if (chapterId.HasValue) baseQuery = baseQuery.Where(l => l.ChapterId == chapterId.Value);
+
+            var total = await baseQuery.CountAsync();
+
+            var query = baseQuery.OrderByDescending(l => l.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(l => new LessonFeedResponse
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    ChapterId = l.ChapterId,
+                    ChapterName = l.Chapter != null ? l.Chapter.Name : null,
+                    SubjectId = l.Chapter != null ? (int?)l.Chapter.SubjectId : null,
+                    SubjectName = l.Chapter != null && l.Chapter.Subject != null ? l.Chapter.Subject.Name : null,
+                    CreatedAt = l.CreatedAt,
+                    UpdatedAt = l.UpdatedAt,
+
+                    QuestionCount = ctx.Questions.Count(q => q.LessonId == l.Id),
+                    ExamCount = ctx.Exams.Count(e => e.LessonId == l.Id),
+                    AttemptCount = ctx.ExamHistories.Count(h => h.Exam != null && h.Exam.LessonId == l.Id),
+                    AverageScore = ctx.ExamHistories.Where(h => h.Exam != null && h.Exam.LessonId == l.Id).Select(h => (decimal?)h.Score).Average() ?? 0m,
+                    IsAttemptedByCurrentUser = currentUserId > 0 && ctx.ExamHistories.Any(h => h.Exam != null && h.Exam.LessonId == l.Id && h.UserId == currentUserId)
+                })
+                .AsNoTracking();
+
+            var items = await query.ToListAsync();
+            return new PagedResponse<LessonFeedResponse>(items, page, pageSize, total);
+        }
+
+        // =================== OPTIMIZED: Lesson details ===================
+        public async Task<LessonDetailOptimizedResponse> GetOptimizedLessonDetailsAsync(int lessonId, int currentUserId = 0)
+        {
+            var ctx = _unitOfWork.Context;
+
+            var lesson = await ctx.Lessons.AsNoTracking()
+                .Where(l => l.Id == lessonId)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Name,
+                    l.ChapterId,
+                    ChapterName = l.Chapter != null ? l.Chapter.Name : null,
+                    SubjectId = l.Chapter != null ? (int?)l.Chapter.SubjectId : null,
+                    SubjectName = l.Chapter != null && l.Chapter.Subject != null ? l.Chapter.Subject.Name : null,
+                    l.CreatedAt,
+                    l.UpdatedAt
+                }).FirstOrDefaultAsync();
+
+            if (lesson == null) throw new ArgumentException("Lesson not found");
+
+            var questionIds = await ctx.Questions.AsNoTracking().Where(q => q.LessonId == lessonId).Select(q => q.Id).ToListAsync();
+            var examIds = await ctx.Exams.AsNoTracking().Where(e => e.LessonId == lessonId).Select(e => e.Id).ToListAsync();
+
+            var attemptCount = await ctx.ExamHistories.CountAsync(h => h.Exam != null && h.Exam.LessonId == lessonId);
+            var avgScore = await ctx.ExamHistories.Where(h => h.Exam != null && h.Exam.LessonId == lessonId).Select(h => (decimal?)h.Score).AverageAsync() ?? 0m;
+            var isAttempted = currentUserId > 0 && await ctx.ExamHistories.AnyAsync(h => h.Exam != null && h.Exam.LessonId == lessonId && h.UserId == currentUserId);
+
+            return new LessonDetailOptimizedResponse
+            {
+                Id = lesson.Id,
+                Name = lesson.Name,
+                ChapterId = lesson.ChapterId,
+                SubjectId = lesson.SubjectId,
+                ChapterName = lesson.ChapterName,
+                SubjectName = lesson.SubjectName,
+                CreatedAt = lesson.CreatedAt,
+                UpdatedAt = lesson.UpdatedAt,
+                QuestionIds = questionIds,
+                ExamIds = examIds,
+                QuestionCount = questionIds.Count,
+                ExamCount = examIds.Count,
+                AttemptCount = attemptCount,
+                AverageScore = avgScore,
+                IsAttemptedByCurrentUser = isAttempted
+            };
         }
     }
 }

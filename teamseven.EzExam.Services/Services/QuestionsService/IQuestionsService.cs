@@ -26,5 +26,12 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             int? textbookId = null);
         
         Task<List<QuestionSimpleResponse>> GetAllQuestionsSimpleAsync(QuestionSearchRequest? searchRequest = null);
+        Task<PagedResponse<QuestionFeedResponse>> GetOptimizedQuestionsFeedAsync(
+            int currentUserId,
+            int page = 1,
+            int pageSize = 20,
+            string? search = null,
+            int? lessonId = null,
+            int? difficultyLevelId = null);
     }
 }
