@@ -64,8 +64,8 @@ namespace teamseven.EzExam.API.Controllers
                     (int)request.Amount,
                     request.Description,
                     items,
-                    "http://localhost:5173/",
-                    "http://localhost:5173/"
+                    "https://www.ezexam.online/login",
+                    "https://www.ezexam.online/login"
                 );
 
                 // Create payment link
