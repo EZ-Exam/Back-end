@@ -13,5 +13,7 @@ namespace teamseven.EzExam.Services.Interfaces
         Task<UserSubscriptionResponse> GetSubscriptionByIdAsync(int id);
         Task<IEnumerable<UserSubscriptionResponse>> GetAllByUserIdAsync(int userId);
         Task<UserSubscriptionResponse> GetByPaymentGatewayTransactionIdAsync(string transactionId);
+        Task<RevenueSummaryResponse> GetRevenueAsync(DateTime? fromUtc, DateTime? toUtc);
+
     }
 }
