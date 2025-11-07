@@ -460,6 +460,57 @@ namespace teamseven.EzExam.Services.Services.ExamService
             return new PagedResponse<ExamFeedResponse>(items, page, pageSize, totalItems);
         }
 
+        // =================== OPTIMIZED: Exams Feed BY USER ===================
+        // Lightweight projection for exams owned by a specific user.
+        public async Task<PagedResponse<ExamFeedResponse>> GetOptimizedExamsFeedByUserAsync(
+            int userId,
+            int page = 1,
+            int pageSize = 20)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 20;
+            var skip = (page - 1) * pageSize;
+
+            var ctx = _unitOfWork.Context;
+
+
+            var baseQuery = ctx.Exams.AsQueryable()
+                .Where(e => e.IsDeleted == false)
+                .Where(e => e.CreatedByUserId == userId);
+
+            var totalItems = await baseQuery.CountAsync();
+
+            var query = baseQuery.OrderByDescending(e => e.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(e => new ExamFeedResponse
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Description = e.Description,
+                    SubjectId = e.SubjectId,
+                    SubjectName = e.Subject != null ? e.Subject.Name : null,
+                    LessonId = e.LessonId,
+                    LessonName = e.Lesson != null ? e.Lesson.Name : null,
+                    ExamTypeName = e.ExamType != null ? e.ExamType.Name : null,
+                    CreatedByUserId = e.CreatedByUserId,
+                    CreatedByUserName = e.CreatedByUser != null ? e.CreatedByUser.Email : null,
+                    CreatedAt = e.CreatedAt,
+                    UpdatedAt = e.UpdatedAt,
+                    TimeLimit = e.TimeLimit,
+                    Duration = e.Duration,
+
+                    TotalQuestions = e.TotalQuestions != 0 ? e.TotalQuestions : ctx.ExamQuestions.Count(eq => eq.ExamId == e.Id),
+                    AttemptCount = ctx.ExamHistories.Count(h => h.ExamId == e.Id),
+                    AverageScore = ctx.ExamHistories.Where(h => h.ExamId == e.Id).Select(h => (decimal?)h.Score).Average() ?? 0m,
+                    IsAttemptedByCurrentUser = false
+                })
+                .AsNoTracking();
+
+            var items = await query.ToListAsync();
+            return new PagedResponse<ExamFeedResponse>(items, page, pageSize, totalItems);
+        }
+
         // =================== OPTIMIZED: Exam Details ===================
         // Returns lightweight details for a single exam including question ids and metadata (no full question payloads).
         public async Task<ExamDetailOptimizedResponse> GetOptimizedExamDetailsAsync(int examId, int currentUserId = 0)

@@ -153,7 +153,8 @@ namespace teamseven.EzExam.API.Controllers
         {
             try
             {
-                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedAsync(page, pageSize, null, null, null, null, userId);
+                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedByUserAsync(
+                    userId, page, pageSize);
                 return Ok(data);
             }
             catch (Exception ex)
