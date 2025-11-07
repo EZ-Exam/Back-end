@@ -410,10 +410,10 @@ namespace teamseven.EzExam.Services.Services.ExamService
 
             var ctx = _unitOfWork.Context;
 
-            // Do not restrict to public exams only in the optimized feed — return all non-deleted exams
-            // (the caller can still filter by createdByUserId or other criteria). This ensures the
-            // optimized feed returns results consistent with GetAll/GetExams when appropriate.
-            var baseQuery = ctx.Exams.AsQueryable().Where(e => e.IsDeleted == false);
+            // Filter exam: Only exam create by roleId = 3 can be loaded
+            var baseQuery = ctx.Exams.AsQueryable()
+                .Where(e => e.IsDeleted == false)
+                .Where(e => e.CreatedByUser != null && e.CreatedByUser.RoleId == 3);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
