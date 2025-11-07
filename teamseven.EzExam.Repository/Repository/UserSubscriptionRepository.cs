@@ -88,6 +88,30 @@ namespace teamseven.EzExam.Repository.Repository
                 .OrderByDescending(x => x.CreatedAt)
                 .FirstOrDefaultAsync();
         }
+        // UserSubscriptionRepository.cs (EF Core)
+        public async Task<decimal> SumCompletedAmountAsync(DateTime? fromUtc, DateTime? toUtc)
+        {
+            var q = _context.UserSubscriptions.AsQueryable()
+                .Where(x => x.PaymentStatus.ToUpper() == "COMPLETED");
+
+            if (fromUtc.HasValue) q = q.Where(x => x.CreatedAt >= fromUtc.Value);
+            if (toUtc.HasValue) q = q.Where(x => x.CreatedAt < toUtc.Value);
+
+            // phòng null
+            var sum = await q.SumAsync(x => (decimal?)x.Amount) ?? 0m;
+            return sum;
+        }
+
+        public async Task<int> CountCompletedAsync(DateTime? fromUtc, DateTime? toUtc)
+        {
+            var q = _context.UserSubscriptions.AsQueryable()
+                .Where(x => x.PaymentStatus.ToUpper() == "COMPLETED");
+
+            if (fromUtc.HasValue) q = q.Where(x => x.CreatedAt >= fromUtc.Value);
+            if (toUtc.HasValue) q = q.Where(x => x.CreatedAt < toUtc.Value);
+
+            return await q.CountAsync();
+        }
 
         public async Task<List<UserSubscription>?> GetSubscriptionsByUserIdAsync(int userId)
         {

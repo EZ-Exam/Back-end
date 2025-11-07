@@ -214,6 +214,33 @@ namespace teamseven.EzExam.API.Controllers
                 return Ok();
             }
         }
+        // GET: /api/payments/revenue?days=3
+        [HttpGet("revenue")]
+        [Authorize] // hoặc AllowAnonymous nếu muốn
+        [SwaggerOperation(
+            Summary = "Revenue summary",
+            Description = "Tổng doanh thu COMPLETED; nếu truyền days=n thì tính từ n ngày trước đến hiện tại, nếu không truyền thì lấy toàn bộ."
+        )]
+        [SwaggerResponse(200, "Revenue summary")]
+        public async Task<IActionResult> GetRevenue([FromQuery] int? days = null)
+        {
+            DateTime? fromUtc = null;
+            DateTime? toUtc = null;
+
+            if (days.HasValue && days.Value > 0)
+            {
+                // từ n ngày trước đến hiện tại (UTC)
+                toUtc = DateTime.UtcNow;
+                fromUtc = toUtc.Value.AddDays(-days.Value);
+            }
+
+            var result = await _serviceProvider
+                .UserSubscriptionService
+                .GetRevenueAsync(fromUtc, toUtc);
+
+            return Ok(result);
+        }
+
 
     }
 
