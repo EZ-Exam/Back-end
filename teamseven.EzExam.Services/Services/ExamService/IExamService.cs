@@ -38,7 +38,10 @@ namespace teamseven.EzExam.Services.Services.ExamService
             int? examTypeId = null,
             int? createdByUserId = null,
             int isSort = 0);
-
+        Task<PagedResponse<ExamFeedResponse>> GetOptimizedExamsFeedByUserAsync(
+            int userId,
+            int page = 1,
+            int pageSize = 20);
         Task<ExamDetailOptimizedResponse> GetOptimizedExamDetailsAsync(int examId, int currentUserId = 0);
 
         Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest);
