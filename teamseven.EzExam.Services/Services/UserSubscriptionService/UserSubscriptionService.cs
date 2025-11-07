@@ -93,6 +93,20 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
                 UpdatedAt = subscription.UpdatedAt
             };
         }
+        // UserSubscriptionService.cs
+        public async Task<RevenueSummaryResponse> GetRevenueAsync(DateTime? fromUtc, DateTime? toUtc)
+        {
+            var total = await _unitOfWork.UserSubscriptionRepository.SumCompletedAmountAsync(fromUtc, toUtc);
+            var count = await _unitOfWork.UserSubscriptionRepository.CountCompletedAsync(fromUtc, toUtc);
+
+            return new RevenueSummaryResponse
+            {
+                TotalAmount = total,
+                CompletedCount = count,
+                From = fromUtc,
+                To = toUtc
+            };
+        }
 
         public async Task<UserSubscriptionResponse> GetByPaymentGatewayTransactionIdAsync(string transactionId)
         {
@@ -157,7 +171,9 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
             if (subscriptions == null || !subscriptions.Any())
                 throw new NotFoundException($"No subscriptions found for user with ID {userId}.");
 
-            return subscriptions.Select(s => new UserSubscriptionResponse
+            return subscriptions.Select(s =>
+            
+            new UserSubscriptionResponse
             {
                 Id = s.Id,
                 UserId = s.UserId,
