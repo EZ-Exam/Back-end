@@ -23,6 +23,13 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
             _logger = logger;
         }
 
+        private string GetSubscriptionAction(UserSubscription subscription)
+        {
+            return string.IsNullOrEmpty(subscription.PaymentGatewayTransactionId)
+                ? "BUY_SUBSCRIPTION"        // giao dịch trên web
+                : "TOPUP_GATEWAY";          // nạp qua PayOS
+        }
+
         public async Task<IEnumerable<UserSubscriptionDataResponse>> GetAllSubscriptionsAsync()
         {
             var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsAsync();
@@ -38,7 +45,9 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
                 Amount = s.Amount,
                 PaymentGatewayTransactionId = s.PaymentGatewayTransactionId,
                 CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt
+                UpdatedAt = s.UpdatedAt,
+
+                ActionType = GetSubscriptionAction(s)
             });
         }
 
