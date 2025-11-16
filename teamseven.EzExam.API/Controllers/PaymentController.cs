@@ -64,8 +64,8 @@ namespace teamseven.EzExam.API.Controllers
                     (int)request.Amount,
                     request.Description,
                     items,
-                    "https://www.ezexam.online/login",
-                    "https://www.ezexam.online/login"
+                    "https://www.ezexam.online",
+                    "https://www.ezexam.online"
                 );
 
                 // Create payment link
