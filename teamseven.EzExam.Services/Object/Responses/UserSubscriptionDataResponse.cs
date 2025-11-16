@@ -13,5 +13,7 @@ namespace teamseven.EzExam.Services.Object.Responses
         public string PaymentGatewayTransactionId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public string ActionType { get; set; }
     }
 }
