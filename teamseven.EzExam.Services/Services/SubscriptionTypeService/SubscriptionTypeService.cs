@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
@@ -11,11 +12,13 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SubscriptionTypeService> _logger;
+        private readonly IMapper _mapper;
 
-        public SubscriptionTypeService(IUnitOfWork unitOfWork, ILogger<SubscriptionTypeService> logger)
+        public SubscriptionTypeService(IUnitOfWork unitOfWork, ILogger<SubscriptionTypeService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<SubscriptionTypeResponse> GetSubscriptionTypeByIdAsync(int id)
@@ -26,7 +29,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
                 if (subscriptionType == null)
                     throw new NotFoundException($"Subscription type with ID {id} not found.");
 
-                return MapToResponse(subscriptionType);
+                return _mapper.Map<SubscriptionTypeResponse>(subscriptionType);
             }
             catch (NotFoundException)
             {
@@ -44,7 +47,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
             try
             {
                 var subscriptionTypes = await _unitOfWork.SubscriptionTypeRepository.GetAllAsync();
-                return subscriptionTypes.Select(MapToResponse);
+                return subscriptionTypes.Select(t => _mapper.Map<SubscriptionTypeResponse>(t));
             }
             catch (Exception ex)
             {
@@ -64,7 +67,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
                 if (subscriptionType == null)
                     throw new NotFoundException($"Subscription type with code '{subscriptionCode}' not found.");
 
-                return MapToResponse(subscriptionType);
+                return _mapper.Map<SubscriptionTypeResponse>(subscriptionType);
             }
             catch (ArgumentException)
             {
@@ -91,34 +94,21 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
 
             try
             {
-                // Check if subscription code already exists
                 var existingType = await _unitOfWork.SubscriptionTypeRepository.GetByCodeAsync(request.SubscriptionCode);
                 var codeExists = existingType != null;
                 if (codeExists)
                     throw new InvalidOperationException($"Subscription code '{request.SubscriptionCode}' already exists.");
 
-                var subscriptionType = new SubscriptionType
-                {
-                    SubscriptionCode = request.SubscriptionCode,
-                    SubscriptionName = request.SubscriptionName,
-                    SubscriptionPrice = request.SubscriptionPrice,
-                    Description = request.Description,
-                    MaxSolutionViews = request.MaxSolutionViews,
-                    MaxAIRequests = request.MaxAIRequests,
-                    IsAIEnabled = request.IsAIEnabled,
-                    Features = request.Features,
-                    IsActive = request.IsActive,
-                    UpdatedBy = request.UpdatedBy,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                var subscriptionType = _mapper.Map<SubscriptionType>(request);
+                subscriptionType.CreatedAt = DateTime.UtcNow;
+                subscriptionType.UpdatedAt = DateTime.UtcNow;
 
                 await _unitOfWork.SubscriptionTypeRepository.AddAsync(subscriptionType);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
                 _logger.LogInformation("Subscription type {Code} created successfully", request.SubscriptionCode);
 
-                return MapToResponse(subscriptionType);
+                return _mapper.Map<SubscriptionTypeResponse>(subscriptionType);
             }
             catch (InvalidOperationException)
             {
@@ -145,23 +135,12 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
                 if (existingSubscriptionType == null)
                     throw new NotFoundException($"Subscription type with ID {id} not found.");
 
-                // Check if subscription code already exists (excluding current record)
                 var existingType = await _unitOfWork.SubscriptionTypeRepository.GetByCodeAsync(request.SubscriptionCode);
                 var codeExists = existingType != null && existingType.Id != id;
                 if (codeExists)
                     throw new InvalidOperationException($"Subscription code '{request.SubscriptionCode}' already exists.");
 
-                // Update properties
-                existingSubscriptionType.SubscriptionCode = request.SubscriptionCode;
-                existingSubscriptionType.SubscriptionName = request.SubscriptionName;
-                existingSubscriptionType.SubscriptionPrice = request.SubscriptionPrice;
-                existingSubscriptionType.Description = request.Description;
-                existingSubscriptionType.MaxSolutionViews = request.MaxSolutionViews;
-                existingSubscriptionType.MaxAIRequests = request.MaxAIRequests;
-                existingSubscriptionType.IsAIEnabled = request.IsAIEnabled;
-                existingSubscriptionType.Features = request.Features;
-                existingSubscriptionType.IsActive = request.IsActive;
-                existingSubscriptionType.UpdatedBy = request.UpdatedBy;
+                _mapper.Map(request, existingSubscriptionType);
                 existingSubscriptionType.UpdatedAt = DateTime.UtcNow;
 
                 await _unitOfWork.SubscriptionTypeRepository.UpdateAsync(existingSubscriptionType);
@@ -169,7 +148,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
 
                 _logger.LogInformation("Subscription type {Id} updated successfully", id);
 
-                return MapToResponse(existingSubscriptionType);
+                return _mapper.Map<SubscriptionTypeResponse>(existingSubscriptionType);
             }
             catch (NotFoundException)
             {
@@ -186,28 +165,15 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
             }
         }
 
-        public async Task<bool> DeleteSubscriptionTypeAsync(int id)
+        public async Task DeleteSubscriptionTypeAsync(int id)
         {
-            try
-            {
-                var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id);
-                if (subscriptionType == null)
-                {
-                    _logger.LogWarning("Subscription type with ID {Id} not found for deletion", id);
-                    return false;
-                }
+            var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id)
+                ?? throw new NotFoundException($"Subscription type with ID {id} not found.");
 
-                await _unitOfWork.SubscriptionTypeRepository.DeleteAsync(subscriptionType);
-                await _unitOfWork.SaveChangesWithTransactionAsync();
+            await _unitOfWork.SubscriptionTypeRepository.DeleteAsync(subscriptionType);
+            await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                _logger.LogInformation("Subscription type {Id} deleted successfully", id);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting subscription type {Id}: {Message}", id, ex.Message);
-                return false;
-            }
+            _logger.LogInformation("Subscription type {Id} deleted successfully", id);
         }
 
         public async Task<IEnumerable<SubscriptionTypeResponse>> GetActiveSubscriptionTypesAsync()
@@ -215,7 +181,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
             try
             {
                 var activeSubscriptionTypes = await _unitOfWork.SubscriptionTypeRepository.GetActiveSubscriptionTypesAsync();
-                return activeSubscriptionTypes.Select(MapToResponse);
+                return activeSubscriptionTypes.Select(t => _mapper.Map<SubscriptionTypeResponse>(t));
             }
             catch (Exception ex)
             {
@@ -247,78 +213,33 @@ namespace teamseven.EzExam.Services.Services.SubscriptionTypeService
             }
         }
 
-        public async Task<bool> ActivateSubscriptionTypeAsync(int id)
+        public async Task ActivateSubscriptionTypeAsync(int id)
         {
-            try
-            {
-                var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id);
-                if (subscriptionType == null)
-                {
-                    _logger.LogWarning("Subscription type with ID {Id} not found for activation", id);
-                    return false;
-                }
+            var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id)
+                ?? throw new NotFoundException($"Subscription type with ID {id} not found.");
 
-                subscriptionType.IsActive = true;
-                subscriptionType.UpdatedAt = DateTime.UtcNow;
+            subscriptionType.IsActive = true;
+            subscriptionType.UpdatedAt = DateTime.UtcNow;
 
-                await _unitOfWork.SubscriptionTypeRepository.UpdateAsync(subscriptionType);
-                await _unitOfWork.SaveChangesWithTransactionAsync();
+            await _unitOfWork.SubscriptionTypeRepository.UpdateAsync(subscriptionType);
+            await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                _logger.LogInformation("Subscription type {Id} activated successfully", id);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error activating subscription type {Id}: {Message}", id, ex.Message);
-                return false;
-            }
+            _logger.LogInformation("Subscription type {Id} activated successfully", id);
         }
 
-        public async Task<bool> DeactivateSubscriptionTypeAsync(int id)
+        public async Task DeactivateSubscriptionTypeAsync(int id)
         {
-            try
-            {
-                var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id);
-                if (subscriptionType == null)
-                {
-                    _logger.LogWarning("Subscription type with ID {Id} not found for deactivation", id);
-                    return false;
-                }
+            var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(id)
+                ?? throw new NotFoundException($"Subscription type with ID {id} not found.");
 
-                subscriptionType.IsActive = false;
-                subscriptionType.UpdatedAt = DateTime.UtcNow;
+            subscriptionType.IsActive = false;
+            subscriptionType.UpdatedAt = DateTime.UtcNow;
 
-                await _unitOfWork.SubscriptionTypeRepository.UpdateAsync(subscriptionType);
-                await _unitOfWork.SaveChangesWithTransactionAsync();
+            await _unitOfWork.SubscriptionTypeRepository.UpdateAsync(subscriptionType);
+            await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                _logger.LogInformation("Subscription type {Id} deactivated successfully", id);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deactivating subscription type {Id}: {Message}", id, ex.Message);
-                return false;
-            }
+            _logger.LogInformation("Subscription type {Id} deactivated successfully", id);
         }
 
-        private static SubscriptionTypeResponse MapToResponse(SubscriptionType subscriptionType)
-        {
-            return new SubscriptionTypeResponse
-            {
-                Id = subscriptionType.Id,
-                SubscriptionCode = subscriptionType.SubscriptionCode,
-                SubscriptionName = subscriptionType.SubscriptionName,
-                SubscriptionPrice = subscriptionType.SubscriptionPrice,
-                Description = subscriptionType.Description,
-                MaxSolutionViews = subscriptionType.MaxSolutionViews,
-                MaxAIRequests = subscriptionType.MaxAIRequests,
-                IsAIEnabled = subscriptionType.IsAIEnabled,
-                Features = subscriptionType.Features,
-                IsActive = subscriptionType.IsActive,
-                UpdatedBy = subscriptionType.UpdatedBy,
-                CreatedAt = subscriptionType.CreatedAt,
-                UpdatedAt = subscriptionType.UpdatedAt
-            };
-        }
     }
 }

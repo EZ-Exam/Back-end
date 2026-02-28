@@ -81,7 +81,6 @@ namespace teamseven.EzExam.Services.Object.Requests
         [StringLength(1000, ErrorMessage = "Cheating details cannot exceed 1000 characters.")]
         public string? CheatingDetails { get; set; }
 
-        // Chi tiết từng câu hỏi học sinh làm
         public List<StudentQuestionAttemptRequest> QuestionAttempts { get; set; } = new List<StudentQuestionAttemptRequest>();
     }
 }

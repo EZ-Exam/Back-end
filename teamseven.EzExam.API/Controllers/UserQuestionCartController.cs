@@ -36,21 +36,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetUserCart(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var cartItems = await _serviceProviders.UserQuestionCartService.GetUserCartAsync(userId);
-                return Ok(cartItems);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving user cart for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving the cart" });
-            }
+            var cartItems = await _serviceProviders.UserQuestionCartService.GetUserCartAsync(userId);
+            return Ok(cartItems);
         }
 
         /// <summary>
@@ -66,21 +58,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetSelectedItems(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var selectedItems = await _serviceProviders.UserQuestionCartService.GetSelectedItemsAsync(userId);
-                return Ok(selectedItems);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving selected items for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving selected items" });
-            }
+            var selectedItems = await _serviceProviders.UserQuestionCartService.GetSelectedItemsAsync(userId);
+            return Ok(selectedItems);
         }
 
         /// <summary>
@@ -96,27 +80,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var result = await _serviceProviders.UserQuestionCartService.AddToCartAsync(request);
-                if (result)
-                {
-                    return Ok(new { message = "Question added to cart successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to add question to cart or question already exists" });
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.UserQuestionCartService.AddToCartAsync(request);
+            if (result)
             {
-                _logger.LogError(ex, "Error adding question to cart for user {UserId}", request.UserId);
-                return StatusCode(500, new { message = "An error occurred while adding question to cart" });
+                return Ok(new { message = "Question added to cart successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to add question to cart or question already exists" });
             }
         }
 
@@ -134,27 +110,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> RemoveFromCart(int userId, int questionId)
         {
-            try
+            if (userId <= 0 || questionId <= 0)
             {
-                if (userId <= 0 || questionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID or question ID" });
-                }
-
-                var result = await _serviceProviders.UserQuestionCartService.RemoveFromCartAsync(userId, questionId);
-                if (result)
-                {
-                    return Ok(new { message = "Question removed from cart successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to remove question from cart or item not found" });
-                }
+                return BadRequest(new { message = "Invalid user ID or question ID" });
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.UserQuestionCartService.RemoveFromCartAsync(userId, questionId);
+            if (result)
             {
-                _logger.LogError(ex, "Error removing question from cart for user {UserId}, question {QuestionId}", userId, questionId);
-                return StatusCode(500, new { message = "An error occurred while removing question from cart" });
+                return Ok(new { message = "Question removed from cart successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to remove question from cart or item not found" });
             }
         }
 
@@ -171,27 +139,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var result = await _serviceProviders.UserQuestionCartService.UpdateCartItemAsync(request);
-                if (result)
-                {
-                    return Ok(new { message = "Cart item updated successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to update cart item or item not found" });
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.UserQuestionCartService.UpdateCartItemAsync(request);
+            if (result)
             {
-                _logger.LogError(ex, "Error updating cart item for user {UserId}, question {QuestionId}", request.UserId, request.QuestionId);
-                return StatusCode(500, new { message = "An error occurred while updating cart item" });
+                return Ok(new { message = "Cart item updated successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to update cart item or item not found" });
             }
         }
 
@@ -209,27 +169,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> ToggleSelection(int userId, int questionId)
         {
-            try
+            if (userId <= 0 || questionId <= 0)
             {
-                if (userId <= 0 || questionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID or question ID" });
-                }
-
-                var result = await _serviceProviders.UserQuestionCartService.ToggleSelectionAsync(userId, questionId);
-                if (result)
-                {
-                    return Ok(new { message = "Selection toggled successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to toggle selection or item not found" });
-                }
+                return BadRequest(new { message = "Invalid user ID or question ID" });
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.UserQuestionCartService.ToggleSelectionAsync(userId, questionId);
+            if (result)
             {
-                _logger.LogError(ex, "Error toggling selection for user {UserId}, question {QuestionId}", userId, questionId);
-                return StatusCode(500, new { message = "An error occurred while toggling selection" });
+                return Ok(new { message = "Selection toggled successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to toggle selection or item not found" });
             }
         }
 
@@ -246,27 +198,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> ClearCart(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
-
-                var result = await _serviceProviders.UserQuestionCartService.ClearCartAsync(userId);
-                if (result)
-                {
-                    return Ok(new { message = "Cart cleared successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to clear cart" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.UserQuestionCartService.ClearCartAsync(userId);
+            if (result)
             {
-                _logger.LogError(ex, "Error clearing cart for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while clearing cart" });
+                return Ok(new { message = "Cart cleared successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to clear cart" });
             }
         }
 
@@ -283,21 +227,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetCartCount(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var count = await _serviceProviders.UserQuestionCartService.GetCartCountAsync(userId);
-                return Ok(new { count });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting cart count for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while getting cart count" });
-            }
+            var count = await _serviceProviders.UserQuestionCartService.GetCartCountAsync(userId);
+            return Ok(new { count });
         }
 
         /// <summary>
@@ -314,21 +250,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> IsQuestionInCart(int userId, int questionId)
         {
-            try
+            if (userId <= 0 || questionId <= 0)
             {
-                if (userId <= 0 || questionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID or question ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID or question ID" });
+            }
 
-                var exists = await _serviceProviders.UserQuestionCartService.IsQuestionInCartAsync(userId, questionId);
-                return Ok(new { exists });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking if question is in cart for user {UserId}, question {QuestionId}", userId, questionId);
-                return StatusCode(500, new { message = "An error occurred while checking cart status" });
-            }
+            var exists = await _serviceProviders.UserQuestionCartService.IsQuestionInCartAsync(userId, questionId);
+            return Ok(new { exists });
         }
     }
 }

@@ -42,16 +42,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetById(int id)
         {
-            try
-            {
-                var result = await _serviceProvider.UserSocialProviderService.GetByIdAsync(id);
-                return Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var result = await _serviceProvider.UserSocialProviderService.GetByIdAsync(id);
+            return Ok(result);
         }
 
         [HttpPost]
@@ -83,15 +75,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || id != request.Id)
                 return BadRequest(new { Message = "Invalid data or ID mismatch." });
 
-            try
-            {
-                await _serviceProvider.UserSocialProviderService.UpdateAsync(request);
-                return Ok(new { Message = "User social provider updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.UserSocialProviderService.UpdateAsync(request);
+            return Ok(new { Message = "User social provider updated successfully." });
         }
 
         [HttpDelete("{id}")]
@@ -99,15 +84,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerOperation(Summary = "Delete a user social provider")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                await _serviceProvider.UserSocialProviderService.DeleteAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.UserSocialProviderService.DeleteAsync(id);
+            return NoContent();
         }
     }
 }

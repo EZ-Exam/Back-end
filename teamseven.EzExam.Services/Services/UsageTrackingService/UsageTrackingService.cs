@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
@@ -11,18 +12,19 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UsageTrackingService> _logger;
+        private readonly IMapper _mapper;
 
-        public UsageTrackingService(IUnitOfWork unitOfWork, ILogger<UsageTrackingService> logger)
+        public UsageTrackingService(IUnitOfWork unitOfWork, ILogger<UsageTrackingService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<bool> CanUserPerformActionAsync(int userId, string actionType)
         {
             try
             {
-                // Get user's current subscription
                 var userSubscription = await GetActiveUserSubscriptionAsync(userId);
                 if (userSubscription == null)
                 {
@@ -30,7 +32,6 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     return false;
                 }
 
-                // Get subscription type details
                 var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(userSubscription.SubscriptionTypeId);
                 if (subscriptionType == null)
                 {
@@ -38,14 +39,12 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     return false;
                 }
 
-                // Check if subscription is still active
                 if (userSubscription.EndDate.HasValue && userSubscription.EndDate.Value < DateTime.UtcNow)
                 {
                     _logger.LogWarning("Subscription expired for user {UserId}", userId);
                     return false;
                 }
 
-                // Check specific action type
                 switch (actionType.ToUpper())
                 {
                     case "AI_REQUEST":
@@ -55,7 +54,6 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                             return false;
                         }
 
-                        // Check AI request limits
                         var aiUsage = await GetCurrentUsageAsync(userId, subscriptionType.Id, "AI_REQUEST");
                         if (subscriptionType.MaxAIRequests != -1 && aiUsage >= subscriptionType.MaxAIRequests)
                         {
@@ -65,7 +63,6 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                         break;
 
                     case "SOLUTION_VIEW":
-                        // Check solution view limits
                         var solutionUsage = await GetCurrentUsageAsync(userId, subscriptionType.Id, "SOLUTION_VIEW");
                         if (subscriptionType.MaxSolutionViews != -1 && solutionUsage >= subscriptionType.MaxSolutionViews)
                         {
@@ -92,7 +89,6 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
         {
             try
             {
-                // Get user's current subscription
                 var userSubscription = await GetActiveUserSubscriptionAsync(request.UserId);
                 if (userSubscription == null)
                 {
@@ -100,23 +96,18 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     return false;
                 }
 
-                // Get or create usage tracking record
                 var resetDate = GetResetDate();
                 var usageTracking = await _unitOfWork.UserUsageTrackingRepository.GetUserUsageTrackingAsync(
                     request.UserId, userSubscription.SubscriptionTypeId, request.UsageType, resetDate);
 
                 if (usageTracking == null)
                 {
-                    usageTracking = new UserUsageTracking
-                    {
-                        UserId = request.UserId,
-                        SubscriptionTypeId = userSubscription.SubscriptionTypeId,
-                        UsageType = request.UsageType,
-                        UsageCount = 1,
-                        ResetDate = resetDate,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
+                    usageTracking = _mapper.Map<UserUsageTracking>(request);
+                    usageTracking.SubscriptionTypeId = userSubscription.SubscriptionTypeId;
+                    usageTracking.UsageCount = 1;
+                    usageTracking.ResetDate = resetDate;
+                    usageTracking.CreatedAt = DateTime.UtcNow;
+                    usageTracking.UpdatedAt = DateTime.UtcNow;
                     await _unitOfWork.UserUsageTrackingRepository.AddAsync(usageTracking);
                 }
                 else
@@ -126,16 +117,8 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     await _unitOfWork.UserUsageTrackingRepository.UpdateAsync(usageTracking);
                 }
 
-                // Create usage history record
-                var usageHistory = new UserUsageHistory
-                {
-                    UserId = request.UserId,
-                    UsageType = request.UsageType,
-                    ResourceId = request.ResourceId,
-                    ResourceType = request.ResourceType,
-                    Description = request.Description,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var usageHistory = _mapper.Map<UserUsageHistory>(request);
+                usageHistory.CreatedAt = DateTime.UtcNow;
                 await _unitOfWork.UserUsageHistoryRepository.AddAsync(usageHistory);
 
                 await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -244,7 +227,7 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     ut.SubscriptionTypeId == userSubscription.SubscriptionTypeId &&
                     ut.ResetDate == resetDate);
 
-                return userUsageTrackings.Select(MapToUsageTrackingResponse);
+                return userUsageTrackings.Select(ut => _mapper.Map<UsageTrackingResponse>(ut));
             }
             catch (Exception ex)
             {
@@ -258,7 +241,7 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
             try
             {
                 var usageHistories = await _unitOfWork.UserUsageHistoryRepository.GetUserUsageHistoryAsync(userId, null, limit);
-                return usageHistories.Select(MapToUsageHistoryResponse);
+                return usageHistories.Select(h => _mapper.Map<UsageHistoryResponse>(h));
             }
             catch (Exception ex)
             {
@@ -267,50 +250,36 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
             }
         }
 
-        public async Task<bool> ResetUserUsageAsync(int userId, string usageType)
+        public async Task ResetUserUsageAsync(int userId, string usageType)
         {
-            try
+            var userSubscription = await GetActiveUserSubscriptionAsync(userId)
+                ?? throw new NotFoundException($"No active subscription found for user {userId}.");
+
+            var resetDate = GetResetDate();
+            var usageTracking = await _unitOfWork.UserUsageTrackingRepository.GetUserUsageTrackingAsync(
+                userId, userSubscription.SubscriptionTypeId, usageType, resetDate);
+
+            if (usageTracking != null)
             {
-                var userSubscription = await GetActiveUserSubscriptionAsync(userId);
-                if (userSubscription == null)
-                {
-                    _logger.LogWarning("No active subscription found for user {UserId}", userId);
-                    return false;
-                }
-
-                var resetDate = GetResetDate();
-                var usageTracking = await _unitOfWork.UserUsageTrackingRepository.GetUserUsageTrackingAsync(
-                    userId, userSubscription.SubscriptionTypeId, usageType, resetDate);
-
-                if (usageTracking != null)
-                {
-                    usageTracking.UsageCount = 0;
-                    usageTracking.UpdatedAt = DateTime.UtcNow;
-                    await _unitOfWork.UserUsageTrackingRepository.UpdateAsync(usageTracking);
-                    await _unitOfWork.SaveChangesWithTransactionAsync();
-                }
-
-                return true;
+                usageTracking.UsageCount = 0;
+                usageTracking.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.UserUsageTrackingRepository.UpdateAsync(usageTracking);
+                await _unitOfWork.SaveChangesWithTransactionAsync();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error resetting usage for user {UserId}: {Message}", userId, ex.Message);
-                return false;
-            }
+
+            _logger.LogInformation("Usage reset for user {UserId}, type {UsageType}", userId, usageType);
         }
 
         public async Task<bool> CheckAndIncrementSolutionViewAsync(int userId, int solutionId)
         {
             try
             {
-                // Check if user can view solution
                 var canView = await CanUserPerformActionAsync(userId, "SOLUTION_VIEW");
                 if (!canView)
                 {
                     return false;
                 }
 
-                // Increment usage
                 var request = new UsageTrackingRequest
                 {
                     UserId = userId,
@@ -333,14 +302,12 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
         {
             try
             {
-                // Check if user can make AI request
                 var canRequest = await CanUserPerformActionAsync(userId, "AI_REQUEST");
                 if (!canRequest)
                 {
                     return false;
                 }
 
-                // Increment usage
                 var request = new UsageTrackingRequest
                 {
                     UserId = userId,
@@ -368,7 +335,6 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
                     return null;
                 }
 
-                // Return the most recent active subscription
                 return activeSubscriptions
                     .Where(s => s.IsActive && (!s.EndDate.HasValue || s.EndDate.Value > DateTime.UtcNow))
                     .OrderByDescending(s => s.StartDate)
@@ -399,38 +365,9 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
 
         private static DateTime GetResetDate()
         {
-            // Reset usage on the 1st of each month
             var now = DateTime.UtcNow;
             return new DateTime(now.Year, now.Month, 1);
         }
 
-        private static UsageTrackingResponse MapToUsageTrackingResponse(UserUsageTracking usageTracking)
-        {
-            return new UsageTrackingResponse
-            {
-                Id = usageTracking.Id,
-                UserId = usageTracking.UserId,
-                SubscriptionTypeId = usageTracking.SubscriptionTypeId,
-                UsageType = usageTracking.UsageType,
-                UsageCount = usageTracking.UsageCount,
-                ResetDate = usageTracking.ResetDate,
-                CreatedAt = usageTracking.CreatedAt,
-                UpdatedAt = usageTracking.UpdatedAt
-            };
-        }
-
-        private static UsageHistoryResponse MapToUsageHistoryResponse(UserUsageHistory usageHistory)
-        {
-            return new UsageHistoryResponse
-            {
-                Id = usageHistory.Id,
-                UserId = usageHistory.UserId,
-                UsageType = usageHistory.UsageType,
-                ResourceId = usageHistory.ResourceId,
-                ResourceType = usageHistory.ResourceType,
-                Description = usageHistory.Description,
-                CreatedAt = usageHistory.CreatedAt
-            };
-        }
     }
 }

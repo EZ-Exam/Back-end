@@ -19,13 +19,10 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
             _logger = logger;
         }
 
-
         public async Task<SubscribeResponse> SubscribeUserAsync(int userId, SubscribeRequest request)
         {
             try
             {
-                // Use repository with hardcoded data - no database queries needed
-                // Validate user exists
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
                 if (user == null)
                 {
@@ -33,7 +30,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     throw new NotFoundException($"User with ID {userId} not found.");
                 }
 
-                // Validate subscription type exists - USE REPOSITORY WITH HARDCODED DATA
                 var subscriptionType = await _unitOfWork.SubscriptionTypeRepository.GetByIdAsync(request.SubscriptionTypeId);
                 if (subscriptionType == null)
                 {
@@ -41,7 +37,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     throw new KeyNotFoundException($"Subscription type with ID {request.SubscriptionTypeId} not found.");
                 }
 
-                // Kiểm tra số dư nếu là subscription trả phí (không phải FREE)
                 if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
                 {
                     if (user.Balance == null || user.Balance < subscriptionType.SubscriptionPrice)
@@ -64,10 +59,8 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     }
                 }
 
-                // Check if user has active subscription - OPTIMIZED QUERY
                 var existingSubscription = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
                 
-                // Nếu có subscription cũ, xóa tất cả subscription active để đè lên gói mới
                 if (existingSubscription != null)
                 {
                     var allActiveSubscriptions = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionsAsync((long)userId);
@@ -84,7 +77,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     }
                 }
 
-                // Create new subscription
                 var userSubscription = new UserSubscription
                 {
                     UserId = userId,
@@ -92,7 +84,7 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     Amount = subscriptionType.SubscriptionPrice,
                     StartDate = DateTime.UtcNow,
                     EndDate = CalculateEndDate(request.SubscriptionTypeId),
-                    PaymentStatus = request.SubscriptionTypeId == 1 ? "Completed" : "Pending", // FREE is auto-completed
+                    PaymentStatus = request.SubscriptionTypeId == 1 ? "Completed" : "Pending",
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -100,7 +92,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
 
                 await _unitOfWork.UserSubscriptionRepository.AddAsync(userSubscription);
                 
-                // Trừ tiền nếu là subscription trả phí
                 if (request.SubscriptionTypeId != 1 && subscriptionType.SubscriptionPrice > 0)
                 {
                     user.Balance -= subscriptionType.SubscriptionPrice;
@@ -221,7 +212,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
         {
             try
             {
-                // get all instead of oneone
                 var activeSubscriptions = await _unitOfWork.UserSubscriptionRepository.GetActiveSubscriptionsAsync((long)userId);
                 _logger.LogInformation("Found {Count} active subscriptions for user {UserId}", activeSubscriptions?.Count ?? 0, userId);
                 
@@ -231,7 +221,6 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
                     return false;
                 }
 
-                // Cancel tất cả subscription active
                 foreach (var subscription in activeSubscriptions)
                 {
                     _logger.LogInformation("Cancelling subscription ID {SubscriptionId} for user {UserId}", subscription.Id, userId);
@@ -308,11 +297,11 @@ namespace teamseven.EzExam.Services.Services.SubscriptionService
         {
             return subscriptionTypeId switch
             {
-                1 => DateTime.UtcNow.AddYears(10), // FREE - 10 years (effectively permanent)
-                2 => DateTime.UtcNow.AddMonths(1),  // BASIC - 1 month
-                3 => DateTime.UtcNow.AddMonths(1),  // PREMIUM - 1 month
-                4 => DateTime.UtcNow.AddMonths(1),  // UNLIMITED - 1 month
-                _ => DateTime.UtcNow.AddMonths(1)   // Default - 1 month
+                1 => DateTime.UtcNow.AddYears(10),
+                2 => DateTime.UtcNow.AddMonths(1),
+                3 => DateTime.UtcNow.AddMonths(1),
+                4 => DateTime.UtcNow.AddMonths(1),
+                _ => DateTime.UtcNow.AddMonths(1)
             };
         }
     }

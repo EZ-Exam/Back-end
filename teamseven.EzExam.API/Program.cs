@@ -50,9 +50,6 @@ using teamseven.EzExam.Services.Services.LessonEnhancedService;
 using teamseven.EzExam.Services.Services.QuestionCommentService;
 var builder = WebApplication.CreateBuilder(args);
 
-// ================= CẤU HÌNH DB =================
-//builder.Services.AddDbContext<teamsevenEzExamdbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<teamsevenezexamdbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
     {
@@ -63,7 +60,6 @@ builder.Services.AddDbContext<teamsevenezexamdbContext>(options =>
         npgsqlOptions.CommandTimeout(3);
     }));
 
-// ================= CẤU HÌNH AUTHENTICATION =================
 ConfigureAuthentication(builder.Services, builder.Configuration);
 
 try
@@ -84,22 +80,9 @@ catch (Exception ex)
     throw;
 }
 
-
-// ================= ĐĂNG KÝ REPOSITORY & SERVICE =================
-// Đăng ký dịch vụ với DI container
-
-// GHI CHÚ: Đăng ký Scoped và các lifetime trong ASP.NET Core
-// 1. Scoped: Một instance mỗi HTTP request, dùng cho DbContext, repository, service liên quan đến request
-//    - Ví dụ: DbContext, GenericRepository<Image>, ImageService
-//    - Lý do: Đảm bảo nhất quán trong request, an toàn với nhiều request đồng thời
-
-
-// ================= ĐĂNG KÝ REPOSITORY & SERVICE =================
-// 📌 Repository Layer (Scoped)
 builder.Services.AddScoped(typeof(GenericRepository<>));
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-// 📌 Service Layer (Scoped)
 builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 builder.Services.AddScoped<ISolutionService, SolutionService>();
@@ -122,56 +105,29 @@ builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ITextBookService, TextBookService>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
-builder.Services.AddScoped<LessonEnhancedRepository>();            // repo thẳng
-builder.Services.AddScoped<ILessonEnhancedService, LessonEnhancedService>(); // service
-builder.Services.AddScoped<IQuestionCommentService, QuestionCommentService>(); // QuestionComment service
+builder.Services.AddScoped<LessonEnhancedRepository>();
+builder.Services.AddScoped<ILessonEnhancedService, LessonEnhancedService>();
+builder.Services.AddScoped<IQuestionCommentService, QuestionCommentService>();
 
-
-// Test System Services
 builder.Services.AddScoped<IUserQuestionCartService, UserQuestionCartService>();
 builder.Services.AddScoped<ITestSessionService, TestSessionService>();
 builder.Services.AddScoped<ITestSessionIntegrationService, TestSessionIntegrationService>();
 
-// Student History Services
 builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
 
-// Exam History Services
 builder.Services.AddScoped<IExamHistoryService, ExamHistoryService>();
 builder.Services.AddScoped<IAIExamGenerationService, AIExamGenerationService>();
 
-// 📌 Background Services - DISABLED for performance
-// builder.Services.AddHostedService<SubscriptionExpirationService>();
-
-// 📌 Utility & Helper Services
-builder.Services.AddTransient<IEmailService, EmailService>(); // Email service (Transient)
-builder.Services.AddSingleton<IPasswordEncryptionService, PasswordEncryptionService>(); // Encryption (Singleton)
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddSingleton<IPasswordEncryptionService, PasswordEncryptionService>();
 builder.Services.AddSingleton<IIdObfuscator, IdObfuscator>();
 builder.Services.AddSingleton<NotificationService>();
 
-// 📌 Service Provider (must be registered after all other services)
 builder.Services.AddScoped<IServiceProviders, ServiceProviders>();
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
 
-// 2. Singleton: Một instance duy nhất cho cả ứng dụng, dùng cho dịch vụ không trạng thái
-//    - Ví dụ: Cấu hình, logger toàn cục
-//    - Cẩn thận: Không dùng cho DbContext/repository vì gây lỗi concurrency
-// Ví dụ: builder.Services.AddSingleton<SomeConfigService>();
-
-// 3. Transient: Instance mới mỗi lần gọi, dùng cho dịch vụ nhẹ, không lưu trạng thái
-//    - Ví dụ: Email sender, dịch vụ tạm thời
-// Ví dụ: builder.Services.AddTransient<SomeLightweightService>();
-
-//TÓM LẠI: NÊN HỎI CON AI COI NÊN XÀI SCOPE GÌ???
-
-
-
-
-
-
-// ================= CẤU HÌNH BLOB STORAGE =================
 ////var blobServiceClient = new BlobServiceClient(builder.Configuration["AzureStorage:ConnectionString"]);
-//builder.Services.AddSingleton(blobServiceClient);
 
-// ================= CẤU HÌNH SUPABASE =================
 var supabaseUrl = builder.Configuration["Supabase:Url"];
 var supabaseKey = builder.Configuration["Supabase:ServiceRoleKey"];
 
@@ -193,7 +149,6 @@ else
     Console.WriteLine("Supabase configuration is missing. PDF blob functionality will not be available.");
 }
 
-// ================= CẤU HÌNH CORS =================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -203,10 +158,8 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-// ================= THAY ĐỔI ĐỂ LẮNG NGHE HTTP =================
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
-// ================= CẤU HÌNH SWAGGER =================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -238,21 +191,19 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ================= CẤU HÌNH AUTOMAPPER =================
-// ================= CẤU HÌNH MEMORY CACHE =================
 builder.Services.AddMemoryCache(options =>
 {
-    options.SizeLimit = 1000; // Maximum number of cache entries
-    options.CompactionPercentage = 0.25; // Remove 25% of entries when limit is reached
+    options.SizeLimit = 1000;
+    options.CompactionPercentage = 0.25;
 });
 
-// ================= CẤU HÌNH CONTROLLERS =================
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// ================= MIDDLEWARE =================
+app.UseMiddleware<ExceptionMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -265,23 +216,19 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add subscription middleware to check AI access
 app.UseSubscriptionMiddleware();
 
 app.MapControllers();
 app.Run();
 
-// ================= AUTHENTICATION CONFIGURATION FUNCTION =================
 void ConfigureAuthentication(IServiceCollection services, IConfiguration config)
 {
-    // Retrieve JWT key from configuration
     var jwtKey = config["Jwt:Key"];
     if (string.IsNullOrEmpty(jwtKey))
     {
         throw new InvalidOperationException("JWT Key is missing in the configuration.");
     }
 
-    // JWT Authentication Configuration
     services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -291,9 +238,9 @@ void ConfigureAuthentication(IServiceCollection services, IConfiguration config)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true, // Verify the issuer
-            ValidateAudience = true, // Verify the audience
-            ValidateLifetime = true, // Check expiration time
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = config["Jwt:Issuer"],
             ValidAudience = config["Jwt:Audience"],
@@ -314,8 +261,6 @@ void ConfigureAuthentication(IServiceCollection services, IConfiguration config)
         };
     });
 
-
-    // Google Authentication
     services.AddAuthentication()
         .AddGoogle(googleOptions =>
         {
@@ -326,8 +271,6 @@ void ConfigureAuthentication(IServiceCollection services, IConfiguration config)
             googleOptions.ClaimActions.MapJsonKey("urn:google:locale", "locale", "string");
         });
 
-
-    // Authorization policies
     services.AddAuthorization(options =>
     {
         options.AddPolicy("DeliveringStaffPolicy", policy => policy.RequireClaim("roleId", "2"));

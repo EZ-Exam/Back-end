@@ -10,12 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class SemesterRepository : GenericRepository<Semester>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public SemesterRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public SemesterRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Semester>?> GetAllAsync()
         {
@@ -50,3 +46,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

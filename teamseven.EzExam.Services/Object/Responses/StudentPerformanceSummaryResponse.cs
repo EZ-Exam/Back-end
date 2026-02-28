@@ -29,13 +29,11 @@ namespace teamseven.EzExam.Services.Object.Responses
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        // Navigation properties for display
         public string? UserName { get; set; }
         public string? UserEmail { get; set; }
         public string? SubjectName { get; set; }
         public string? GradeName { get; set; }
 
-        // Additional computed properties
         public List<StudentQuizHistoryResponse>? RecentQuizzes { get; set; }
         public string? PerformanceInsights { get; set; }
         public List<string>? Recommendations { get; set; }

@@ -10,19 +10,15 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class ExamQuestionRepository : GenericRepository<ExamQuestion>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public ExamQuestionRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public ExamQuestionRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<ExamQuestion>?> GetByExamIdAsync(int examId)
         {
             return await _context.ExamQuestions
                 .Where(eq => eq.ExamId == examId)
                 .Include(eq => eq.Exam)     // T?i Exam d? l?y ExamName
-                .Include(eq => eq.Question) // T?i Question d? l?y QuestionContent
+                .Include(eq => eq.Question).ThenInclude(q => q.Answers)
                 .ToListAsync();
         }
 
@@ -35,7 +31,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<IEnumerable<Exam>> GetByCreatorAsync(int userId)
         {
             return await _context.Exams
-                .Where(e => e.CreatedByUserId == userId && !e.IsDeleted) // L?c theo userId và không b? xóa
+                .Where(e => e.CreatedByUserId == userId && !e.IsDeleted) // L?c theo userId v khng b? xa
                 .Include(e => e.Lesson)        // T?i Lesson d? l?y LessonName
                 .Include(e => e.ExamType)      // T?i ExamType d? l?y ExamTypeName
                 .Include(e => e.CreatedByUser) // T?i CreatedByUser d? l?y Name ho?c Email
@@ -68,3 +64,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

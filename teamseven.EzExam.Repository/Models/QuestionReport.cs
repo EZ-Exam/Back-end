@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -29,7 +29,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("IsHandled")]
         public bool IsHandled { get; set; } = false;
 
-        // Navigation properties
         [ForeignKey("QuestionId")]
         public virtual Question Question { get; set; } = null!;
 

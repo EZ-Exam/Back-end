@@ -10,9 +10,9 @@ using teamseven.EzExam.Services.Services.SubscriptionService;
 namespace teamseven.EzExam.API.Controllers
 {
     [ApiController]
-    [Route("api/subscription")]
+    [Route("api/subscriptions")]
     [Produces("application/json")]
-    [Authorize] 
+    [Authorize]
     public class SubscriptionController : ControllerBase
     {
         private readonly ISubscriptionService _subscriptionService;
@@ -29,13 +29,12 @@ namespace teamseven.EzExam.API.Controllers
             _jwtHelperService = jwtHelperService;
         }
 
-        [HttpPost("subscribe")]
-        [SwaggerOperation(Summary = "Subscribe to a subscription plan", Description = "Subscribe the current user to a subscription plan. FREE subscription can be overridden by any paid package. Paid subscriptions cannot be overridden by other paid packages.")]
+        [HttpPost]
+        [SwaggerOperation(Summary = "Subscribe to a subscription plan", Description = "Subscribe the current user to a subscription plan.")]
         [SwaggerResponse(200, "Subscription successful.", typeof(SubscribeResponse))]
         [SwaggerResponse(400, "Invalid request data or subscription logic violation.", typeof(object))]
         [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(404, "User or subscription type not found.", typeof(object))]
-        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> Subscribe([FromBody] SubscribeRequest request)
         {
             if (!ModelState.IsValid)
@@ -44,132 +43,77 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null)
             {
-                // Get current user ID from JWT token
-                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
-                if (currentUserId == null)
-                {
-                    _logger.LogWarning("Could not extract user ID from JWT token.");
-                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
-                }
+                _logger.LogWarning("Could not extract user ID from JWT token.");
+                return Unauthorized(new { Message = "Invalid or missing user information in token." });
+            }
 
-                var result = await _subscriptionService.SubscribeUserAsync(currentUserId.Value, request);
-                return Ok(result);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "User or subscription type not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error subscribing user: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while subscribing." });
-            }
+            var result = await _subscriptionService.SubscribeUserAsync(currentUserId.Value, request);
+            return Ok(result);
         }
 
-        [HttpGet("current")]
+        [HttpGet("me")]
         [SwaggerOperation(Summary = "Get current subscription", Description = "Retrieves the current active subscription for the authenticated user.")]
         [SwaggerResponse(200, "Current subscription retrieved successfully.", typeof(SubscribeResponse))]
         [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(404, "No active subscription found.", typeof(object))]
-        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetCurrentSubscription()
         {
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null)
             {
-                // Get current user ID from JWT token
-                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
-                if (currentUserId == null)
-                {
-                    _logger.LogWarning("Could not extract user ID from JWT token.");
-                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
-                }
+                _logger.LogWarning("Could not extract user ID from JWT token.");
+                return Unauthorized(new { Message = "Invalid or missing user information in token." });
+            }
 
-                var result = await _subscriptionService.GetUserCurrentSubscriptionAsync(currentUserId.Value);
-                return Ok(result);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "No active subscription found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting current subscription: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving subscription." });
-            }
+            var result = await _subscriptionService.GetUserCurrentSubscriptionAsync(currentUserId.Value);
+            return Ok(result);
         }
 
-        [HttpGet("history")]
+        [HttpGet("me/history")]
         [SwaggerOperation(Summary = "Get subscription history", Description = "Retrieves the subscription history for the authenticated user.")]
         [SwaggerResponse(200, "Subscription history retrieved successfully.", typeof(List<SubscribeResponse>))]
         [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
-        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetSubscriptionHistory()
         {
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null)
             {
-                // Get current user ID from JWT token
-                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
-                if (currentUserId == null)
-                {
-                    _logger.LogWarning("Could not extract user ID from JWT token.");
-                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
-                }
+                _logger.LogWarning("Could not extract user ID from JWT token.");
+                return Unauthorized(new { Message = "Invalid or missing user information in token." });
+            }
 
-                var result = await _subscriptionService.GetUserSubscriptionHistoryAsync(currentUserId.Value);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting subscription history: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving subscription history." });
-            }
+            var result = await _subscriptionService.GetUserSubscriptionHistoryAsync(currentUserId.Value);
+            return Ok(result);
         }
 
-
-        [HttpPost("cancel")]
+        [HttpDelete("me")]
         [SwaggerOperation(Summary = "Cancel current subscription", Description = "Cancels the current active subscription for the authenticated user.")]
         [SwaggerResponse(200, "Subscription cancelled successfully.", typeof(object))]
         [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
         [SwaggerResponse(404, "No active subscription found.", typeof(object))]
-        [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> CancelSubscription()
         {
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null)
             {
-                // Get current user ID from JWT token
-                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
-                if (currentUserId == null)
-                {
-                    _logger.LogWarning("Could not extract user ID from JWT token.");
-                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
-                }
-
-                var result = await _subscriptionService.CancelUserSubscriptionAsync(currentUserId.Value);
-                if (!result)
-                {
-                    return NotFound(new { Message = "No active subscription found to cancel." });
-                }
-
-                return Ok(new { Message = "Subscription cancelled successfully." });
+                _logger.LogWarning("Could not extract user ID from JWT token.");
+                return Unauthorized(new { Message = "Invalid or missing user information in token." });
             }
-            catch (Exception ex)
+
+            var result = await _subscriptionService.CancelUserSubscriptionAsync(currentUserId.Value);
+            if (!result)
             {
-                _logger.LogError(ex, "Error cancelling subscription: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while cancelling subscription." });
+                return NotFound(new { Message = "No active subscription found to cancel." });
             }
+
+            return Ok(new { Message = "Subscription cancelled successfully." });
         }
     }
 }

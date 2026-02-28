@@ -9,12 +9,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class QuestionRepository : GenericRepository<Question>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public QuestionRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public QuestionRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Question>?> GetAllAsync()
         {
@@ -89,19 +85,17 @@ namespace teamseven.EzExam.Repository.Repository
     int? chapterId = null,
     int isSort = 0,
     int createdByUserId = 0,
-    int? textbookId = null) // Default = 0 => kh�ng l?c theo user
+    int? textbookId = null)
         {
             var query = _context.Questions
                 .Include(q => q.Lesson)
                 .AsQueryable();
 
-            // ?? L?c theo ngu?i t?o (n?u c�)
             if (createdByUserId != 0)
             {
                 query = query.Where(q => q.CreatedByUserId == createdByUserId);
             }
 
-            // ?? Search (b? d?u)
             if (!string.IsNullOrEmpty(search))
             {
                 var searchNormalized = search.RemoveDiacritics().ToLower();
@@ -124,12 +118,9 @@ namespace teamseven.EzExam.Repository.Repository
             {
                 query = query.Where(q => q.Lesson.ChapterId == chapterId.Value);
             }
-            // NEW: filter theo textbookId
             if (textbookId.HasValue)
                 query = query.Where(q => q.TextbookId == textbookId.Value);
 
-
-            // ?? S?p x?p
             if (isSort == 1)
             {
                 if (!string.IsNullOrEmpty(sort))
@@ -175,7 +166,6 @@ namespace teamseven.EzExam.Repository.Repository
                 query = query.OrderBy(q => q.Id);
             }
 
-            // ?? Pagination
             var totalItems = await query.CountAsync();
             var items = await query
                 .Skip((pageNumber - 1) * pageSize)
@@ -186,3 +176,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
     }
+

@@ -5,33 +5,27 @@ using teamseven.EzExam.Services.Extensions;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 
+using AutoMapper;
+
 namespace teamseven.EzExam.Services.Services.UserSocialProviderService
 {
     public class UserSocialProviderService : IUserSocialProviderService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UserSocialProviderService> _logger;
+        private readonly IMapper _mapper;
 
-        public UserSocialProviderService(IUnitOfWork unitOfWork, ILogger<UserSocialProviderService> logger)
+        public UserSocialProviderService(IUnitOfWork unitOfWork, ILogger<UserSocialProviderService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<UserSocialProviderDataResponse>> GetAllAsync()
         {
             var items = await _unitOfWork.UserSocialProviderRepository.GetAllAsync();
-            return items.Select(x => new UserSocialProviderDataResponse
-            {
-                Id = x.Id,
-                UserId = x.UserId,
-                ProviderName = x.ProviderName,
-                ProviderId = x.ProviderId,
-                Email = x.Email,
-                ProfileUrl = x.ProfileUrl,
-                CreatedAt = x.CreatedAt,
-                UpdatedAt = x.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<UserSocialProviderDataResponse>>(items);
         }
 
         public async Task<UserSocialProviderDataResponse> GetByIdAsync(int id)
@@ -40,30 +34,13 @@ namespace teamseven.EzExam.Services.Services.UserSocialProviderService
             if (item == null)
                 throw new NotFoundException($"UserSocialProvider with ID {id} not found.");
 
-            return new UserSocialProviderDataResponse
-            {
-                Id = item.Id,
-                UserId = item.UserId,
-                ProviderName = item.ProviderName,
-                ProviderId = item.ProviderId,
-                Email = item.Email,
-                ProfileUrl = item.ProfileUrl,
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt
-            };
+            return _mapper.Map<UserSocialProviderDataResponse>(item);
         }
 
         public async Task CreateAsync(CreateUserSocialProviderRequest request)
         {
-            var entity = new UserSocialProvider
-            {
-                UserId = request.UserId,
-                ProviderName = request.ProviderName,
-                ProviderId = request.ProviderId,
-                Email = request.Email,
-                ProfileUrl = request.ProfileUrl,
-                CreatedAt = DateTime.UtcNow
-            };
+            var entity = _mapper.Map<UserSocialProvider>(request);
+            entity.CreatedAt = DateTime.UtcNow;
 
             await _unitOfWork.UserSocialProviderRepository.CreateAsync(entity);
             await _unitOfWork.SaveChangesWithTransactionAsync();

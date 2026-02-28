@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,14 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class LessonEnhancedRepository : GenericRepository<LessonEnhanced>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public LessonEnhancedRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
-
-        // Repository/LessonEnhancedRepository.cs
+        public LessonEnhancedRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<LessonEnhanced>> GetAllAsync(string? subjectId = null)
         {
@@ -40,7 +34,6 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<Dictionary<int, List<int>>> GetQuestionsForLessonsAsync(IEnumerable<string> lessonIds)
         {
-            // Parse & lọc id hợp lệ
             var idList = (lessonIds ?? Enumerable.Empty<string>())
                 .Select(s => int.TryParse(s, out var id) ? (int?)id : null)
                 .Where(x => x.HasValue)
@@ -62,7 +55,6 @@ namespace teamseven.EzExam.Repository.Repository
         }
         public async Task<Dictionary<int, List<int>>> GetQuestionsForLessonsAsync(IReadOnlyCollection<int> lessonIds)
         {
-            // Chặn null rõ ràng (nếu đang bật nullable context)
             ArgumentNullException.ThrowIfNull(lessonIds);
 
             if (lessonIds.Count == 0)
@@ -79,8 +71,6 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToDictionary(g => g.Key, g => g.Select(r => r.QuestionId).ToList());
         }
 
-
-
         public async Task<LessonEnhanced?> GetByIdAsync(int id)
         {
             return await base.GetByIdAsync(id);
@@ -96,7 +86,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<int> AddAsync(LessonEnhanced lesson)
         {
             _context.LessonsEnhanced.Add(lesson);
-            await _context.SaveChangesAsync();   // EF sẽ gán Id tự tăng vào entity.Id
+            await _context.SaveChangesAsync();
             return lesson.Id;
         }
 
@@ -110,7 +100,6 @@ namespace teamseven.EzExam.Repository.Repository
             return await RemoveAsync(lesson);
         }
 
-        // ===== Paged/Search/Sort theo Title & SubjectId =====
         public async Task<(List<LessonEnhanced> Items, int Total)> GetPagedAsync(
          int pageNumber,
          int pageSize,
@@ -120,10 +109,8 @@ namespace teamseven.EzExam.Repository.Repository
          int? questionId = null,
          int isSort = 0)
         {
-            // base query
             IQueryable<LessonEnhanced> q = _context.LessonsEnhanced.AsNoTracking();
 
-            // filter
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.RemoveDiacritics().ToLower();
@@ -136,7 +123,6 @@ namespace teamseven.EzExam.Repository.Repository
 
             if (questionId.HasValue)
             {
-                // join bảng phụ để lọc lesson chứa questionId
                 q = from le in q
                     join leq in _context.LessonsEnhancedQuestions.AsNoTracking()
                         on le.Id equals leq.LessonId
@@ -145,7 +131,6 @@ namespace teamseven.EzExam.Repository.Repository
                 q = q.Distinct();
             }
 
-            // sort
             if (isSort == 1)
             {
                 q = (sort ?? "").ToLower() switch
@@ -172,9 +157,6 @@ namespace teamseven.EzExam.Repository.Repository
             return (items, total);
         }
 
-        // ===== Bảng nối: helpers =====
-
-        /// <summary>Lấy list QuestionId theo đúng thứ tự Position</summary>
         public async Task<List<int>> GetQuestionIdsAsync(int lessonId)
         {
             return await _context.LessonsEnhancedQuestions
@@ -183,7 +165,6 @@ namespace teamseven.EzExam.Repository.Repository
                 .Select(x => x.QuestionId)
                 .ToListAsync();
         }
-        /// (B1) Lọc chỉ giữ các QuestionId có tồn tại trong bảng questions
         public async Task<List<int>> FilterExistingQuestionIdsAsync(IEnumerable<int> ids)
         {
             var set = ids?.Distinct().ToList() ?? new List<int>();
@@ -195,7 +176,6 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
-        /// (B2) Chỉ thêm mới (append) các QuestionId chưa có, gán Position tiếp theo
         public async Task AppendLessonQuestionsAsync(int lessonId, IEnumerable<int> newQuestionIds)
         {
             var incoming = newQuestionIds?.Distinct().ToList() ?? new List<int>();
@@ -221,7 +201,6 @@ namespace teamseven.EzExam.Repository.Repository
             await _context.LessonsEnhancedQuestions.AddRangeAsync(rows);
             await _context.SaveChangesAsync();
         }
-        /// <summary>Thay toàn bộ danh sách question theo thứ tự (Position = index + 1)</summary>
         public async Task ReplaceLessonQuestionsAsync(int lessonId, IEnumerable<int> questionIds)
         {
             var olds = await _context.LessonsEnhancedQuestions
@@ -248,7 +227,6 @@ namespace teamseven.EzExam.Repository.Repository
             }
         }
 
-        /// <summary>Trả về các lesson có chứa questionId</summary>
         public async Task<List<LessonEnhanced>> GetByQuestionIdAsync(int questionId)
         {
             var lessonIds = await _context.LessonsEnhancedQuestions
@@ -265,3 +243,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

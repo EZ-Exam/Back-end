@@ -9,7 +9,7 @@ namespace teamseven.EzExam.API.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<SubscriptionExpirationService> _logger;
-        private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1); // Check every hour
+        private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1);
 
         public SubscriptionExpirationService(
             IServiceProvider serviceProvider,
@@ -48,7 +48,6 @@ namespace teamseven.EzExam.API.Services
                     _logger.LogError(ex, "Error occurred while checking expired subscriptions: {Message}", ex.Message);
                 }
 
-                // Wait for the next check interval
                 await Task.Delay(_checkInterval, stoppingToken);
             }
 

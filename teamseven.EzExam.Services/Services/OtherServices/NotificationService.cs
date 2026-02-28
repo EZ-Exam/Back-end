@@ -32,17 +32,17 @@ public class NotificationService
 
         if (isTopic)
         {
-            message.Topic = target; // V� d?: "promotion" cho qu?ng c�o
+            message.Topic = target;
         }
         else
         {
-            message.Token = target; // Token device cho x�c minh giao d?ch
+            message.Token = target;
         }
 
         try
         {
             var response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
-            return response; // Tr? v? message ID n?u th�nh c�ng
+            return response;
         }
         catch (Exception ex)
         {

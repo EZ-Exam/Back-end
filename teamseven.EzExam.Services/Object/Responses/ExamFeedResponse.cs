@@ -16,13 +16,11 @@ namespace teamseven.EzExam.Services.Object.Responses
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        // Metadata
         public int TotalQuestions { get; set; }
         public int AttemptCount { get; set; }
         public decimal AverageScore { get; set; }
         public bool IsAttemptedByCurrentUser { get; set; }
 
-        // Basic timing
         public int? TimeLimit { get; set; }
         public int? Duration { get; set; }
     }

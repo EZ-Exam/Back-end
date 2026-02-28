@@ -12,12 +12,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class RoleRepository : GenericRepository<Role>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public RoleRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public RoleRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Role>?> GetRoleList()
         {
@@ -48,5 +44,5 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 
-
 }
+

@@ -10,7 +10,7 @@ namespace teamseven.EzExam.Services.Services.UsageTrackingService
         Task<UserSubscriptionStatusResponse> GetUserSubscriptionStatusAsync(int userId);
         Task<IEnumerable<UsageTrackingResponse>> GetUserUsageTrackingAsync(int userId);
         Task<IEnumerable<UsageHistoryResponse>> GetUserUsageHistoryAsync(int userId, int? limit = null);
-        Task<bool> ResetUserUsageAsync(int userId, string usageType);
+        Task ResetUserUsageAsync(int userId, string usageType);
         Task<bool> CheckAndIncrementSolutionViewAsync(int userId, int solutionId);
         Task<bool> CheckAndIncrementAIRequestAsync(int userId, string description = null);
     }

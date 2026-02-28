@@ -10,12 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class ExamRepository : GenericRepository<Exam>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public ExamRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public ExamRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Exam>?> GetAllAsync()
         {
@@ -61,12 +57,11 @@ namespace teamseven.EzExam.Repository.Repository
             return await RemoveAsync(exam);
         }
 
-        // Repository/ExamRepository.cs
         public async Task<(List<Exam> Items, int Total)> GetPagedAsync(
             int pageNumber,
             int pageSize,
             string? search = null,
-            string? sort = null,         // name|createdAt|updatedAt|totalQuestions|timeLimit : asc|desc
+            string? sort = null,
             int? subjectId = null,
             int? lessonId = null,
             int? examTypeId = null,
@@ -76,7 +71,6 @@ namespace teamseven.EzExam.Repository.Repository
         {
             var q = _context.Exams.AsNoTracking().AsQueryable();
 
-            // ------- filters -------
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.ToLower();
@@ -90,7 +84,6 @@ namespace teamseven.EzExam.Repository.Repository
             if (examTypeId.HasValue) q = q.Where(x => x.ExamTypeId == examTypeId.Value);
             if (createdByUserId.HasValue) q = q.Where(x => x.CreatedByUserId == createdByUserId.Value);
 
-            // ------- sort -------
             if (isSort == 1 && !string.IsNullOrWhiteSpace(sort))
             {
                 switch (sort.ToLower())
@@ -113,7 +106,6 @@ namespace teamseven.EzExam.Repository.Repository
                 q = q.OrderBy(x => x.Id);
             }
 
-            // ------- paging -------
             var total = await q.CountAsync();
             var items = await q.Skip((pageNumber - 1) * pageSize)
                                .Take(pageSize)
@@ -122,5 +114,11 @@ namespace teamseven.EzExam.Repository.Repository
             return (items, total);
         }
 
+        public IQueryable<Exam> GetBaseOptimizedFeedQuery()
+        {
+            return _context.Exams.AsNoTracking().AsQueryable();
+        }
+
     }
 }
+

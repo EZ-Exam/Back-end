@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
@@ -24,9 +24,8 @@ namespace teamseven.EzExam.API.Controllers
             _logger = logger;
         }
 
-        // Create/Upsert từ JSON
         [HttpPost]
-        [Authorize] // đổi sang [AllowAnonymous] nếu cần test nhanh
+        [Authorize]
         [SwaggerOperation(Summary = "Create/Upsert lesson enhanced", Description = "Create or update a LessonEnhanced with ordered questions")]
         [SwaggerResponse(201, "Lesson created/updated successfully.")]
         [SwaggerResponse(400, "Bad request.")]
@@ -34,26 +33,12 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> Upsert([FromBody] LessonEnhancedUpsertRequest request)
         {
-            try
-            {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                var res = await _serviceProvider.LessonEnhancedService.CreateAsync(request);
-                return CreatedAtAction(nameof(GetById), new { id = res.id }, res);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid payload for LessonEnhanced upsert");
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error upserting LessonEnhanced");
-                return StatusCode(500, "Internal server error");
-            }
+            var res = await _serviceProvider.LessonEnhancedService.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = res.id }, res);
         }
 
-        // Get by lesson id
         [HttpGet("{id:int}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get lesson enhanced by id")]
@@ -62,23 +47,10 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            try
-            {
-                var res = await _serviceProvider.LessonEnhancedService.GetByIdAsync(id);
-                return Ok(res);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound($"Lesson {id} not found");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting LessonEnhanced {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
+            var res = await _serviceProvider.LessonEnhancedService.GetByIdAsync(id);
+            return Ok(res);
         }
 
-        // Get by question id
         [HttpGet("by-question/{questionId:int}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get lessons enhanced containing a question id")]
@@ -86,16 +58,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> GetByQuestion([FromRoute] int questionId)
         {
-            try
-            {
-                var res = await _serviceProvider.LessonEnhancedService.GetByQuestionIdAsync(questionId);
-                return Ok(res);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting lessons by questionId {QuestionId}", questionId);
-                return StatusCode(500, "Internal server error");
-            }
+            var res = await _serviceProvider.LessonEnhancedService.GetByQuestionIdAsync(questionId);
+            return Ok(res);
         }
         [HttpGet]
         [AllowAnonymous]
@@ -107,16 +71,8 @@ namespace teamseven.EzExam.API.Controllers
         public async Task<IActionResult> GetAll(
             [FromQuery] string? subjectId = null)
         {
-            try
-            {
-                var res = await _serviceProvider.LessonEnhancedService.GetAllAsync(subjectId, true);
-                return Ok(res);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "GetAll LessonEnhanced failed. subjectId={SubjectId}, includeQuestions={IncludeQuestions}", subjectId, true);
-                return StatusCode(500, "Internal server error");
-            }
+            var res = await _serviceProvider.LessonEnhancedService.GetAllAsync(subjectId, true);
+            return Ok(res);
         }
         [HttpGet("paged")]
         [AllowAnonymous]
@@ -131,49 +87,35 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] string? subjectId = null,
             [FromQuery] string? questionId = null,
             [FromQuery] string? search = null,
-            [FromQuery] string? sort = null,              // title|createdAt|updatedAt : asc|desc
+            [FromQuery] string? sort = null,
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
-            [FromQuery] int isSort = 0                   // 0 = default sort by Id asc; 1 = dùng 'sort'
+            [FromQuery] int isSort = 0
 )
         {
-            try
+            if ((pageNumber.HasValue && pageNumber < 1) ||
+                (pageSize.HasValue && pageSize < 1))
             {
-                // Validate basic params
-                if ((pageNumber.HasValue && pageNumber < 1) ||
-                    (pageSize.HasValue && pageSize < 1))
-                {
-                    _logger.LogWarning("Invalid pagination: pageNumber={PageNumber}, pageSize={PageSize}", pageNumber, pageSize);
-                    return BadRequest(new { Message = "pageNumber and pageSize must be greater than 0." });
-                }
-
-                if (isSort is not (0 or 1))
-                {
-                    _logger.LogWarning("Invalid isSort: {IsSort}", isSort);
-                    return BadRequest(new { Message = "isSort must be 0 or 1." });
-                }
-
-                if (isSort == 1 && !string.IsNullOrWhiteSpace(sort) && !IsValidSort(sort))
-                {
-                    _logger.LogWarning("Invalid sort: {Sort}", sort);
-                    return BadRequest(new { Message = "Invalid sort. Use one of: title|createdAt|updatedAt with :asc or :desc (e.g. createdAt:desc)." });
-                }
-
-                var res = await _serviceProvider.LessonEnhancedService.GetPagedAsync(
-                    pageNumber, pageSize, search, sort, subjectId, questionId, isSort, true);
-
-                return Ok(res);
+                _logger.LogWarning("Invalid pagination: pageNumber={PageNumber}, pageSize={PageSize}", pageNumber, pageSize);
+                return BadRequest(new { Message = "pageNumber and pageSize must be greater than 0." });
             }
-            catch (ArgumentException ex)
+
+            if (isSort is not (0 or 1))
             {
-                _logger.LogWarning(ex, "Bad query in LessonsEnhancedController.GetPaged");
-                return BadRequest(new { Message = ex.Message });
+                _logger.LogWarning("Invalid isSort: {IsSort}", isSort);
+                return BadRequest(new { Message = "isSort must be 0 or 1." });
             }
-            catch (Exception ex)
+
+            if (isSort == 1 && !string.IsNullOrWhiteSpace(sort) && !IsValidSort(sort))
             {
-                _logger.LogError(ex, "Get lesson-enhanced paged failed. subjectId={SubjectId}, questionId={QuestionId}", subjectId, questionId);
-                return StatusCode(500, new { Message = "Internal server error" });
+                _logger.LogWarning("Invalid sort: {Sort}", sort);
+                return BadRequest(new { Message = "Invalid sort. Use one of: title|createdAt|updatedAt with :asc or :desc (e.g. createdAt:desc)." });
             }
+
+            var res = await _serviceProvider.LessonEnhancedService.GetPagedAsync(
+                pageNumber, pageSize, search, sort, subjectId, questionId, isSort, true);
+
+            return Ok(res);
         }
         private static bool IsValidSort(string sort)
         {

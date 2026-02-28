@@ -33,7 +33,6 @@ namespace teamseven.EzExam.Services.Object.Responses
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        // Navigation properties for display
         public string? CreatedByUserName { get; set; }
         public string? ExamTypeName { get; set; }
         public string? LessonName { get; set; }

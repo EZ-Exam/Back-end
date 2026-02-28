@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -51,7 +51,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Image")]
         public string? Image { get; set; }
 
-
         [Column("TemplateQuestionId")]
         public int? TemplateQuestionId { get; set; }
 
@@ -89,7 +88,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Options")]
         public string? Options { get; set; }
 
-        // Navigation properties
         [ForeignKey("CreatedByUserId")]
         public virtual User CreatedByUser { get; set; } = null!;
 

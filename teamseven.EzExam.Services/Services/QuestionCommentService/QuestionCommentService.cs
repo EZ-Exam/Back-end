@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,13 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<QuestionCommentService> _logger;
+        private readonly IMapper _mapper;
 
-        public QuestionCommentService(IUnitOfWork unitOfWork, ILogger<QuestionCommentService> logger)
+        public QuestionCommentService(IUnitOfWork unitOfWork, ILogger<QuestionCommentService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<QuestionCommentResponse> CreateCommentAsync(CreateQuestionCommentRequest request)
@@ -30,7 +33,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new ArgumentNullException(nameof(request), "Comment request cannot be null.");
             }
 
-            // Verify question exists
             var question = await _unitOfWork.QuestionRepository.GetByIdAsync(request.QuestionId);
             if (question == null)
             {
@@ -38,7 +40,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"Question with ID {request.QuestionId} not found.");
             }
 
-            // Verify user exists
             var user = await _unitOfWork.UserRepository.GetByIdAsync(request.UserId);
             if (user == null)
             {
@@ -46,7 +47,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"User with ID {request.UserId} not found.");
             }
 
-            // Verify parent comment exists if provided
             if (request.ParentCommentId.HasValue)
             {
                 var parentComment = await _unitOfWork.QuestionCommentRepository.GetByIdAsync(request.ParentCommentId.Value);
@@ -56,14 +56,12 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                     throw new NotFoundException($"Parent comment with ID {request.ParentCommentId} not found.");
                 }
                 
-                // Verify parent comment belongs to the same question
                 if (parentComment.QuestionId != request.QuestionId)
                 {
                     _logger.LogWarning("Parent comment {ParentCommentId} does not belong to question {QuestionId}.", request.ParentCommentId, request.QuestionId);
                     throw new ArgumentException($"Parent comment {request.ParentCommentId} does not belong to question {request.QuestionId}.");
                 }
                 
-                // Verify parent comment is approved
                 if (!parentComment.IsApproved)
                 {
                     _logger.LogWarning("Parent comment {ParentCommentId} is not approved.", request.ParentCommentId);
@@ -80,7 +78,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 Rating = request.Rating,
                 IsDeleted = false,
                 IsHelpful = false,
-                IsApproved = true, // Auto-approve for now, can be changed to false for moderation
+                IsApproved = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -91,7 +89,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 await _unitOfWork.SaveChangesWithTransactionAsync();
                 _logger.LogInformation("Comment with ID {CommentId} created successfully.", createdComment.Id);
 
-                return await MapToResponseAsync(createdComment);
+                return _mapper.Map<QuestionCommentResponse>(createdComment);
             }
             catch (Exception ex)
             {
@@ -115,7 +113,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"Comment with ID {request.Id} not found.");
             }
 
-            // Check if user can modify this comment
             if (!await CanUserModifyCommentAsync(request.Id, userId, roleId))
             {
                 _logger.LogWarning("User {UserId} cannot modify comment {CommentId}.", userId, request.Id);
@@ -133,7 +130,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 await _unitOfWork.SaveChangesWithTransactionAsync();
                 _logger.LogInformation("Comment with ID {CommentId} updated successfully.", updatedComment.Id);
 
-                return await MapToResponseAsync(updatedComment);
+                return _mapper.Map<QuestionCommentResponse>(updatedComment);
             }
             catch (Exception ex)
             {
@@ -151,7 +148,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"Comment with ID {commentId} not found.");
             }
 
-            // Check if comment is already deleted
             if (comment.IsDeleted)
             {
                 _logger.LogWarning("Comment with ID {CommentId} is already deleted.", commentId);
@@ -190,7 +186,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             {
                 var comments = await _unitOfWork.QuestionCommentRepository.GetByQuestionIdWithRepliesAsync(questionId);
                 
-                // Group comments into main comments and replies
                 var mainComments = comments.Where(c => c.ParentCommentId == null).ToList();
                 var replies = comments.Where(c => c.ParentCommentId != null).ToList();
 
@@ -198,17 +193,11 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
 
                 foreach (var mainComment in mainComments)
                 {
-                    var mainCommentResponse = await MapToResponseAsync(mainComment);
+                    var mainCommentResponse = _mapper.Map<QuestionCommentResponse>(mainComment);
                     
-                    // Add replies for this main comment
                     var commentReplies = replies.Where(r => r.ParentCommentId == mainComment.Id).ToList();
                     mainCommentResponse.ReplyCount = commentReplies.Count;
-                    mainCommentResponse.Replies = new List<QuestionCommentResponse>();
-                    
-                    foreach (var reply in commentReplies)
-                    {
-                        mainCommentResponse.Replies.Add(await MapToResponseAsync(reply));
-                    }
+                    mainCommentResponse.Replies = commentReplies.Select(r => _mapper.Map<QuestionCommentResponse>(r)).ToList();
 
                     responses.Add(mainCommentResponse);
                 }
@@ -231,7 +220,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 throw new NotFoundException($"Comment with ID {commentId} not found.");
             }
 
-            return await MapToResponseAsync(comment);
+            return _mapper.Map<QuestionCommentResponse>(comment);
         }
 
         public async Task<QuestionCommentResponse> ApproveCommentAsync(ApproveQuestionCommentRequest request)
@@ -258,7 +247,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 await _unitOfWork.SaveChangesWithTransactionAsync();
                 _logger.LogInformation("Comment with ID {CommentId} approval status updated to {IsApproved}.", request.Id, request.IsApproved);
 
-                return await MapToResponseAsync(updatedComment);
+                return _mapper.Map<QuestionCommentResponse>(updatedComment);
             }
             catch (Exception ex)
             {
@@ -272,14 +261,7 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             try
             {
                 var comments = await _unitOfWork.QuestionCommentRepository.GetPendingApprovalAsync();
-                var responses = new List<QuestionCommentResponse>();
-
-                foreach (var comment in comments)
-                {
-                    responses.Add(await MapToResponseAsync(comment));
-                }
-
-                return responses.OrderBy(c => c.CreatedAt).ToList();
+                return comments.Select(c => _mapper.Map<QuestionCommentResponse>(c)).OrderBy(c => c.CreatedAt).ToList();
             }
             catch (Exception ex)
             {
@@ -298,7 +280,6 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
                 return true;
             }
 
-            // Nếu user là role 1 (User) và là chủ comment thì cho phép
             if (roleId == 1 && comment.UserId == userId)
             {
                 return true;
@@ -307,26 +288,5 @@ namespace teamseven.EzExam.Services.Services.QuestionCommentService
             return false;
         }
 
-
-        private async Task<QuestionCommentResponse> MapToResponseAsync(QuestionComment comment)
-        {
-            return new QuestionCommentResponse
-            {
-                Id = comment.Id,
-                QuestionId = comment.QuestionId,
-                UserId = comment.UserId,
-                Content = comment.Content,
-                ParentCommentId = comment.ParentCommentId,
-                Rating = comment.Rating,
-                IsHelpful = comment.IsHelpful,
-                IsApproved = comment.IsApproved,
-                CreatedAt = comment.CreatedAt,
-                UpdatedAt = comment.UpdatedAt,
-                UserName = comment.User?.Email ?? "Unknown",
-                UserEmail = comment.User?.Email ?? "Unknown",
-                ReplyCount = 0,
-                Replies = new List<QuestionCommentResponse>()
-            };
-        }
     }
 }

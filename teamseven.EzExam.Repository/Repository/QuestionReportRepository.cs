@@ -12,10 +12,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class QuestionReportRepository : GenericRepository<QuestionReport>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public QuestionReportRepository(teamsevenezexamdbContext context)
-        {
+        public QuestionReportRepository(teamsevenezexamdbContext context) : base(context) { 
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
@@ -43,3 +41,4 @@ namespace teamseven.EzExam.Repository.Repository
 
     }
 }
+

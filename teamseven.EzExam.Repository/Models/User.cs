@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -59,7 +59,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("Balance")]
         public decimal? Balance { get; set; }
 
-        // Navigation properties
         [ForeignKey("RoleId")]
         public virtual Role Role { get; set; } = null!;
 

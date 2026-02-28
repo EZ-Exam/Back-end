@@ -23,34 +23,34 @@ namespace teamseven.EzExam.Repository.Models
 
         [Column("UserAnswer")]
         [MaxLength(5000)]
-        public string? UserAnswer { get; set; } // For text-based answers
+        public string? UserAnswer { get; set; }
 
         [Column("IsCorrect")]
         public bool IsCorrect { get; set; }
 
         [Column("TimeSpent")]
-        public int TimeSpent { get; set; } = 0; // seconds
+        public int TimeSpent { get; set; } = 0;
 
         [Column("ConfidenceLevel")]
-        public int? ConfidenceLevel { get; set; } // 1-5 scale (1 = very unsure, 5 = very confident)
+        public int? ConfidenceLevel { get; set; }
 
         [Column("AttemptType")]
         [MaxLength(50)]
-        public string AttemptType { get; set; } = "PRACTICE"; // PRACTICE, EXAM, REVIEW, QUIZ
+        public string AttemptType { get; set; } = "PRACTICE";
 
         [Column("SessionId")]
-        public int? SessionId { get; set; } // Link to TestSession if applicable
+        public int? SessionId { get; set; }
 
         [Column("ExamId")]
-        public int? ExamId { get; set; } // Link to Exam if applicable
+        public int? ExamId { get; set; }
 
         [Column("DifficultyLevel")]
         [MaxLength(20)]
-        public string? DifficultyLevel { get; set; } // EASY, MEDIUM, HARD
+        public string? DifficultyLevel { get; set; }
 
         [Column("Topic")]
         [MaxLength(100)]
-        public string? Topic { get; set; } // Topic of the question
+        public string? Topic { get; set; }
 
         [Column("SubjectId")]
         public int? SubjectId { get; set; }
@@ -74,23 +74,22 @@ namespace teamseven.EzExam.Repository.Models
         public bool IsMarkedForReview { get; set; } = false;
 
         [Column("AttemptSequence")]
-        public int AttemptSequence { get; set; } = 1; // 1st attempt, 2nd attempt, etc.
+        public int AttemptSequence { get; set; } = 1;
 
         [Column("PreviousAttempts")]
-        public int PreviousAttempts { get; set; } = 0; // Number of previous attempts on this question
+        public int PreviousAttempts { get; set; } = 0;
 
         [Column("LearningOutcome")]
         [MaxLength(500)]
-        public string? LearningOutcome { get; set; } // What the user learned from this attempt
+        public string? LearningOutcome { get; set; }
 
         [Column("MistakeType")]
         [MaxLength(100)]
-        public string? MistakeType { get; set; } // e.g., "Calculation Error", "Concept Misunderstanding"
+        public string? MistakeType { get; set; }
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

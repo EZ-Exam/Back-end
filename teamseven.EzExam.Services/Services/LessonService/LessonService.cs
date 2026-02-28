@@ -16,41 +16,25 @@ namespace teamseven.EzExam.Services.Services.LessonService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LessonService> _logger;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public LessonService(IUnitOfWork unitOfWork, ILogger<LessonService> logger)
+        public LessonService(IUnitOfWork unitOfWork, ILogger<LessonService> logger, AutoMapper.IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<LessonDataResponse>> GetAllLessonAsync()
         {
             var lessons = await _unitOfWork.LessonRepository.GetAllAsync() ?? new List<Lesson>();
-            return lessons.Select(l => new LessonDataResponse
-            {
-                Id = l.Id,
-                Name = l.Name,
-                ChapterId = l.ChapterId,
-                Document = l.Document,
-                DocumentType = l.DocumentType,
-                CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<LessonDataResponse>>(lessons);
         }
 
         public async Task<IEnumerable<LessonDataResponse>> GetLessonsByChapterIdAsync(int chapterId)
         {
             var lessons = await _unitOfWork.LessonRepository.GetByChapterIdAsync(chapterId) ?? new List<Lesson>();
-            return lessons.Select(l => new LessonDataResponse
-            {
-                Id = l.Id,
-                Name = l.Name,
-                ChapterId = l.ChapterId,
-                Document = l.Document,
-                DocumentType = l.DocumentType,
-                CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<LessonDataResponse>>(lessons);
         }
 
         public async Task<PagedResponse<LessonDataResponse>> GetLessonsAsync(
@@ -59,7 +43,7 @@ namespace teamseven.EzExam.Services.Services.LessonService
              string? search = null,
              string? sort = null,
              int? chapterId = null,
-             int isSort = 0) // Default isSort = 0 (No)
+             int isSort = 0)
         {
             try
             {
@@ -98,26 +82,17 @@ namespace teamseven.EzExam.Services.Services.LessonService
                             "createdat:desc" => lessons.OrderByDescending(l => l.CreatedAt).ToList(),
                             "updatedat:asc" => lessons.OrderBy(l => l.UpdatedAt).ToList(),
                             "updatedat:desc" => lessons.OrderByDescending(l => l.UpdatedAt).ToList(),
-                            _ => lessons.OrderByDescending(l => l.CreatedAt).ToList() // Default when isSort=1
+                            _ => lessons.OrderByDescending(l => l.CreatedAt).ToList()
                         };
                     }
                     else
                     {
-                        lessons = lessons.OrderBy(l => l.Id).ToList(); // Default when isSort=0
+                        lessons = lessons.OrderBy(l => l.Id).ToList();
                     }
                     totalItems = lessons.Count;
                 }
 
-                var lessonResponses = lessons.Select(l => new LessonDataResponse
-                {
-                    Id = l.Id,
-                    Name = l.Name,
-                    ChapterId = l.ChapterId,
-                    Document = l.Document,
-                    DocumentType = l.DocumentType,
-                    CreatedAt = l.CreatedAt,
-                    UpdatedAt = l.UpdatedAt
-                }).ToList();
+                var lessonResponses = _mapper.Map<List<LessonDataResponse>>(lessons);
 
                 return new PagedResponse<LessonDataResponse>(
                     lessonResponses,
@@ -132,7 +107,6 @@ namespace teamseven.EzExam.Services.Services.LessonService
             }
         }
 
-
         public async Task<LessonDataResponse> GetLessonByIdAsync(int id)
         {
             var lesson = await _unitOfWork.LessonRepository.GetByIdAsync(id);
@@ -142,16 +116,7 @@ namespace teamseven.EzExam.Services.Services.LessonService
                 throw new NotFoundException($"Lesson with ID {id} not found.");
             }
 
-            return new LessonDataResponse
-            {
-                Id = lesson.Id,
-                Name = lesson.Name,
-                ChapterId = lesson.ChapterId,
-                Document = lesson.Document,
-                DocumentType = lesson.DocumentType,
-                CreatedAt = lesson.CreatedAt,
-                UpdatedAt = lesson.UpdatedAt
-            };
+            return _mapper.Map<LessonDataResponse>(lesson);
         }
 
         public async Task CreateLessonAsync(CreateLessonRequest request)
@@ -163,12 +128,8 @@ namespace teamseven.EzExam.Services.Services.LessonService
                 throw new NotFoundException($"Chapter with ID {request.ChapterId} not found.");
             }
 
-            var lesson = new Lesson
-            {
-                Name = request.Name,
-                ChapterId = request.ChapterId,
-                CreatedAt = DateTime.UtcNow
-            };
+            var lesson = _mapper.Map<Lesson>(request);
+            lesson.CreatedAt = DateTime.UtcNow;
 
             await _unitOfWork.LessonRepository.CreateAsync(lesson);
             await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -200,7 +161,6 @@ namespace teamseven.EzExam.Services.Services.LessonService
             await _unitOfWork.SaveChangesWithTransactionAsync();
         }
 
-        // =================== OPTIMIZED: Lesson feed ===================
         public async Task<PagedResponse<LessonFeedResponse>> GetOptimizedLessonsFeedAsync(
             int currentUserId,
             int page = 1,
@@ -251,7 +211,6 @@ namespace teamseven.EzExam.Services.Services.LessonService
             return new PagedResponse<LessonFeedResponse>(items, page, pageSize, total);
         }
 
-        // =================== OPTIMIZED: Lesson details ===================
         public async Task<LessonDetailOptimizedResponse> GetOptimizedLessonDetailsAsync(int lessonId, int currentUserId = 0)
         {
             var ctx = _unitOfWork.Context;

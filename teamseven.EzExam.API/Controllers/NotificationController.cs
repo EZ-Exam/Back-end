@@ -37,34 +37,26 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Title and body are required." });
             }
 
-            try
+            var data = new Dictionary<string, string>
             {
-                var data = new Dictionary<string, string>
-                {
-                    { "type", "promotion" },
-                    { "offer", request.Details ?? "No additional details" }
-                };
+                { "type", "promotion" },
+                { "offer", request.Details ?? "No additional details" }
+            };
 
-                var messageId = await _notificationService.SendNotificationAsync(
-                    title: request.Title,
-                    body: request.Body,
-                    data: data,
-                    target: "promotion",
-                    isTopic: true
-                );
+            var messageId = await _notificationService.SendNotificationAsync(
+                title: request.Title,
+                body: request.Body,
+                data: data,
+                target: "promotion",
+                isTopic: true
+            );
 
-                _logger.LogInformation("Promotion notification sent successfully with message ID: {MessageId}", messageId);
-                return StatusCode(201, new NotificationResponse
-                {
-                    Message = "Promotion notification sent successfully.",
-                    MessageId = messageId
-                });
-            }
-            catch (Exception ex)
+            _logger.LogInformation("Promotion notification sent successfully with message ID: {MessageId}", messageId);
+            return StatusCode(201, new NotificationResponse
             {
-                _logger.LogError(ex, "Error sending promotion notification.");
-                return StatusCode(500, new { Message = "An error occurred while sending the promotion notification." });
-            }
+                Message = "Promotion notification sent successfully.",
+                MessageId = messageId
+            });
         }
 
         [HttpPost("announcements")]
@@ -81,34 +73,26 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Title and body are required." });
             }
 
-            try
+            var data = new Dictionary<string, string>
             {
-                var data = new Dictionary<string, string>
-                {
-                    { "type", "announcement" },
-                    { "details", request.Details ?? "No additional details" }
-                };
+                { "type", "announcement" },
+                { "details", request.Details ?? "No additional details" }
+            };
 
-                var messageId = await _notificationService.SendNotificationAsync(
-                    title: request.Title,
-                    body: request.Body,
-                    data: data,
-                    target: "announcements",
-                    isTopic: true
-                );
+            var messageId = await _notificationService.SendNotificationAsync(
+                title: request.Title,
+                body: request.Body,
+                data: data,
+                target: "announcements",
+                isTopic: true
+            );
 
-                _logger.LogInformation("Announcement notification sent successfully with message ID: {MessageId}", messageId);
-                return StatusCode(201, new NotificationResponse
-                {
-                    Message = "Announcement notification sent successfully.",
-                    MessageId = messageId
-                });
-            }
-            catch (Exception ex)
+            _logger.LogInformation("Announcement notification sent successfully with message ID: {MessageId}", messageId);
+            return StatusCode(201, new NotificationResponse
             {
-                _logger.LogError(ex, "Error sending announcement notification.");
-                return StatusCode(500, new { Message = "An error occurred while sending the announcement notification." });
-            }
+                Message = "Announcement notification sent successfully.",
+                MessageId = messageId
+            });
         }
     }
 

@@ -12,10 +12,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class TextBookRepository : GenericRepository<TextBook>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public TextBookRepository(teamsevenezexamdbContext context)
-        {
+        public TextBookRepository(teamsevenezexamdbContext context) : base(context) { 
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
@@ -72,3 +70,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

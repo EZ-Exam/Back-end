@@ -27,14 +27,12 @@ namespace teamseven.EzExam.Services.Services.Authentication
 
         public async Task<(bool IsSuccess, string ResultOrError)> RegisterUserAsync(RegisterRequest request)
         {
-            // Check for duplicate email
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 return (false, "Email already in use");
             }
 
-            // Create new user
             var user = new User
             {
                 Email = request.Email,
@@ -51,7 +49,6 @@ namespace teamseven.EzExam.Services.Services.Authentication
                 UpdatedBy = null
             };
 
-            // Save to database
             await _userRepository.AddUserAsync(user);
 
             return (true, "User registered successfully");
@@ -59,7 +56,6 @@ namespace teamseven.EzExam.Services.Services.Authentication
 
         public async Task<(bool IsSuccess, string ResultOrError)> ChangeUserRoleAsync(int userId, string roleName, string providedSecretKey)
         {
-            // Check secret key
             var expectedSecretKey = _configuration["Security:SuperSecretKey"]
                                     ?? Environment.GetEnvironmentVariable("SUPER_SECRET_KEY");
             if (string.IsNullOrEmpty(expectedSecretKey) || providedSecretKey != expectedSecretKey)

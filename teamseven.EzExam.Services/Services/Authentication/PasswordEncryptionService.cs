@@ -18,21 +18,21 @@ namespace teamseven.EzExam.Services.Services.Authentication
         }
 
         /// <summary>
-        /// Mã hóa m?t kh?u ngu?i dùng b?ng thu?t toán ASP.NET Core Identity.
+        /// Encrypts plain password.
         /// </summary>
-        /// <param name="plainPassword">M?t kh?u g?c.</param>
-        /// <returns>M?t kh?u dã du?c mã hóa.</returns>
+        /// <param name="plainPassword">Plain password.</param>
+        /// <returns>Hashed password.</returns>
         public string EncryptPassword(string plainPassword)
         {
             return _passwordHasher.HashPassword(null, plainPassword);
         }
 
         /// <summary>
-        /// Xác minh m?t kh?u ngu?i dùng.
+        /// Verifies plain password against hashed.
         /// </summary>
-        /// <param name="plainPassword">M?t kh?u g?c do ngu?i dùng nh?p.</param>
-        /// <param name="hashedPassword">M?t kh?u dã mã hóa du?c luu trong co s? d? li?u.</param>
-        /// <returns>True n?u m?t kh?u kh?p, ngu?c l?i là false.</returns>
+        /// <param name="plainPassword">Plain password.</param>
+        /// <param name="hashedPassword">Hashed password.</param>
+        /// <returns>True if match.</returns>
         public bool VerifyPassword(string plainPassword, string hashedPassword)
         {
             var result = _passwordHasher.VerifyHashedPassword(null, hashedPassword, plainPassword);

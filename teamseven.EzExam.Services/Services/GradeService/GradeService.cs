@@ -13,23 +13,19 @@ namespace teamseven.EzExam.Services.Services.GradeService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<GradeService> _logger;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public GradeService(IUnitOfWork unitOfWork, ILogger<GradeService> logger)
+        public GradeService(IUnitOfWork unitOfWork, ILogger<GradeService> logger, AutoMapper.IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<GradeDataResponse>> GetAllGradesAsync()
         {
             var grades = await _unitOfWork.GradeRepository.GetAllAsync();
-            return grades.Select(g => new GradeDataResponse
-            {
-                Id = g.Id,
-                Name = g.Name,
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<GradeDataResponse>>(grades);
         }
 
         public async Task<GradeDataResponse> GetGradeByIdAsync(int id)
@@ -38,13 +34,7 @@ namespace teamseven.EzExam.Services.Services.GradeService
             if (grade == null)
                 throw new NotFoundException($"Grade with ID {id} not found.");
 
-            return new GradeDataResponse
-            {
-                Id = grade.Id,
-                Name = grade.Name,
-                CreatedAt = grade.CreatedAt,
-                UpdatedAt = grade.UpdatedAt
-            };
+            return _mapper.Map<GradeDataResponse>(grade);
         }
 
         public async Task CreateGradeAsync(CreateGradeRequest request)
@@ -89,7 +79,6 @@ namespace teamseven.EzExam.Services.Services.GradeService
             await _unitOfWork.GradeRepository.UpdateAsync(grade);
             await _unitOfWork.SaveChangesWithTransactionAsync();
         }
-
 
         public async Task DeleteGradeAsync(string encodedId)
         {

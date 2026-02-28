@@ -297,7 +297,6 @@ namespace teamseven.EzExam.Services.Services.JwtHelperService
         {
             try
             {
-                // Get JWT configuration
                 var jwtKey = _configuration["Jwt:Key"];
                 if (string.IsNullOrEmpty(jwtKey))
                 {
@@ -305,7 +304,6 @@ namespace teamseven.EzExam.Services.Services.JwtHelperService
                     return null;
                 }
 
-                // Validate and decode token
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKey));
 
@@ -318,7 +316,7 @@ namespace teamseven.EzExam.Services.Services.JwtHelperService
                     ValidIssuer = _configuration["Jwt:Issuer"],
                     ValidAudience = _configuration["Jwt:Audience"],
                     IssuerSigningKey = key,
-                    ClockSkew = TimeSpan.Zero // No tolerance for expired tokens
+                    ClockSkew = TimeSpan.Zero
                 };
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);

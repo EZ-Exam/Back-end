@@ -44,15 +44,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Semester not found.")]
         public async Task<IActionResult> GetSemesterById(int id)
         {
-            try
-            {
-                var semester = await _serviceProvider.SemesterService.GetSemesterByIdAsync(id);
-                return Ok(semester);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            var semester = await _serviceProvider.SemesterService.GetSemesterByIdAsync(id);
+            return Ok(semester);
         }
 
         [HttpGet("by-grade/{gradeId}")]
@@ -62,18 +55,9 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Grade not found.")]
         public async Task<IActionResult> GetSemestersByGradeId(int gradeId)
         {
-            try
-            {
-                var result = await _serviceProvider.SemesterService.GetSemesterByGradeIdAsync(gradeId);
-                return Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var result = await _serviceProvider.SemesterService.GetSemesterByGradeIdAsync(gradeId);
+            return Ok(result);
         }
-
 
         [HttpPost]
         [SwaggerOperation(Summary = "Create a new semester", Description = "Creates a new semester with the provided details.")]
@@ -89,21 +73,8 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
-                await _serviceProvider.SemesterService.CreateSemesterAsync(request);
-                return StatusCode(201, new { Message = "Semester created successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while creating the semester." });
-            }
+            await _serviceProvider.SemesterService.CreateSemesterAsync(request);
+            return StatusCode(201, new { Message = "Semester created successfully." });
         }
 
         [HttpPut("{id}")]
@@ -118,20 +89,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || id != request.Id)
                 return BadRequest(new { Message = "Invalid data or ID mismatch." });
 
-            try
-            {
-                await _serviceProvider.SemesterService.UpdateSemesterAsync(request);
-                return Ok(new { Message = "Semester updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating semester.");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.SemesterService.UpdateSemesterAsync(request);
+            return Ok(new { Message = "Semester updated successfully." });
         }
 
         [HttpDelete("{id}")]
@@ -141,21 +100,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
         public async Task<IActionResult> DeleteSemester(int id)
         {
-            try
-            {
-                await _serviceProvider.SemesterService.DeleteSemesterAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while deleting the semester." });
-            }
+            await _serviceProvider.SemesterService.DeleteSemesterAsync(id);
+            return NoContent();
         }
     }
 }

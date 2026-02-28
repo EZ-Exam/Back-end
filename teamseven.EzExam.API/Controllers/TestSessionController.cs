@@ -36,27 +36,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> StartSession([FromBody] StartTestSessionRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var session = await _serviceProviders.TestSessionService.StartSessionAsync(request);
-                if (session != null)
-                {
-                    return Ok(session);
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to start test session or user already has an active session for this exam" });
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var session = await _serviceProviders.TestSessionService.StartSessionAsync(request);
+            if (session != null)
             {
-                _logger.LogError(ex, "Error starting test session for user {UserId}, exam {ExamId}", request.UserId, request.ExamId);
-                return StatusCode(500, new { message = "An error occurred while starting test session" });
+                return Ok(session);
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to start test session or user already has an active session for this exam" });
             }
         }
 
@@ -74,27 +66,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> EndSession(int sessionId, [FromBody] EndTestSessionRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var result = await _serviceProviders.TestSessionService.EndSessionAsync(sessionId, request);
-                if (result)
-                {
-                    return Ok(new { message = "Test session ended successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to end test session or session not found" });
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.TestSessionService.EndSessionAsync(sessionId, request);
+            if (result)
             {
-                _logger.LogError(ex, "Error ending test session {SessionId}", sessionId);
-                return StatusCode(500, new { message = "An error occurred while ending test session" });
+                return Ok(new { message = "Test session ended successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to end test session or session not found" });
             }
         }
 
@@ -111,27 +95,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> PauseSession(int sessionId)
         {
-            try
+            if (sessionId <= 0)
             {
-                if (sessionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid session ID" });
-                }
-
-                var result = await _serviceProviders.TestSessionService.PauseSessionAsync(sessionId);
-                if (result)
-                {
-                    return Ok(new { message = "Test session paused successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to pause test session or session not found" });
-                }
+                return BadRequest(new { message = "Invalid session ID" });
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.TestSessionService.PauseSessionAsync(sessionId);
+            if (result)
             {
-                _logger.LogError(ex, "Error pausing test session {SessionId}", sessionId);
-                return StatusCode(500, new { message = "An error occurred while pausing test session" });
+                return Ok(new { message = "Test session paused successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to pause test session or session not found" });
             }
         }
 
@@ -148,27 +124,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> ResumeSession(int sessionId)
         {
-            try
+            if (sessionId <= 0)
             {
-                if (sessionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid session ID" });
-                }
-
-                var result = await _serviceProviders.TestSessionService.ResumeSessionAsync(sessionId);
-                if (result)
-                {
-                    return Ok(new { message = "Test session resumed successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to resume test session or session not found" });
-                }
+                return BadRequest(new { message = "Invalid session ID" });
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.TestSessionService.ResumeSessionAsync(sessionId);
+            if (result)
             {
-                _logger.LogError(ex, "Error resuming test session {SessionId}", sessionId);
-                return StatusCode(500, new { message = "An error occurred while resuming test session" });
+                return Ok(new { message = "Test session resumed successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to resume test session or session not found" });
             }
         }
 
@@ -186,27 +154,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetSession(int sessionId)
         {
-            try
+            if (sessionId <= 0)
             {
-                if (sessionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid session ID" });
-                }
-
-                var session = await _serviceProviders.TestSessionService.GetSessionAsync(sessionId);
-                if (session != null)
-                {
-                    return Ok(session);
-                }
-                else
-                {
-                    return NotFound(new { message = "Test session not found" });
-                }
+                return BadRequest(new { message = "Invalid session ID" });
             }
-            catch (Exception ex)
+
+            var session = await _serviceProviders.TestSessionService.GetSessionAsync(sessionId);
+            if (session != null)
             {
-                _logger.LogError(ex, "Error retrieving test session {SessionId}", sessionId);
-                return StatusCode(500, new { message = "An error occurred while retrieving test session" });
+                return Ok(session);
+            }
+            else
+            {
+                return NotFound(new { message = "Test session not found" });
             }
         }
 
@@ -223,21 +183,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetUserSessions(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var sessions = await _serviceProviders.TestSessionService.GetUserSessionsAsync(userId);
-                return Ok(sessions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving test sessions for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving test sessions" });
-            }
+            var sessions = await _serviceProviders.TestSessionService.GetUserSessionsAsync(userId);
+            return Ok(sessions);
         }
 
         /// <summary>
@@ -253,21 +205,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetActiveSessions(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var sessions = await _serviceProviders.TestSessionService.GetActiveSessionsAsync(userId);
-                return Ok(sessions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving active test sessions for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving active test sessions" });
-            }
+            var sessions = await _serviceProviders.TestSessionService.GetActiveSessionsAsync(userId);
+            return Ok(sessions);
         }
 
         /// <summary>
@@ -283,21 +227,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetCompletedSessions(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var sessions = await _serviceProviders.TestSessionService.GetCompletedSessionsAsync(userId);
-                return Ok(sessions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving completed test sessions for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving completed test sessions" });
-            }
+            var sessions = await _serviceProviders.TestSessionService.GetCompletedSessionsAsync(userId);
+            return Ok(sessions);
         }
 
         /// <summary>
@@ -315,27 +251,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetActiveSessionByExam(int userId, int examId)
         {
-            try
+            if (userId <= 0 || examId <= 0)
             {
-                if (userId <= 0 || examId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID or exam ID" });
-                }
-
-                var session = await _serviceProviders.TestSessionService.GetActiveSessionByExamAsync(userId, examId);
-                if (session != null)
-                {
-                    return Ok(session);
-                }
-                else
-                {
-                    return NotFound(new { message = "No active session found for this user and exam" });
-                }
+                return BadRequest(new { message = "Invalid user ID or exam ID" });
             }
-            catch (Exception ex)
+
+            var session = await _serviceProviders.TestSessionService.GetActiveSessionByExamAsync(userId, examId);
+            if (session != null)
             {
-                _logger.LogError(ex, "Error retrieving active session for user {UserId}, exam {ExamId}", userId, examId);
-                return StatusCode(500, new { message = "An error occurred while retrieving active session" });
+                return Ok(session);
+            }
+            else
+            {
+                return NotFound(new { message = "No active session found for this user and exam" });
             }
         }
 
@@ -352,27 +280,19 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> SubmitAnswer([FromBody] SubmitAnswerRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var result = await _serviceProviders.TestSessionService.SubmitAnswerAsync(request);
-                if (result)
-                {
-                    return Ok(new { message = "Answer submitted successfully" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Failed to submit answer" });
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var result = await _serviceProviders.TestSessionService.SubmitAnswerAsync(request);
+            if (result)
             {
-                _logger.LogError(ex, "Error submitting answer for session {SessionId}, question {QuestionId}", request.TestSessionId, request.QuestionId);
-                return StatusCode(500, new { message = "An error occurred while submitting answer" });
+                return Ok(new { message = "Answer submitted successfully" });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to submit answer" });
             }
         }
 
@@ -389,21 +309,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetSessionAnswers(int sessionId)
         {
-            try
+            if (sessionId <= 0)
             {
-                if (sessionId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid session ID" });
-                }
+                return BadRequest(new { message = "Invalid session ID" });
+            }
 
-                var answers = await _serviceProviders.TestSessionService.GetSessionAnswersAsync(sessionId);
-                return Ok(answers);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving session answers for session {SessionId}", sessionId);
-                return StatusCode(500, new { message = "An error occurred while retrieving session answers" });
-            }
+            var answers = await _serviceProviders.TestSessionService.GetSessionAnswersAsync(sessionId);
+            return Ok(answers);
         }
 
         /// <summary>
@@ -419,21 +331,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetAverageScore(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var averageScore = await _serviceProviders.TestSessionService.GetAverageScoreAsync(userId);
-                return Ok(new { averageScore });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving average score for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving average score" });
-            }
+            var averageScore = await _serviceProviders.TestSessionService.GetAverageScoreAsync(userId);
+            return Ok(new { averageScore });
         }
 
         /// <summary>
@@ -449,21 +353,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error")]
         public async Task<IActionResult> GetTotalSessionsCount(int userId)
         {
-            try
+            if (userId <= 0)
             {
-                if (userId <= 0)
-                {
-                    return BadRequest(new { message = "Invalid user ID" });
-                }
+                return BadRequest(new { message = "Invalid user ID" });
+            }
 
-                var totalCount = await _serviceProviders.TestSessionService.GetTotalSessionsCountAsync(userId);
-                return Ok(new { totalCount });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving total sessions count for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving total sessions count" });
-            }
+            var totalCount = await _serviceProviders.TestSessionService.GetTotalSessionsCountAsync(userId);
+            return Ok(new { totalCount });
         }
     }
 }

@@ -28,7 +28,6 @@ namespace teamseven.EzExam.API.Controllers
             _jwtHelperService = jwtHelperService;
         }
 
-
         [HttpGet]
         [Authorize(Policy = "DeliveringStaffPolicy")]
         [SwaggerOperation(Summary = "Get all users", Description = "Retrieves a list of all users. Requires DeliveringStaffPolicy authorization.")]
@@ -41,7 +40,7 @@ namespace teamseven.EzExam.API.Controllers
 
         }
 
-        [HttpGet("total-count")]
+        [HttpGet("count")]
         [Authorize(Policy = "DeliveringStaffPolicy")]
         [SwaggerOperation(Summary = "Get total user, question, exam count", Description = "Retrieves the total number of users. Requires DeliveringStaffPolicy authorization.")]
         [SwaggerResponse(200, "Total user count retrieved successfully.", typeof(TotalUserResponse))]
@@ -53,8 +52,8 @@ namespace teamseven.EzExam.API.Controllers
             return Ok(totalCount);
         }
 
-        [HttpGet("my-profile")]
-        [Authorize] // Require authentication
+        [HttpGet("me")]
+        [Authorize]
         [SwaggerOperation(Summary = "Get current user profile", Description = "Retrieves the profile information of the currently authenticated user.")]
         [SwaggerResponse(200, "Profile retrieved successfully.", typeof(UserResponse))]
         [SwaggerResponse(401, "Unauthorized - Invalid token.", typeof(object))]
@@ -62,59 +61,41 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(object))]
         public async Task<IActionResult> GetMyProfile()
         {
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null)
             {
-                // Get current user ID from JWT token
-                var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-                var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
-                if (currentUserId == null)
-                {
-                    _logger.LogWarning("Could not extract user ID from JWT token.");
-                    return Unauthorized(new { Message = "Invalid or missing user information in token." });
-                }
+                _logger.LogWarning("Could not extract user ID from JWT token.");
+                return Unauthorized(new { Message = "Invalid or missing user information in token." });
+            }
 
-                var userProfile = await _serviceProvider.UserService.GetMyProfileAsync(currentUserId.Value);
-                return Ok(userProfile);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "User not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user profile: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving user profile." });
-            }
+            var userProfile = await _serviceProvider.UserService.GetMyProfileAsync(currentUserId.Value);
+            return Ok(userProfile);
         }
 
-        [HttpPut("premium/{userId}")]
-        [AllowAnonymous]
+        [HttpPost("{id}/premium")]
+        [Authorize]
         [SwaggerOperation(
         Summary = "Upgrade user to premium",
         Description = "If user's balance >= 10000 and user is not already premium, deduct 10000 and upgrade to premium")]
         [SwaggerResponse(200, "Upgraded successfully")]
         [SwaggerResponse(400, "Not enough balance or already premium")]
         [SwaggerResponse(404, "User not found")]
-        public async Task<IActionResult> UpgradeToPremium(int userId)
+        public async Task<IActionResult> UpgradeToPremium(int id)
         {
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null || currentUserId != id)
             {
-                var success = await _serviceProvider.UserService.UpgradeToPremiumAsync(userId);
+                return StatusCode(403, new { Message = "Forbidden: Cannot upgrade another user's account." });
+            }
 
-                if (!success)
-                    return BadRequest(new { Message = "User already premium or insufficient balance." });
+            var success = await _serviceProvider.UserService.UpgradeToPremiumAsync(id);
 
-                return Ok(new { Message = "User upgraded to premium successfully." });
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Internal server error" });
-            }
+            if (!success)
+                return BadRequest(new { Message = "User already premium or insufficient balance." });
+
+            return Ok(new { Message = "User upgraded to premium successfully." });
         }
 
         [HttpGet("{id}")]
@@ -130,21 +111,15 @@ namespace teamseven.EzExam.API.Controllers
             {
                 return BadRequest("Invalid user ID");
             }
-            try
+
+            var user = await _serviceProvider.UserService.GetUserByIdAsync(id);
+            if (user == null)
             {
-                var user = await _serviceProvider.UserService.GetUserByIdAsync(id);
-                if (user == null)
-                {
-                    return NotFound($"User with ID {id} not found");
-                }
-                return Ok(user);
+                return NotFound($"User with ID {id} not found");
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while retrieving the user");
-            }
+            return Ok(user);
         }
-        [HttpPut("{id}/soft-delete")]
+        [HttpDelete("{id}")]
         [Authorize(Policy = "DeliveringStaffPolicy")]
         [SwaggerOperation(Summary = "Soft delete user", Description = "Performs a soft delete on a user by setting their status to inactive.")]
         [SwaggerResponse(200, "User soft deleted successfully.", typeof(UserResponse))]
@@ -159,26 +134,11 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest("Invalid user ID");
             }
 
-            try
-            {
-                var userDto = await _serviceProvider.UserService.SoftDeleteUserAsync(id);
-                return Ok(userDto);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while soft deleting the user");
-            }
+            var userDto = await _serviceProvider.UserService.SoftDeleteUserAsync(id);
+            return Ok(userDto);
         }
 
-        [HttpPut("{id}/restore-user")]
+        [HttpPatch("{id}/restore")]
         [Authorize(Policy = "DeliveringStaffPolicy")]
         [SwaggerOperation(Summary = "Restore user", Description = "Restore user by setting their status to active.")]
         [SwaggerResponse(200, "User restored successfully", typeof(UserResponse))]
@@ -193,28 +153,12 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest("Invalid user ID");
             }
 
-            try
-            {
-                var userDto = await _serviceProvider.UserService.RestoreUserAsync(id);
-                return Ok(userDto);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while restoring the user");
-            }
+            var userDto = await _serviceProvider.UserService.RestoreUserAsync(id);
+            return Ok(userDto);
         }
 
-
-        [HttpPut("{id}/profile")]
-        [AllowAnonymous]
+        [HttpPut("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Update user profile", Description = "Updates the profile information of a specific user.")]
         [SwaggerResponse(200, "Profile updated successfully.", typeof(object))]
         [SwaggerResponse(400, "Invalid user ID or request data.", typeof(object))]
@@ -231,19 +175,19 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var currentUserId = _jwtHelperService.GetCurrentUserIdFromToken(authHeader);
+            if (currentUserId == null || currentUserId != id)
             {
-                var (isSuccess, resultOrError) = await _serviceProvider.UserService.UpdateUserProfileAsync(id, request);
-                if (!isSuccess)
-                {
-                    return BadRequest(resultOrError);
-                }
-                return Ok(new { Message = resultOrError });
+                return StatusCode(403, new { Message = "Forbidden: Cannot update another user's profile." });
             }
-            catch (Exception ex)
+
+            var (isSuccess, resultOrError) = await _serviceProvider.UserService.UpdateUserProfileAsync(id, request);
+            if (!isSuccess)
             {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
+                return BadRequest(resultOrError);
             }
+            return Ok(new { Message = resultOrError });
         }
     }
 }

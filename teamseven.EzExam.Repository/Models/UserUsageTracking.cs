@@ -21,7 +21,7 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(50)]
         [Column("UsageType")]
-        public string UsageType { get; set; } = string.Empty; // 'SOLUTION_VIEW', 'AI_REQUEST'
+        public string UsageType { get; set; } = string.Empty;
 
         [Column("UsageCount")]
         public int UsageCount { get; set; } = 0;
@@ -36,7 +36,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

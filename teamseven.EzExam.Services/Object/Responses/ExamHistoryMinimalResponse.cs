@@ -10,7 +10,6 @@ namespace teamseven.EzExam.Services.Object.Responses
         public DateTime SubmittedAt { get; set; }
         public int TimeTaken { get; set; }
         
-        // Thông tin từ Exam để tự động track
         public int SubjectId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
         public int? GradeId { get; set; }

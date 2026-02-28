@@ -33,7 +33,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         public virtual ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
         public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();

@@ -10,12 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class ChapterRepository : GenericRepository<Chapter>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public ChapterRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public ChapterRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Chapter>?> GetAllAsync()
         {
@@ -41,7 +37,6 @@ namespace teamseven.EzExam.Repository.Repository
                 .ToListAsync();
         }
 
-
         public async Task<int> AddAsync(Chapter chapter)
         {
             return await CreateAsync(chapter);
@@ -58,3 +53,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

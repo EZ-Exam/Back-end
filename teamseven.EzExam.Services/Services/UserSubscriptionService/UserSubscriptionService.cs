@@ -16,39 +16,33 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UserSubscriptionService> _logger;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public UserSubscriptionService(IUnitOfWork unitOfWork, ILogger<UserSubscriptionService> logger)
+        public UserSubscriptionService(IUnitOfWork unitOfWork, ILogger<UserSubscriptionService> logger, AutoMapper.IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         private string GetSubscriptionAction(UserSubscription subscription)
         {
             return string.IsNullOrEmpty(subscription.PaymentGatewayTransactionId)
-                ? "BUY_SUBSCRIPTION"        // giao dịch trên web
-                : "TOPUP_GATEWAY";          // nạp qua PayOS
+                ? "BUY_SUBSCRIPTION"
+                : "TOPUP_GATEWAY";
         }
 
         public async Task<IEnumerable<UserSubscriptionDataResponse>> GetAllSubscriptionsAsync()
         {
             var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsAsync();
-            return subscriptions.Select(s => new UserSubscriptionDataResponse
+            var responses = _mapper.Map<IEnumerable<UserSubscriptionDataResponse>>(subscriptions);
+            
+            var responseList = responses.ToList();
+            for (int i = 0; i < responseList.Count; i++)
             {
-                Id = s.Id,
-                UserId = s.UserId,
-                SubscriptionTypeId = s.SubscriptionTypeId,
-                StartDate = s.StartDate,
-                EndDate = s.EndDate,
-                IsActive = s.IsActive,
-                PaymentStatus = s.PaymentStatus,
-                Amount = s.Amount,
-                PaymentGatewayTransactionId = s.PaymentGatewayTransactionId,
-                CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt,
-
-                ActionType = GetSubscriptionAction(s)
-            });
+                responseList[i].ActionType = GetSubscriptionAction(subscriptions.ElementAt(i));
+            }
+            return responseList;
         }
 
         public async Task AddSubscriptionAsync(UserSubscriptionRequest request)
@@ -64,7 +58,7 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
                 SubscriptionTypeId = request.SubscriptionTypeId,
                 StartDate = DateTime.UtcNow,
                 EndDate = request.EndDate ?? DateTime.UtcNow.AddMonths(1),
-                IsActive = true, // Kích hoạt subscription ngay khi tạo
+                IsActive = true,
                 PaymentStatus = "Pending",
                 Amount = request.Amount,
                 PaymentGatewayTransactionId = request.PaymentGatewayTransactionId,
@@ -87,22 +81,8 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
         {
             var subscription = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
             if (subscription == null) throw new KeyNotFoundException("Subscription not found");
-            return new UserSubscriptionResponse
-            {
-                Id = subscription.Id,
-                UserId = subscription.UserId,
-                SubscriptionTypeId = subscription.SubscriptionTypeId,
-                StartDate = subscription.StartDate,
-                EndDate = subscription.EndDate,
-                IsActive = subscription.IsActive,
-                PaymentStatus = subscription.PaymentStatus,
-                Amount = subscription.Amount,
-                PaymentGatewayTransactionId = subscription.PaymentGatewayTransactionId,
-                CreatedAt = subscription.CreatedAt,
-                UpdatedAt = subscription.UpdatedAt
-            };
+            return _mapper.Map<UserSubscriptionResponse>(subscription);
         }
-        // UserSubscriptionService.cs
         public async Task<RevenueSummaryResponse> GetRevenueAsync(DateTime? fromUtc, DateTime? toUtc)
         {
             var total = await _unitOfWork.UserSubscriptionRepository.SumCompletedAmountAsync(fromUtc, toUtc);
@@ -121,20 +101,7 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
         {
             var subscription = await  _unitOfWork.UserSubscriptionRepository.GetByPaymentGatewayTransactionIdAsync(transactionId);
             if (subscription == null) throw new KeyNotFoundException("Subscription not found");
-            return new UserSubscriptionResponse
-            {
-                Id = subscription.Id,
-                UserId = subscription.UserId,
-                SubscriptionTypeId = subscription.SubscriptionTypeId,
-                StartDate = subscription.StartDate,
-                EndDate = subscription.EndDate,
-                IsActive = subscription.IsActive,
-                PaymentStatus = subscription.PaymentStatus,
-                Amount = subscription.Amount,
-                PaymentGatewayTransactionId = subscription.PaymentGatewayTransactionId,
-                CreatedAt = subscription.CreatedAt,
-                UpdatedAt = subscription.UpdatedAt
-            };
+            return _mapper.Map<UserSubscriptionResponse>(subscription);
         }
         public async Task UpdateAsync(UserSubscriptionResponse subscription)
         {
@@ -148,11 +115,8 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
             if (existingSubscription == null)
                 throw new NotFoundException($"Subscription with ID {subscription.Id} not found.");
 
-            // Cập nhật các trường từ subscription (giả sử các giá trị đã được thay đổi trong HandleWebhook)
-            existingSubscription.PaymentStatus = subscription.PaymentStatus;
-            existingSubscription.Amount = subscription.Amount;
-            existingSubscription.IsActive = subscription.IsActive;
-            existingSubscription.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian hiện tại
+            _mapper.Map(subscription, existingSubscription);
+            existingSubscription.UpdatedAt = DateTime.UtcNow;
 
             try
             {
@@ -180,22 +144,7 @@ namespace teamseven.EzExam.Services.Services.UserSubscriptionService
             if (subscriptions == null || !subscriptions.Any())
                 throw new NotFoundException($"No subscriptions found for user with ID {userId}.");
 
-            return subscriptions.Select(s =>
-            
-            new UserSubscriptionResponse
-            {
-                Id = s.Id,
-                UserId = s.UserId,
-                SubscriptionTypeId = s.SubscriptionTypeId,
-                StartDate = s.StartDate,
-                EndDate = s.EndDate,
-                IsActive = s.IsActive,
-                PaymentStatus = s.PaymentStatus,
-                Amount = s.Amount,
-                PaymentGatewayTransactionId = s.PaymentGatewayTransactionId,
-                CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt
-            }).ToList();
+            return _mapper.Map<IEnumerable<UserSubscriptionResponse>>(subscriptions);
         }
 
     }

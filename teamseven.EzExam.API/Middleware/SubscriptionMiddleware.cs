@@ -18,7 +18,6 @@ namespace teamseven.EzExam.API.Middleware
 
         public async Task InvokeAsync(HttpContext context, IJwtHelperService jwtHelperService, IUsageTrackingService usageTrackingService)
         {
-            // Skip middleware for non-API routes or non-AI endpoints
             if (!context.Request.Path.StartsWithSegments("/api") || 
                 !IsAIEndpoint(context.Request.Path))
             {
@@ -26,7 +25,6 @@ namespace teamseven.EzExam.API.Middleware
                 return;
             }
 
-            // Skip if user is not authenticated
             if (!context.User.Identity?.IsAuthenticated ?? true)
             {
                 await _next(context);
@@ -35,7 +33,6 @@ namespace teamseven.EzExam.API.Middleware
 
             try
             {
-                // Extract user ID from JWT token
                 var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
                 var userId = jwtHelperService.GetCurrentUserIdFromToken(authHeader);
 
@@ -46,7 +43,6 @@ namespace teamseven.EzExam.API.Middleware
                     return;
                 }
 
-                // Check if user can perform AI action
                 var canPerformAction = await usageTrackingService.CanUserPerformActionAsync(userId.Value, "AI_REQUEST");
 
                 if (!canPerformAction)
@@ -68,7 +64,6 @@ namespace teamseven.EzExam.API.Middleware
                     return;
                 }
 
-                // Log AI usage
                 await usageTrackingService.CheckAndIncrementAIRequestAsync(userId.Value, 
                     $"AI request to {context.Request.Path}");
 
@@ -82,7 +77,6 @@ namespace teamseven.EzExam.API.Middleware
                 _logger.LogError(ex, "Error in SubscriptionMiddleware for path {Path}: {Message}", 
                     context.Request.Path, ex.Message);
                 
-                // Continue to next middleware on error to avoid breaking the request
                 await _next(context);
             }
         }
@@ -91,7 +85,6 @@ namespace teamseven.EzExam.API.Middleware
         {
             var pathString = path.Value?.ToLower() ?? "";
             
-            // List of AI endpoints that should be protected
             var aiEndpoints = new[]
             {
                 "/api/gemini-15",
@@ -105,7 +98,6 @@ namespace teamseven.EzExam.API.Middleware
         }
     }
 
-    // Extension method to register the middleware
     public static class SubscriptionMiddlewareExtensions
     {
         public static IApplicationBuilder UseSubscriptionMiddleware(this IApplicationBuilder builder)

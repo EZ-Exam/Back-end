@@ -49,44 +49,36 @@ namespace teamseven.EzExam.API.Controllers
              [FromQuery] int? userId = null,
              [FromQuery] int? textbookId = null) 
         {
-            try
+            if (pageNumber.HasValue && pageNumber < 1 || pageSize.HasValue && pageSize < 1)
             {
-                if (pageNumber.HasValue && pageNumber < 1 || pageSize.HasValue && pageSize < 1)
-                {
-                    _logger.LogWarning("Invalid pagination parameters: pageNumber={PageNumber}, pageSize={PageSize}.", pageNumber, pageSize);
-                    return BadRequest(new { Message = "pageNumber and pageSize must be greater than 0." });
-                }
-
-                if (isSort != 0 && isSort != 1)
-                {
-                    _logger.LogWarning("Invalid isSort parameter: {IsSort}.", isSort);
-                    return BadRequest(new { Message = "isSort must be 0 or 1." });
-                }
-
-                if (isSort == 1 && !string.IsNullOrEmpty(sort) && !IsValidSortParameter(sort))
-                {
-                    _logger.LogWarning("Invalid sort parameter: {Sort}.", sort);
-                    return BadRequest(new { Message = "Invalid sort parameter. Use format 'field:asc' or 'field:desc' with valid fields (content, difficultyLevel, createdAt, updatedAt)." });
-                }
-
-                var pagedQuestions = await _serviceProvider.QuestionsService.GetQuestionsAsync(
-                    pageNumber,
-                    pageSize,
-                    search,
-                    sort,
-                    lessonId,
-                    difficultyLevel,
-                    chapterId,
-                    isSort,
-                    userId,
-                    textbookId);
-                return Ok(pagedQuestions);
+                _logger.LogWarning("Invalid pagination parameters: pageNumber={PageNumber}, pageSize={PageSize}.", pageNumber, pageSize);
+                return BadRequest(new { Message = "pageNumber and pageSize must be greater than 0." });
             }
-            catch (Exception ex)
+
+            if (isSort != 0 && isSort != 1)
             {
-                _logger.LogError(ex, "Error retrieving questions: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving questions." });
+                _logger.LogWarning("Invalid isSort parameter: {IsSort}.", isSort);
+                return BadRequest(new { Message = "isSort must be 0 or 1." });
             }
+
+            if (isSort == 1 && !string.IsNullOrEmpty(sort) && !IsValidSortParameter(sort))
+            {
+                _logger.LogWarning("Invalid sort parameter: {Sort}.", sort);
+                return BadRequest(new { Message = "Invalid sort parameter. Use format 'field:asc' or 'field:desc' with valid fields (content, difficultyLevel, createdAt, updatedAt)." });
+            }
+
+            var pagedQuestions = await _serviceProvider.QuestionsService.GetQuestionsAsync(
+                pageNumber,
+                pageSize,
+                search,
+                sort,
+                lessonId,
+                difficultyLevel,
+                chapterId,
+                isSort,
+                userId,
+                textbookId);
+            return Ok(pagedQuestions);
         }
         private bool IsValidSortParameter(string sort)
         {
@@ -94,29 +86,6 @@ namespace teamseven.EzExam.API.Controllers
             var validOrders = new[] { "asc", "desc" };
             var parts = sort.ToLower().Split(':');
             return parts.Length == 2 && validFields.Contains(parts[0]) && validOrders.Contains(parts[1]);
-        }
-
-        [HttpGet("by-subject/{subjectId}")]
-        [AllowAnonymous]
-        [SwaggerOperation(
-            Summary = "Get questions by subject ID",
-            Description = "Retrieves all questions belonging to a specific subject ID."
-        )]
-        [SwaggerResponse(200, "Questions retrieved successfully.", typeof(List<QuestionDataResponse>))]
-        [SwaggerResponse(404, "Subject not found.", typeof(ProblemDetails))]
-        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
-        public async Task<IActionResult> GetBySubjectId(int subjectId)
-        {
-            try
-            {
-                var result = await _serviceProvider.QuestionsService.GetQuestionBySubjectIdAsync(subjectId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving questions for SubjectId {SubjectId}: {Message}", subjectId, ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving questions for the subject." });
-            }
         }
 
 
@@ -135,43 +104,30 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
+            var questionResponse = await _serviceProvider.QuestionsService.AddQuestionAsync(questionDataRequest);
+            var result = new
             {
-                var questionResponse = await _serviceProvider.QuestionsService.AddQuestionAsync(questionDataRequest);
-                var result = new
+                question = new
                 {
-                    question = new
-                    {
-                        id = questionResponse.Id,
-                        content = questionResponse.Content,
-                        questionSource = questionResponse.QuestionSource,
-                        difficultyLevel = questionResponse.DifficultyLevelId,
-                        lessonId = questionResponse.LessonId,
-                        textbookId = questionResponse.TextbookId,
-                        createdByUserId = questionResponse.CreatedByUserId,
-                        createdAt = questionResponse.CreatedAt,
-                        updatedAt = questionResponse.UpdatedAt,
-                        formula = questionResponse.Formula,
-                        correctAnswer = questionResponse.CorrectAnswer,
-                        explanation = questionResponse.Explanation,
-                        type = questionResponse.Type,
-                        options = questionResponse.Options
-                    },
-                    message = "Question created successfully."
-                };
+                    id = questionResponse.Id,
+                    content = questionResponse.Content,
+                    questionSource = questionResponse.QuestionSource,
+                    difficultyLevel = questionResponse.DifficultyLevelId,
+                    lessonId = questionResponse.LessonId,
+                    textbookId = questionResponse.TextbookId,
+                    createdByUserId = questionResponse.CreatedByUserId,
+                    createdAt = questionResponse.CreatedAt,
+                    updatedAt = questionResponse.UpdatedAt,
+                    formula = questionResponse.Formula,
+                    correctAnswer = questionResponse.CorrectAnswer,
+                    explanation = questionResponse.Explanation,
+                    type = questionResponse.Type,
+                    options = questionResponse.Options
+                },
+                message = "Question created successfully."
+            };
 
-                return StatusCode(201, result);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating question: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while creating question." });
-            }
+            return StatusCode(201, result);
         }
 
         [HttpPut("{id}")]
@@ -195,23 +151,9 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Route ID and request ID do not match." });
             }
 
-            try
-            {
-                var updatedQuestion = await _serviceProvider.QuestionsService.ModifyQuestionAsync(request);
-                return Ok(updatedQuestion);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating question: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while updating the question." });
-            }
+            var updatedQuestion = await _serviceProvider.QuestionsService.ModifyQuestionAsync(request);
+            return Ok(updatedQuestion);
         }
-
 
         [HttpDelete("{id}")]
         [AllowAnonymous]
@@ -221,21 +163,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
-            try
-            {
-                await _serviceProvider.QuestionsService.DeleteQuestionAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting question with ID {QuestionId}: {Message}", id, ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while deleting question." });
-            }
+            await _serviceProvider.QuestionsService.DeleteQuestionAsync(id);
+            return NoContent();
         }
 
         [HttpGet("{id}")]
@@ -246,21 +175,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
         public async Task<IActionResult> GetQuestion(int id)
         {
-            try
-            {
-                var question = await _serviceProvider.QuestionsService.GetQuestionById(id);
-                return Ok(question);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving question with ID {QuestionId}: {Message}", id, ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving question." });
-            }
+            var question = await _serviceProvider.QuestionsService.GetQuestionById(id);
+            return Ok(question);
         }
 
         [HttpGet("simple")]
@@ -272,31 +188,23 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] int? gradeId = null,
             [FromQuery] int? lessonId = null)
         {
-            try
+            var searchRequest = new QuestionSearchRequest
             {
-                var searchRequest = new QuestionSearchRequest
-                {
-                    Content = content,
-                    DifficultyLevelId = difficultyLevelId,
-                    GradeIds = gradeId.HasValue ? new List<int> { gradeId.Value } : null,
-                    LessonIds = lessonId.HasValue ? new List<int> { lessonId.Value } : null
-                };
+                Content = content,
+                DifficultyLevelId = difficultyLevelId,
+                GradeIds = gradeId.HasValue ? new List<int> { gradeId.Value } : null,
+                LessonIds = lessonId.HasValue ? new List<int> { lessonId.Value } : null
+            };
 
-                var questions = await _serviceProvider.QuestionsService.GetAllQuestionsSimpleAsync(searchRequest);
-                
-                return Ok(new
-                {
-                    Success = true,
-                    Data = questions,
-                    Total = questions.Count,
-                    Message = "Questions retrieved successfully."
-                });
-            }
-            catch (Exception ex)
+            var questions = await _serviceProvider.QuestionsService.GetAllQuestionsSimpleAsync(searchRequest);
+            
+            return Ok(new
             {
-                _logger.LogError(ex, "Error retrieving simple questions: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while retrieving questions." });
-            }
+                Success = true,
+                Data = questions,
+                Total = questions.Count,
+                Message = "Questions retrieved successfully."
+            });
         }
 
         [HttpGet("feed")]
@@ -313,27 +221,20 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] int? lessonId = null,
             [FromQuery] int? difficultyLevelId = null)
         {
-            try
+            if (page < 1 || pageSize < 1)
             {
-                if (page < 1 || pageSize < 1)
-                {
-                    return BadRequest(new { Message = "page and pageSize must be greater than 0." });
-                }
-
-                var feed = await _serviceProvider.QuestionsService.GetOptimizedQuestionsFeedAsync(
-                    currentUserId,
-                    page,
-                    pageSize,
-                    search,
-                    lessonId,
-                    difficultyLevelId);
-
-                return Ok(feed);
+                return BadRequest(new { Message = "page and pageSize must be greater than 0." });
             }
-            catch (Exception)
-            {
-                return StatusCode(500, new { Message = "An error occurred while retrieving the questions feed." });
-            }
+
+            var feed = await _serviceProvider.QuestionsService.GetOptimizedQuestionsFeedAsync(
+                currentUserId,
+                page,
+                pageSize,
+                search,
+                lessonId,
+                difficultyLevelId);
+
+            return Ok(feed);
         }
     }
 }

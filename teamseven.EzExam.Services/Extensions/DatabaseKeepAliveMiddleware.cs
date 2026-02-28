@@ -17,7 +17,7 @@ public class DatabaseKeepAliveMiddleware
     private readonly RequestDelegate _next;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<DatabaseKeepAliveMiddleware> _logger;
-    private readonly TimeSpan _queryInterval = TimeSpan.FromMinutes(60); // Truy v?n m?i 45 min
+    private readonly TimeSpan _queryInterval = TimeSpan.FromMinutes(60);
     private DateTime _lastQueryTime;
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private Task _backgroundTask;
@@ -28,12 +28,11 @@ public class DatabaseKeepAliveMiddleware
         _serviceProvider = serviceProvider;
         _logger = logger;
         _lastQueryTime = DateTime.MinValue;
-        _backgroundTask = StartBackgroundQuery(_cts.Token); // B?t d?u task n?n
+        _backgroundTask = StartBackgroundQuery(_cts.Token);
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // Ti?p t?c pipeline
         await _next(context);
     }
 
@@ -61,19 +60,16 @@ public class DatabaseKeepAliveMiddleware
                 Console.WriteLine($"Keep-alive query failed: {ex.Message}");
             }
 
-            // Ch? 30 ph�t tru?c khi ki?m tra l?i
             await Task.Delay(_queryInterval, cancellationToken);
         }
     }
 
-    // H?y task khi middleware b? dispose (t�y ch?n)
     public void Dispose()
     {
         _cts.Cancel();
     }
 }
 
-// Extension method d? dang k� middleware
 public static class DatabaseKeepAliveMiddlewareExtensions
 {
     public static IApplicationBuilder UseDatabaseKeepAlive(this IApplicationBuilder builder)

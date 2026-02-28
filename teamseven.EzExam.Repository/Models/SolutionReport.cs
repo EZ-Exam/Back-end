@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -31,7 +31,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("ReportDate")]
         public DateTime ReportDate { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("SolutionId")]
         public virtual Solution Solution { get; set; } = null!;
 

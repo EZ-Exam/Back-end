@@ -51,14 +51,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         private readonly ILessonEnhancedService _lessonEnhancedService;
         private readonly IQuestionCommentService _questionCommentService;
 
-        // Test System Services
         private readonly IUserQuestionCartService _userQuestionCartService;
         private readonly ITestSessionService _testSessionService;
         
-        // Student History Services
         private readonly IStudentHistoryService _studentHistoryService;
         
-        // Exam History Services
         private readonly IExamHistoryService _examHistoryService;
 
         public ServiceProviders(
@@ -116,14 +113,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
             _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
             _lessonEnhancedService = lessonEnhancedService ?? throw new ArgumentNullException(nameof(lessonEnhancedService));
             _questionCommentService = questionCommentService ?? throw new ArgumentNullException(nameof(questionCommentService));
-            // Test System Services
             _userQuestionCartService = userQuestionCartService ?? throw new ArgumentNullException(nameof(userQuestionCartService));
             _testSessionService = testSessionService ?? throw new ArgumentNullException(nameof(testSessionService));
             
-            // Student History Services
             _studentHistoryService = studentHistoryService ?? throw new ArgumentNullException(nameof(studentHistoryService));
             
-            // Exam History Services
             _examHistoryService = examHistoryService ?? throw new ArgumentNullException(nameof(examHistoryService));
         }
 
@@ -152,15 +146,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         public ILessonEnhancedService LessonEnhancedService => _lessonEnhancedService;
         public IQuestionCommentService QuestionCommentService => _questionCommentService;
 
-
-        // Test System Services
         public IUserQuestionCartService UserQuestionCartService => _userQuestionCartService;
         public ITestSessionService TestSessionService => _testSessionService;
         
-        // Student History Services
         public IStudentHistoryService StudentHistoryService => _studentHistoryService;
         
-        // Exam History Services
         public IExamHistoryService ExamHistoryService => _examHistoryService;
     }
 }

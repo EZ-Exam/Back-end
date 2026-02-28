@@ -43,16 +43,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Report not found")]
         public async Task<IActionResult> GetReportById([FromRoute] int id)
         {
-            try
-            {
-                var report = await _serviceProvider.QuestionReportService.GetReportByIdAsync(id);
-                return Ok(report);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var report = await _serviceProvider.QuestionReportService.GetReportByIdAsync(id);
+            return Ok(report);
         }
 
         [HttpPost]
@@ -65,16 +57,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
-            {
-                await _serviceProvider.QuestionReportService.CreateReportAsync(request);
-                return StatusCode(201, new { Message = "Question report created successfully." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while creating report.");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.QuestionReportService.CreateReportAsync(request);
+            return StatusCode(201, new { Message = "Question report created successfully." });
         }
 
         [HttpPut("{id}")]
@@ -88,20 +72,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || id != request.Id)
                 return BadRequest(new { Message = "Invalid request data or ID mismatch." });
 
-            try
-            {
-                await _serviceProvider.QuestionReportService.UpdateReportAsync(request);
-                return Ok(new { Message = "Question report updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while updating report.");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.QuestionReportService.UpdateReportAsync(request);
+            return Ok(new { Message = "Question report updated successfully." });
         }
     }
 }

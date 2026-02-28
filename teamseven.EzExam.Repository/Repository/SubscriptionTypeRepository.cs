@@ -7,8 +7,6 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class SubscriptionTypeRepository : GenericRepository<SubscriptionType>, ISubscriptionTypeRepository
     {
-        // HARDCODED SUBSCRIPTION TYPES - NO DATABASE QUERIES
-        // BASIC and FREE are merged as one subscription type
         private static readonly Dictionary<int, SubscriptionType> _hardcodedSubscriptionTypes = new()
         {
             { 1, new SubscriptionType { Id = 1, SubscriptionName = "FREE", SubscriptionCode = "FREE", SubscriptionPrice = 0, MaxAIRequests = 0, MaxSolutionViews = 5, IsActive = true, IsAIEnabled = false, Features = "Free/Basic features with moderate limits", Description = "Free subscription with basic features - same as BASIC" } },
@@ -21,10 +19,8 @@ namespace teamseven.EzExam.Repository.Repository
         {
         }
 
-        // HIDE GetByIdAsync to use hardcoded data
         public new async Task<SubscriptionType?> GetByIdAsync(int id)
         {
-            // Return hardcoded data instead of database query
             if (_hardcodedSubscriptionTypes.ContainsKey(id))
             {
                 return _hardcodedSubscriptionTypes[id];
@@ -32,34 +28,28 @@ namespace teamseven.EzExam.Repository.Repository
             return null;
         }
 
-        // HIDE GetAllAsync to use hardcoded data
         public new async Task<IEnumerable<SubscriptionType>> GetAllAsync()
         {
-            // Return hardcoded data instead of database query
             return _hardcodedSubscriptionTypes.Values;
         }
 
         public new async Task<SubscriptionType?> GetByCodeAsync(string code)
         {
-            // Use hardcoded data instead of database query
             return _hardcodedSubscriptionTypes.Values.FirstOrDefault(st => st.SubscriptionCode == code);
         }
 
         public new async Task<SubscriptionType?> GetBySubscriptionCodeAsync(string subscriptionCode)
         {
-            // Use hardcoded data instead of database query
             return _hardcodedSubscriptionTypes.Values.FirstOrDefault(st => st.SubscriptionCode == subscriptionCode);
         }
 
         public new async Task<IEnumerable<SubscriptionType>> GetActiveSubscriptionTypesAsync()
         {
-            // Use hardcoded data instead of database query
             return _hardcodedSubscriptionTypes.Values.Where(st => st.IsActive);
         }
 
         public new async Task<bool> IsSubscriptionCodeExistsAsync(string subscriptionCode, int? excludeId = null)
         {
-            // Use hardcoded data instead of database query
             var exists = _hardcodedSubscriptionTypes.Values.Any(st => st.SubscriptionCode == subscriptionCode);
             
             if (excludeId.HasValue)

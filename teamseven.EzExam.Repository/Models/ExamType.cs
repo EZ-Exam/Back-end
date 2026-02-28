@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -18,20 +18,20 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(20)]
         [Column("TypeCode")]
-        public string TypeCode { get; set; } = string.Empty; // MOCK, AI_GEN, USER
+        public string TypeCode { get; set; } = string.Empty;
 
         [MaxLength(500)]
         [Column("Description")]
         public string? Description { get; set; }
 
         [Column("DefaultDuration")]
-        public int? DefaultDuration { get; set; } // minutes - optional default, user can override
+        public int? DefaultDuration { get; set; }
 
         [Column("MaxQuestions")]
-        public int? MaxQuestions { get; set; } // optional limit
+        public int? MaxQuestions { get; set; }
 
         [Column("MinQuestions")]
-        public int? MinQuestions { get; set; } // optional minimum
+        public int? MinQuestions { get; set; }
 
         [Column("IsActive")]
         public bool IsActive { get; set; } = true;
@@ -42,7 +42,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();
     }
 }

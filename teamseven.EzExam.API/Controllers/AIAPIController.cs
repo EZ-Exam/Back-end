@@ -55,7 +55,6 @@ namespace teamseven.EzExam.API.Controllers
             string baseUrl = "";
             string apiKey = "";
 
-            // Clear previous headers
             _httpClient.DefaultRequestHeaders.Authorization = null;
             _httpClient.DefaultRequestHeaders.Remove("x-api-key");
             _httpClient.DefaultRequestHeaders.Remove("anthropic-version");
@@ -129,28 +128,21 @@ namespace teamseven.EzExam.API.Controllers
                     var data = line.Substring(6).Trim();
                     if (data == "[DONE]") break;
                     
-                    try
+                    var jsonNode = JsonNode.Parse(data);
+                    string? contentDelta = null;
+                    
+                    if (provider.ToLower() == "gemini")
                     {
-                        var jsonNode = JsonNode.Parse(data);
-                        string? contentDelta = null;
-                        
-                        if (provider.ToLower() == "gemini")
-                        {
-                            contentDelta = jsonNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-                        }
-                        else
-                        {
-                            contentDelta = jsonNode?["choices"]?[0]?["delta"]?["content"]?.GetValue<string>();
-                        }
-                        
-                        if (!string.IsNullOrEmpty(contentDelta))
-                        {
-                            fullResponse.Append(contentDelta);
-                        }
+                        contentDelta = jsonNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
                     }
-                    catch (JsonException ex)
+                    else
                     {
-                        _logger.LogWarning(ex, "Invalid JSON in {Provider} stream data: {Data}", provider, data);
+                        contentDelta = jsonNode?["choices"]?[0]?["delta"]?["content"]?.GetValue<string>();
+                    }
+                    
+                    if (!string.IsNullOrEmpty(contentDelta))
+                    {
+                        fullResponse.Append(contentDelta);
                     }
                 }
                 return fullResponse.ToString();
@@ -189,16 +181,13 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { Message = "Input is required." });
             }
 
-            try
-            {
-                // Use custom prompt if provided, otherwise use default physics prompt
-                var systemPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
-                    ? request.DefaultPrompt 
-                    : "You are an expert physicist specializing in precise, step-by-step solutions using Chain of Thought reasoning. Always provide clear, accurate, and concise explanations.";
+            var systemPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
+                ? request.DefaultPrompt 
+                : "You are an expert physicist specializing in precise, step-by-step solutions using Chain of Thought reasoning. Always provide clear, accurate, and concise explanations.";
 
-                var userPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
-                    ? request.Input 
-                    : $@"For the given problem, follow these steps:
+            var userPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
+                ? request.Input 
+                : $@"For the given problem, follow these steps:
 1. Restate the problem clearly in English.
 2. List all given data and assumptions.
 3. Derive the necessary formulas.
@@ -210,120 +199,113 @@ Ensure all mathematical expressions are in LaTeX and use clear English.
 
 Problem: {request.Input}";
 
-                object requestBody;
-                string model = request.AIModel;
+            object requestBody;
+            string model = request.AIModel;
 
-                switch (request.Provider.ToLower())
-                {
-                    case "openai":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "deepseek":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "gemini":
-                        requestBody = new
-                        {
-                            contents = new[]
-                            {
-                                new { role = "model", parts = new[] { new { text = systemPrompt } } },
-                                new { role = "user", parts = new[] { new { text = userPrompt } } }
-                            },
-                            generationConfig = new
-                            {
-                                maxOutputTokens = 8192,
-                                temperature = 0.2
-                            }
-                        };
-                        break;
-
-                    case "grok":
-                    case "xai":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "anthropic":
-                    case "claude":
-                        requestBody = new
-                        {
-                            model = model,
-                            max_tokens = 8192,
-                            messages = new[]
-                            {
-                                new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
-                            }
-                        };
-                        break;
-
-                    default:
-                        return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
-                }
-
-                var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
-
-                // Fallback for DeepSeek if reasoner model fails
-                if (request.Provider.ToLower() == "deepseek" && string.IsNullOrWhiteSpace(responseText))
-                {
-                    _logger.LogWarning("Reasoner model returned empty response, falling back to chat model.");
-                    model = "deepseek-chat";
+            switch (request.Provider.ToLower())
+            {
+                case "openai":
                     requestBody = new
                     {
                         model = model,
                         messages = new[]
                         {
-                            new { role = "system", content = "You are a helpful physics assistant providing step-by-step solutions." },
-                            new { role = "user", content = $"Solve this physics problem step by step: {request.Input}" }
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
                         },
-                        max_tokens = 4096,
-                        temperature = 0.3,
+                        max_tokens = 8192,
+                        temperature = 0.2,
                         stream = true
                     };
-                    responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
-                }
+                    break;
 
-                var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
-                return Ok(result);
+                case "deepseek":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 8192,
+                        temperature = 0.2,
+                        stream = true
+                    };
+                    break;
+
+                case "gemini":
+                    requestBody = new
+                    {
+                        contents = new[]
+                        {
+                            new { role = "model", parts = new[] { new { text = systemPrompt } } },
+                            new { role = "user", parts = new[] { new { text = userPrompt } } }
+                        },
+                        generationConfig = new
+                        {
+                            maxOutputTokens = 8192,
+                            temperature = 0.2
+                        }
+                    };
+                    break;
+
+                case "grok":
+                case "xai":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 8192,
+                        temperature = 0.2,
+                        stream = true
+                    };
+                    break;
+
+                case "anthropic":
+                case "claude":
+                    requestBody = new
+                    {
+                        model = model,
+                        max_tokens = 8192,
+                        messages = new[]
+                        {
+                            new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
+                        }
+                    };
+                    break;
+
+                default:
+                    return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
             }
-            catch (Exception ex)
+
+            var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
+
+            if (request.Provider.ToLower() == "deepseek" && string.IsNullOrWhiteSpace(responseText))
             {
-                _logger.LogError(ex, "Error processing AI solve request for provider: {Provider}", request.Provider);
-                return StatusCode(500, new { Message = "An error occurred while processing the request." });
+                _logger.LogWarning("Reasoner model returned empty response, falling back to chat model.");
+                model = "deepseek-chat";
+                requestBody = new
+                {
+                    model = model,
+                    messages = new[]
+                    {
+                        new { role = "system", content = "You are a helpful physics assistant providing step-by-step solutions." },
+                        new { role = "user", content = $"Solve this physics problem step by step: {request.Input}" }
+                    },
+                    max_tokens = 4096,
+                    temperature = 0.3,
+                    stream = true
+                };
+                responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
             }
+
+            var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
+            return Ok(result);
         }
 
         [HttpPost("latex")]
@@ -339,11 +321,9 @@ Problem: {request.Input}";
                 return BadRequest(new { Message = "Input is required." });
             }
 
-            try
-            {
-                var systemPrompt = "You are an expert physicist providing pure LaTeX mathematical derivations without any text explanations.";
+            var systemPrompt = "You are an expert physicist providing pure LaTeX mathematical derivations without any text explanations.";
 
-                var userPrompt = $@"For the given problem, provide ONLY the LaTeX code for the solution, including:
+            var userPrompt = $@"For the given problem, provide ONLY the LaTeX code for the solution, including:
 - All necessary formulas.
 - Step-by-step derivations using LaTeX math mode.
 - The final answer in \boxed{{}}.
@@ -352,100 +332,94 @@ Do NOT include any explanatory text or natural language.
 
 Problem: {request.Input}";
 
-                object requestBody;
-                string model = request.AIModel;
+            object requestBody;
+            string model = request.AIModel;
 
-                switch (request.Provider.ToLower())
-                {
-                    case "openai":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "deepseek":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "gemini":
-                        requestBody = new
-                        {
-                            contents = new[]
-                            {
-                                new { role = "model", parts = new[] { new { text = systemPrompt } } },
-                                new { role = "user", parts = new[] { new { text = userPrompt } } }
-                            },
-                            generationConfig = new
-                            {
-                                maxOutputTokens = 8192,
-                                temperature = 0.2
-                            }
-                        };
-                        break;
-
-                    case "grok":
-                    case "xai":
-                        requestBody = new
-                        {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 8192,
-                            temperature = 0.2,
-                            stream = true
-                        };
-                        break;
-
-                    case "anthropic":
-                    case "claude":
-                        requestBody = new
-                        {
-                            model = model,
-                            max_tokens = 8192,
-                            messages = new[]
-                            {
-                                new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
-                            }
-                        };
-                        break;
-
-                    default:
-                        return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
-                }
-
-                var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
-
-                var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
-                return Ok(result);
-            }
-            catch (Exception ex)
+            switch (request.Provider.ToLower())
             {
-                _logger.LogError(ex, "Error processing AI latex request for provider: {Provider}", request.Provider);
-                return StatusCode(500, new { Message = "An error occurred while processing the request." });
+                case "openai":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 8192,
+                        temperature = 0.2,
+                        stream = true
+                    };
+                    break;
+
+                case "deepseek":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 8192,
+                        temperature = 0.2,
+                        stream = true
+                    };
+                    break;
+
+                case "gemini":
+                    requestBody = new
+                    {
+                        contents = new[]
+                        {
+                            new { role = "model", parts = new[] { new { text = systemPrompt } } },
+                            new { role = "user", parts = new[] { new { text = userPrompt } } }
+                        },
+                        generationConfig = new
+                        {
+                            maxOutputTokens = 8192,
+                            temperature = 0.2
+                        }
+                    };
+                    break;
+
+                case "grok":
+                case "xai":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 8192,
+                        temperature = 0.2,
+                        stream = true
+                    };
+                    break;
+
+                case "anthropic":
+                case "claude":
+                    requestBody = new
+                    {
+                        model = model,
+                        max_tokens = 8192,
+                        messages = new[]
+                        {
+                            new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
+                        }
+                    };
+                    break;
+
+                default:
+                    return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
             }
+
+            var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
+
+            var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
+            return Ok(result);
         }
 
         [HttpPost("chat")]
@@ -461,108 +435,100 @@ Problem: {request.Input}";
                 return BadRequest(new { Message = "Input is required." });
             }
 
-            try
+            var systemPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
+                ? request.DefaultPrompt 
+                : "You are a helpful and accurate assistant.";
+
+            var userPrompt = request.Input;
+
+            object requestBody;
+            string model = request.AIModel;
+
+            switch (request.Provider.ToLower())
             {
-                var systemPrompt = !string.IsNullOrWhiteSpace(request.DefaultPrompt) 
-                    ? request.DefaultPrompt 
-                    : "You are a helpful and accurate assistant.";
-
-                var userPrompt = request.Input;
-
-                object requestBody;
-                string model = request.AIModel;
-
-                switch (request.Provider.ToLower())
-                {
-                    case "openai":
-                        requestBody = new
+                case "openai":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
                         {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 4096,
-                            temperature = 0.3,
-                            stream = true
-                        };
-                        break;
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 4096,
+                        temperature = 0.3,
+                        stream = true
+                    };
+                    break;
 
-                    case "deepseek":
-                        requestBody = new
+                case "deepseek":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
                         {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 4096,
-                            temperature = 0.3,
-                            stream = true
-                        };
-                        break;
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 4096,
+                        temperature = 0.3,
+                        stream = true
+                    };
+                    break;
 
-                    case "gemini":
-                        requestBody = new
+                case "gemini":
+                    requestBody = new
+                    {
+                        contents = new[]
                         {
-                            contents = new[]
-                            {
-                                new { role = "model", parts = new[] { new { text = systemPrompt } } },
-                                new { role = "user", parts = new[] { new { text = userPrompt } } }
-                            },
-                            generationConfig = new
-                            {
-                                maxOutputTokens = 4096,
-                                temperature = 0.3
-                            }
-                        };
-                        break;
-
-                    case "grok":
-                    case "xai":
-                        requestBody = new
+                            new { role = "model", parts = new[] { new { text = systemPrompt } } },
+                            new { role = "user", parts = new[] { new { text = userPrompt } } }
+                        },
+                        generationConfig = new
                         {
-                            model = model,
-                            messages = new[]
-                            {
-                                new { role = "system", content = systemPrompt },
-                                new { role = "user", content = userPrompt }
-                            },
-                            max_tokens = 4096,
-                            temperature = 0.3,
-                            stream = true
-                        };
-                        break;
+                            maxOutputTokens = 4096,
+                            temperature = 0.3
+                        }
+                    };
+                    break;
 
-                    case "anthropic":
-                    case "claude":
-                        requestBody = new
+                case "grok":
+                case "xai":
+                    requestBody = new
+                    {
+                        model = model,
+                        messages = new[]
                         {
-                            model = model,
-                            max_tokens = 4096,
-                            messages = new[]
-                            {
-                                new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
-                            }
-                        };
-                        break;
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        max_tokens = 4096,
+                        temperature = 0.3,
+                        stream = true
+                    };
+                    break;
 
-                    default:
-                        return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
-                }
+                case "anthropic":
+                case "claude":
+                    requestBody = new
+                    {
+                        model = model,
+                        max_tokens = 4096,
+                        messages = new[]
+                        {
+                            new { role = "user", content = $"{systemPrompt}\n\n{userPrompt}" }
+                        }
+                    };
+                    break;
 
-                var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
-
-                var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
-                return Ok(result);
+                default:
+                    return BadRequest(new { Message = "Unsupported AI provider. Supported providers: openai, deepseek, gemini, grok, anthropic" });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing AI chat request for provider: {Provider}", request.Provider);
-                return StatusCode(500, new { Message = "An error occurred while processing the request." });
-            }
+
+            var responseText = await CallAIProviderAsync(request.Provider, model, requestBody, useStream: true);
+
+            var result = new AIChatResponse { Response = responseText, Provider = request.Provider };
+            return Ok(result);
         }
     }
 }

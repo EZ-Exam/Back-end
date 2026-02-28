@@ -22,7 +22,6 @@ namespace teamseven.EzExam.API.Controllers
             _serviceProvider = serviceProvider;
             _logger = logger;
         }
-        // API/Controllers/ExamsController.cs
         [HttpGet]
         [AllowAnonymous]
         [SwaggerOperation(
@@ -32,7 +31,7 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(200, "OK", typeof(PagedResponse<ExamResponse>))]
         public async Task<IActionResult> GetExams(
             [FromQuery] string? search = null,
-            [FromQuery] string? sort = null,          // name|createdAt|updatedAt|totalQuestions|timeLimit : asc|desc
+            [FromQuery] string? sort = null,
             [FromQuery] int? subjectId = null,
             [FromQuery] int? lessonId = null,
             [FromQuery] int? examTypeId = null,
@@ -68,34 +67,14 @@ namespace teamseven.EzExam.API.Controllers
 
         //// =================== GET ALL EXAMS ===================
 
-        //[HttpGet]
-        //[AllowAnonymous]
-        //[SwaggerOperation(Summary = "Get all exams", Description = "Retrieves all exams")]
-        //public async Task<IActionResult> GetAllExams()
-        //{
-        //    var exams = await _serviceProvider.ExamService.GetAllExamAsync();
-        //    return Ok(exams);
-        //}
-
-        // =================== GET EXAM BY ID ===================
-
         [HttpGet("{id}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get exam by ID", Description = "Retrieves a single exam")]
         public async Task<IActionResult> GetExam(int id)
         {
-            try
-            {
-                var exam = await _serviceProvider.ExamService.GetExamAsync(id);
-                return Ok(exam);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var exam = await _serviceProvider.ExamService.GetExamAsync(id);
+            return Ok(exam);
         }
-        // =================== OPTIMIZED: Exams Feed (catalog) ===================
         [HttpGet("optimized/feed")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get optimized exams feed", Description = "Lightweight, metadata-only feed for exams (optimized). Use for catalog lists.")]
@@ -108,130 +87,63 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] int? examTypeId = null,
             [FromQuery] int? createdByUserId = null)
         {
-            try
-            {
-                if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
+            if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
 
-                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedAsync(page, pageSize, search, subjectId, lessonId, examTypeId, createdByUserId);
+            var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedAsync(page, pageSize, search, subjectId, lessonId, examTypeId, createdByUserId);
 
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized exams feed");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            return Ok(data);
         }
 
-        // =================== OPTIMIZED: Exam Details (lightweight) ===================
         [HttpGet("optimized/{id}/details")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get optimized exam details", Description = "Lightweight exam details (question ids + metadata) to minimize payload.")]
         public async Task<IActionResult> GetOptimizedExamDetails(int id, [FromQuery] int currentUserId = 0)
         {
-            try
-            {
-                var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
-                return Ok(data);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized exam details for {ExamId}", id);
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
+            return Ok(data);
         }
 
-        // =================== OPTIMIZED: Exams Feed BY USER (catalog owned by user) ===================
         [HttpGet("optimized/user/{userId}/feed")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOptimizedExamsFeedByUser(int userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            try
-            {
-                var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedByUserAsync(
-                    userId, page, pageSize);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized exams feed for user {UserId}", userId);
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var data = await _serviceProvider.ExamService.GetOptimizedExamsFeedByUserAsync(
+                userId, page, pageSize);
+            return Ok(data);
         }
 
-        // =================== OPTIMIZED: Exam Details BY USER ===================
         [HttpGet("optimized/user/{userId}/{id}/details")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOptimizedExamDetailsByUser(int userId, int id, [FromQuery] int currentUserId = 0)
         {
-            try
-            {
-                var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
-                if (data.CreatedByUserId != userId)
-                    return NotFound(new { Message = "Exam not found for user." });
-                return Ok(data);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized exam details for exam {ExamId} by user {UserId}", id, userId);
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var data = await _serviceProvider.ExamService.GetOptimizedExamDetailsAsync(id, currentUserId);
+            if (data.CreatedByUserId != userId)
+                return NotFound(new { Message = "Exam not found for user." });
+            return Ok(data);
         }
-        // =================== GET EXAM BY USERID ===================
         [HttpGet("user/{userId}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get exams by user ID", Description = "Retrieves all exams created by a specific user")]
         public async Task<IActionResult> GetExamsByUserId(int userId)
         {
-            try
-            {
-                var exams = await _serviceProvider.ExamService.GetExamsByUserIdAsync(userId);
-                return Ok(exams);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving exams by userId");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var exams = await _serviceProvider.ExamService.GetExamsByUserIdAsync(userId);
+            return Ok(exams);
         }
 
-
-        // =================== CREATE EXAM ===================
-
         [HttpPost]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Create exam", Description = "Creates a new exam")]
         public async Task<IActionResult> CreateExam([FromBody] ExamRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
-            {
-                var id = await _serviceProvider.ExamService.CreateExamAsync(request);
-                return StatusCode(201, new { Id = id, Message = "Exam created successfully." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating exam");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var id = await _serviceProvider.ExamService.CreateExamAsync(request);
+            return StatusCode(201, new { Id = id, Message = "Exam created successfully." });
         }
 
-        // =================== UPDATE EXAM ===================
-
         [HttpPut("{id}")]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Update exam", Description = "Updates an existing exam")]
         public async Task<IActionResult> UpdateExam(int id, [FromBody] UpdateExamRequest request)
         {
@@ -241,62 +153,27 @@ namespace teamseven.EzExam.API.Controllers
             if (id != request.Id)
                 return BadRequest(new { Message = "Route ID and request ID do not match." });
 
-            try
-            {
-                var updatedExam = await _serviceProvider.ExamService.UpdateExamAsync(request);
-                return Ok(updatedExam);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Exam not found");
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating exam");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var updatedExam = await _serviceProvider.ExamService.UpdateExamAsync(request);
+            return Ok(updatedExam);
         }
 
-        // =================== ADD QUESTION TO EXAM ===================
-
         [HttpPost("questions")]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Assign question to exam")]
         public async Task<IActionResult> AddExamQuestion([FromBody] ExamQuestionRequest request)
         {
-            try
-            {
-                await _serviceProvider.ExamService.CreateExamQuestionAsync(request);
-                return Ok(new { Message = "Question added to exam." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error assigning question");
-                return BadRequest(new { Message = ex.Message });
-            }
+            await _serviceProvider.ExamService.CreateExamQuestionAsync(request);
+            return Ok(new { Message = "Question added to exam." });
         }
 
-        // =================== REMOVE QUESTION FROM EXAM ===================
-
         [HttpDelete("questions")]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Remove question from exam")]
         public async Task<IActionResult> RemoveExamQuestion([FromBody] ExamQuestionRequest request)
         {
-            try
-            {
-                await _serviceProvider.ExamService.RemoveExamQuestion(request);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.ExamService.RemoveExamQuestion(request);
+            return NoContent();
         }
-
-        // =================== GET QUESTIONS BY EXAM ID ===================
 
         [HttpGet("{id}/questions")]
         [AllowAnonymous]
@@ -307,141 +184,64 @@ namespace teamseven.EzExam.API.Controllers
             return Ok(questions);
         }
 
-        // =================== GET DETAILED QUESTIONS BY EXAM ID ===================
-
         [HttpGet("{id}/questions/detail")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get detailed exam questions with all fields (correctAnswer, options, explanation, etc.)")]
         public async Task<IActionResult> GetExamQuestionsDetail(int id)
         {
-            try
-            {
-                var questions = await _serviceProvider.ExamService.GetExamQuestionsDetailAsync(id);
-                return Ok(questions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving detailed exam questions for exam {ExamId}", id);
-                return StatusCode(500, new { Message = "Error retrieving exam questions", Detail = ex.Message });
-            }
+            var questions = await _serviceProvider.ExamService.GetExamQuestionsDetailAsync(id);
+            return Ok(questions);
         }
-        [HttpPut("rename/{examId}")]
-        public async Task<IActionResult> RenameExam(int examId, string newName)
+        [HttpPatch("{id}/rename")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Rename exam")]
+        public async Task<IActionResult> RenameExam(int id, [FromQuery] string newName)
         {
-            try
-            {
-                await _serviceProvider.ExamService.RenameExamAsync(examId, newName);
-                return Ok(new { Message = "Exam renamed successfully" });
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Internal error", Detail = ex.Message });
-            }
+            await _serviceProvider.ExamService.RenameExamAsync(id, newName);
+            return Ok(new { Message = "Exam renamed successfully" });
         }
-
-        // =================== CREATE EXAM HISTORY ===================
 
         [HttpPost("history")]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Create exam history")]
         public async Task<IActionResult> CreateExamHistory([FromBody] ExamHistoryRequest request)
         {
-            try
-            {
-                await _serviceProvider.ExamService.CreateExamHistoryAsync(request);
-                return StatusCode(201, new { Message = "Exam history recorded." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating exam history");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.ExamService.CreateExamHistoryAsync(request);
+            return StatusCode(201, new { Message = "Exam history recorded." });
         }
 
-        // =================== DELETE EXAM HISTORY ===================
-
         [HttpDelete("history")]
-        [AllowAnonymous]
+        [Authorize]
         [SwaggerOperation(Summary = "Delete exam history")]
         public async Task<IActionResult> DeleteExamHistory([FromBody] ExamHistoryRequest request)
         {
-            try
-            {
-                await _serviceProvider.ExamService.DeleteExamHistoryAsync(request);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting exam history");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.ExamService.DeleteExamHistoryAsync(request);
+            return NoContent();
         }
-
-        // =================== GET EXAM HISTORY DETAILS ===================
 
         [HttpGet("history/{id}")]
         [AllowAnonymous]
         [SwaggerOperation(Summary = "Get exam history details")]
         public async Task<IActionResult> GetExamHistory(int id)
         {
-            try
-            {
-                var result = await _serviceProvider.ExamService.GetExamHistoryResponseAsync(id);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving exam history");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            var result = await _serviceProvider.ExamService.GetExamHistoryResponseAsync(id);
+            return Ok(result);
         }
-        // =================== SOFT DELETE EXAM ===================
-        [HttpPut("{id}/soft-delete")]
-        [AllowAnonymous]
+        [HttpDelete("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Soft delete exam", Description = "Mark exam as deleted")]
         public async Task<IActionResult> SoftDeleteExam(int id)
         {
-            try
-            {
-                await _serviceProvider.ExamService.SoftDeleteExamAsync(id);
-                return Ok(new { Message = "Exam soft-deleted successfully." });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Exam not found");
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error soft deleting exam");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.ExamService.SoftDeleteExamAsync(id);
+            return Ok(new { Message = "Exam soft-deleted successfully." });
         }
-        // =================== RECOVER EXAM ===================
-        [HttpPut("{id}/recover")]
-        [AllowAnonymous]
+        [HttpPatch("{id}/recover")]
+        [Authorize]
         [SwaggerOperation(Summary = "Recover exam", Description = "Recover soft-deleted exam (IsDeleted = false)")]
         public async Task<IActionResult> RecoverExam(int id)
         {
-            try
-            {
-                await _serviceProvider.ExamService.RecoverExamAsync(id);
-                return Ok(new { Message = "Exam recovered successfully." });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Exam not found");
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error recovering exam");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.ExamService.RecoverExamAsync(id);
+            return Ok(new { Message = "Exam recovered successfully." });
         }
 
     }

@@ -27,7 +27,7 @@ namespace teamseven.EzExam.Repository.Models
 
         [Column("UserAnswer")]
         [MaxLength(5000)]
-        public string? UserAnswer { get; set; } // For text-based answers
+        public string? UserAnswer { get; set; }
 
         [Required]
         [Column("IsCorrect")]
@@ -36,14 +36,14 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(20)]
         [Column("DifficultyLevel")]
-        public string DifficultyLevel { get; set; } = "MEDIUM"; // EASY, MEDIUM, HARD
+        public string DifficultyLevel { get; set; } = "MEDIUM";
 
         [Column("TimeSpent")]
-        public int TimeSpent { get; set; } = 0; // seconds spent on this question
+        public int TimeSpent { get; set; } = 0;
 
         [Column("Topic")]
         [MaxLength(200)]
-        public string? Topic { get; set; } // Topic/subject of the question
+        public string? Topic { get; set; }
 
         [Column("ChapterId")]
         public int? ChapterId { get; set; }
@@ -52,10 +52,10 @@ namespace teamseven.EzExam.Repository.Models
         public int? LessonId { get; set; }
 
         [Column("QuestionOrder")]
-        public int QuestionOrder { get; set; } = 0; // Order of question in the quiz
+        public int QuestionOrder { get; set; } = 0;
 
         [Column("ConfidenceLevel")]
-        public int? ConfidenceLevel { get; set; } // 1-5 scale (1 = very unsure, 5 = very confident)
+        public int? ConfidenceLevel { get; set; }
 
         [Column("IsMarkedForReview")]
         public bool IsMarkedForReview { get; set; } = false;
@@ -64,12 +64,11 @@ namespace teamseven.EzExam.Repository.Models
         public bool IsSkipped { get; set; } = false;
 
         [Column("AnswerChangeCount")]
-        public int AnswerChangeCount { get; set; } = 0; // Number of times answer was changed
+        public int AnswerChangeCount { get; set; } = 0;
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("StudentQuizHistoryId")]
         public virtual StudentQuizHistory StudentQuizHistory { get; set; } = null!;
 

@@ -9,13 +9,13 @@ namespace teamseven.EzExam.Services.Object.Requests
         public string Input { get; set; } = string.Empty;
 
         [StringLength(5000)]
-        public string? DefaultPrompt { get; set; } // Optional custom prompt
+        public string? DefaultPrompt { get; set; }
 
         [Required]
         [StringLength(50)]
-        public string AIModel { get; set; } = "gpt-4o"; // AI model (e.g., gpt-4o, gpt-3.5-turbo, gemini-2.5-flash, etc.)
+        public string AIModel { get; set; } = "gpt-4o";
 
         [StringLength(20)]
-        public string Provider { get; set; } = "openai"; // Provider type for API format handling
+        public string Provider { get; set; } = "openai";
     }
 }

@@ -10,43 +10,32 @@ using teamseven.EzExam.Services.Extensions;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 
+using AutoMapper;
+
 namespace teamseven.EzExam.Services.Services.TextBookService
 {
     public class TextBookService : ITextBookService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<TextBookService> _logger;
+        private readonly IMapper _mapper;
 
-        public TextBookService(IUnitOfWork unitOfWork, ILogger<TextBookService> logger)
+        public TextBookService(IUnitOfWork unitOfWork, ILogger<TextBookService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<TextBookDataResponse>> GetAllTextBookAsync()
         {
             var textbooks = await _unitOfWork.TextBookRepository.GetAllAsync();
-            return textbooks.Select(tb => new TextBookDataResponse
-            {
-                Id = tb.Id,
-                Name = tb.Name,
-                GradeId = tb.GradeId,
-                CreatedAt = tb.CreatedAt,
-                UpdatedAt = tb.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<TextBookDataResponse>>(textbooks);
         }
         public async Task<List<TextBookDataResponse>> GetAsync(int? gradeId = null, int? subjectId = null)
         {
             var items = await _unitOfWork.TextBookRepository.GetAllAsync(gradeId, subjectId);
-            return items.Select(x => new TextBookDataResponse
-            {
-                Id = x.Id,
-                Name = x.Name,
-                GradeId = x.GradeId,
-                SubjectId = x.SubjectId,
-                CreatedAt = x.CreatedAt,
-                UpdatedAt = x.UpdatedAt
-            }).ToList();
+            return _mapper.Map<List<TextBookDataResponse>>(items);
         }
 
         public async Task<TextBookDataResponse> GetTextBookByIdAsync(int id)
@@ -55,24 +44,13 @@ namespace teamseven.EzExam.Services.Services.TextBookService
             if (tb == null)
                 throw new NotFoundException($"Textbook with ID {id} not found.");
 
-            return new TextBookDataResponse
-            {
-                Id = tb.Id,
-                Name = tb.Name,
-                GradeId = tb.GradeId,
-                CreatedAt = tb.CreatedAt,
-                UpdatedAt = tb.UpdatedAt
-            };
+            return _mapper.Map<TextBookDataResponse>(tb);
         }
 
         public async Task CreateTextBookAsync(CreateTextBookRequest request)
         {
-            var textbook = new TextBook
-            {
-                Name = request.Name,
-                GradeId = request.GradeId,
-                CreatedAt = DateTime.UtcNow
-            };
+            var textbook = _mapper.Map<TextBook>(request);
+            textbook.CreatedAt = DateTime.UtcNow;
 
             await _unitOfWork.TextBookRepository.CreateAsync(textbook);
             await _unitOfWork.SaveChangesWithTransactionAsync();

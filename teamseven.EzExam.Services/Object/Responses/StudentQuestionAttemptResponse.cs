@@ -21,7 +21,6 @@ namespace teamseven.EzExam.Services.Object.Responses
         public int AnswerChangeCount { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        // Navigation properties for display
         public string? QuestionContent { get; set; }
         public string? QuestionType { get; set; }
         public string? SelectedAnswerContent { get; set; }

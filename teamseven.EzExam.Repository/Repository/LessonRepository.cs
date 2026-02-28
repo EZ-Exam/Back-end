@@ -10,12 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class LessonRepository : GenericRepository<Lesson>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public LessonRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public LessonRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Lesson>?> GetAllAsync()
         {
@@ -55,24 +51,21 @@ namespace teamseven.EzExam.Repository.Repository
              string? search = null,
              string? sort = null,
              int? chapterId = null,
-             int isSort = 0) // Default isSort = 0 (No)
+             int isSort = 0)
         {
             var query = _context.Lessons.AsQueryable();
 
-            // Search (accent-insensitive)
             if (!string.IsNullOrEmpty(search))
             {
                 var searchNormalized = search.RemoveDiacritics().ToLower();
                 query = query.Where(l => l.Name.RemoveDiacritics().ToLower().Contains(searchNormalized));
             }
 
-            // Filter by ChapterId
             if (chapterId.HasValue)
             {
                 query = query.Where(l => l.ChapterId == chapterId.Value);
             }
 
-            // Sort
             if (isSort == 1)
             {
                 if (!string.IsNullOrEmpty(sort))
@@ -98,21 +91,20 @@ namespace teamseven.EzExam.Repository.Repository
                             query = query.OrderByDescending(l => l.UpdatedAt);
                             break;
                         default:
-                            query = query.OrderByDescending(l => l.CreatedAt); // Default when sort invalid
+                            query = query.OrderByDescending(l => l.CreatedAt);
                             break;
                     }
                 }
                 else
                 {
-                    query = query.OrderByDescending(l => l.CreatedAt); // Default when isSort=1, no sort param
+                    query = query.OrderByDescending(l => l.CreatedAt);
                 }
             }
             else
             {
-                query = query.OrderBy(l => l.Id); // Default when isSort=0 (No)
+                query = query.OrderBy(l => l.Id);
             }
 
-            // Pagination
             var totalItems = await query.CountAsync();
             var items = await query
                 .Skip((pageNumber - 1) * pageSize)
@@ -123,3 +115,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

@@ -22,53 +22,10 @@ namespace teamseven.EzExam.API.Controllers
             _logger = logger;
         }
 
-        // =================== GET ALL LESSONS ===================
-
         [HttpGet]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get all lessons", Description = "Retrieves all lessons")]
-        [SwaggerResponse(200, "Lessons retrieved successfully.", typeof(IEnumerable<LessonDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.")]
-        public async Task<IActionResult> GetAllLessons()
-        {
-            try
-            {
-                var lessons = await _serviceProvider.LessonService.GetAllLessonAsync();
-                return Ok(lessons);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving all lessons");
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        [HttpGet("by-chapter/{chapterId}")]
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get lessons by chapter ID", Description = "Retrieves lessons filtered by chapter ID")]
-        [SwaggerResponse(200, "Lessons retrieved successfully.", typeof(IEnumerable<LessonDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.")]
-        public async Task<IActionResult> GetLessonsByChapterId(int chapterId)
-        {
-            try
-            {
-                var lessons = await _serviceProvider.LessonService.GetLessonsByChapterIdAsync(chapterId);
-                return Ok(lessons);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving lessons by chapterId {ChapterId}", chapterId);
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        // =================== GET LESSONS WITH PAGINATION ===================
-
-        [HttpGet("paged")]
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get lessons with pagination", Description = "Retrieves lessons with pagination and filtering")]
+        [SwaggerOperation(Summary = "Get lessons (filtered & paged)", Description = "Optional filters: chapterId, gradeId, search, sort, pageNumber, pageSize.")]
         [SwaggerResponse(200, "Lessons retrieved successfully.", typeof(PagedResponse<LessonDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> GetLessons(
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
@@ -78,20 +35,17 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] int? gradeId = null,
             [FromQuery] int isSort = 0)
         {
-            try
+            if (chapterId.HasValue && pageNumber == null && pageSize == null)
             {
-                var lessons = await _serviceProvider.LessonService.GetLessonsAsync(
-                    pageNumber, pageSize, search, sort, chapterId, isSort);
-                return Ok(lessons);
+                // simple by-chapter list
+                var byChapter = await _serviceProvider.LessonService.GetLessonsByChapterIdAsync(chapterId.Value);
+                return Ok(byChapter);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving lessons with pagination");
-                return StatusCode(500, "Internal server error");
-            }
-        }
 
-        // =================== GET LESSON BY ID ===================
+            var lessons = await _serviceProvider.LessonService.GetLessonsAsync(
+                pageNumber, pageSize, search, sort, chapterId, isSort);
+            return Ok(lessons);
+        }
 
         [HttpGet("{id}")]
         [AllowAnonymous]
@@ -101,22 +55,13 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> GetLessonById(int id)
         {
-            try
-            {
-                var lesson = await _serviceProvider.LessonService.GetLessonByIdAsync(id);
-                return Ok(lesson);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving lesson with ID: {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
+            var lesson = await _serviceProvider.LessonService.GetLessonByIdAsync(id);
+            return Ok(lesson);
         }
 
-        // =================== OPTIMIZED: Lessons Feed ===================
-        [HttpGet("optimized/feed")]
+        [HttpGet("feed")]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get optimized lessons feed", Description = "Lightweight lessons feed with metadata (questionCount, examCount, attempts). Use for catalog lists.")]
+        [SwaggerOperation(Summary = "Get optimized lessons feed", Description = "Lightweight lessons feed with metadata.")]
         public async Task<IActionResult> GetOptimizedLessonsFeed(
             [FromQuery] int currentUserId = 0,
             [FromQuery] int page = 1,
@@ -124,44 +69,20 @@ namespace teamseven.EzExam.API.Controllers
             [FromQuery] string? search = null,
             [FromQuery] int? chapterId = null)
         {
-            try
-            {
-                if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
+            if (page < 1 || pageSize < 1) return BadRequest(new { Message = "page and pageSize must be > 0" });
 
-                var data = await _serviceProvider.LessonService.GetOptimizedLessonsFeedAsync(currentUserId, page, pageSize, search, chapterId);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized lessons feed");
-                return StatusCode(500, "Internal server error");
-            }
+            var data = await _serviceProvider.LessonService.GetOptimizedLessonsFeedAsync(currentUserId, page, pageSize, search, chapterId);
+            return Ok(data);
         }
 
-        // =================== OPTIMIZED: Lesson Details ===================
-        [HttpGet("optimized/{id}/details")]
+        [HttpGet("{id}/details")]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get optimized lesson details", Description = "Lightweight lesson details with question and exam ids plus metadata.")]
+        [SwaggerOperation(Summary = "Get lesson details", Description = "Detailed lesson info with question and exam ids.")]
         public async Task<IActionResult> GetOptimizedLessonDetails(int id, [FromQuery] int currentUserId = 0)
         {
-            try
-            {
-                var data = await _serviceProvider.LessonService.GetOptimizedLessonDetailsAsync(id, currentUserId);
-                return Ok(data);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving optimized lesson details for {LessonId}", id);
-                return StatusCode(500, "Internal server error");
-            }
+            var data = await _serviceProvider.LessonService.GetOptimizedLessonDetailsAsync(id, currentUserId);
+            return Ok(data);
         }
-
-        // =================== CREATE LESSON ===================
 
         [HttpPost]
         [Authorize]
@@ -172,24 +93,14 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> CreateLesson([FromBody] CreateLessonRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                return BadRequest(ModelState);
+            }
 
-                await _serviceProvider.LessonService.CreateLessonAsync(request);
-                return StatusCode(201, "Lesson created successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating lesson");
-                return StatusCode(500, "Internal server error");
-            }
+            await _serviceProvider.LessonService.CreateLessonAsync(request);
+            return StatusCode(201, "Lesson created successfully");
         }
-
-        // =================== UPDATE LESSON ===================
 
         [HttpPut("{id}")]
         [Authorize]
@@ -201,25 +112,15 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> UpdateLesson(int id, [FromBody] LessonDataRequest request)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                return BadRequest(ModelState);
+            }
 
-                request.Id = id;
-                await _serviceProvider.LessonService.UpdateLessonAsync(request);
-                return Ok("Lesson updated successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating lesson with ID: {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
+            request.Id = id;
+            await _serviceProvider.LessonService.UpdateLessonAsync(request);
+            return Ok("Lesson updated successfully");
         }
-
-        // =================== DELETE LESSON ===================
 
         [HttpDelete("{id}")]
         [Authorize]
@@ -230,16 +131,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.")]
         public async Task<IActionResult> DeleteLesson(int id)
         {
-            try
-            {
-                await _serviceProvider.LessonService.DeleteLessonAsync(id);
-                return Ok("Lesson deleted successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting lesson with ID: {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
+            await _serviceProvider.LessonService.DeleteLessonAsync(id);
+            return Ok("Lesson deleted successfully");
         }
     }
 }

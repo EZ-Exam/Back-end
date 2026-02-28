@@ -16,11 +16,9 @@ namespace teamseven.EzExam.Services.Object.Responses
         public int CreatedByUserId { get; set; }
         public string? CreatedByUserName { get; set; }
 
-        // Metadata counts (only numbers, no full collections)
         public int AnswerCount { get; set; }
         public int CommentCount { get; set; }
 
-        // If current user has any interaction (attempted/answered)
         public bool IsAnsweredByCurrentUser { get; set; }
 
         public string Type { get; set; } = "multiple-choice";

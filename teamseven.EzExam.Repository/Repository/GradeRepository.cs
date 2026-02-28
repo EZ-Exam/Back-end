@@ -9,12 +9,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class GradeRepository : GenericRepository<Grade>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public GradeRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public GradeRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<Grade>?> GetAllAsync()
         {
@@ -42,3 +38,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

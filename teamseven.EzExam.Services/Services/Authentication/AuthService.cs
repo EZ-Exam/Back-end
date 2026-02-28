@@ -115,7 +115,6 @@ namespace teamseven.EzExam.Services.Services.Authentication
 
             var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration.");
 
-            // Lấy thông tin subscription hiện tại
             var subscriptionInfo = await _subscriptionService.GetUserCurrentSubscriptionAsync(user.Id);
 
             var claims = new List<Claim>
@@ -152,37 +151,32 @@ namespace teamseven.EzExam.Services.Services.Authentication
         {
             try
             {
-                // Authenticate token with Google
                 var settings = new GoogleJsonWebSignature.ValidationSettings
                 {
                     Audience = new[] { _configuration["Authentication:Google:ClientId"] }
                 };
                 var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
 
-                // Check UserSocialProvider
                 var socialProvider = await _unitOfWork.UserSocialProviderRepository.GetByProviderAsync("Google", payload.Subject);
                 User user;
 
                 if (socialProvider == null)
                 {
-                    // Check user by email
                     user = await _unitOfWork.UserRepository.GetByEmailAsync(payload.Email);
                     if (user == null)
                     {
-                        // Create new user
                         user = new User
                         {
                             Email = payload.Email,
                             FullName = payload.Name,
                             AvatarUrl = payload.Picture,
-                            RoleId = 1, // Default RoleId
+                            RoleId = 1,
                             IsActive = true,
                             CreatedAt = DateTime.UtcNow
                         };
                         await _unitOfWork.UserRepository.AddUserAsync(user);
                     }
 
-                    // Create UserSocialProvider
                     var userSocialProvider = new UserSocialProvider
                     {
                         UserId = user.Id,
@@ -194,12 +188,10 @@ namespace teamseven.EzExam.Services.Services.Authentication
                     };
                     await _unitOfWork.UserSocialProviderRepository.AddAsync(userSocialProvider);
 
-                    // Save changes with transaction
                     await _unitOfWork.SaveChangesWithTransactionAsync();
                 }
                 else
                 {
-                    // Existing user
                     user = await _unitOfWork.UserRepository.GetByEmailAsync(payload.Email);
                     if (user == null)
                     {
@@ -210,7 +202,6 @@ namespace teamseven.EzExam.Services.Services.Authentication
                     await _unitOfWork.SaveChangesWithTransactionAsync();
                 }
 
-                // Generate JWT with subscription info
                 return await GenerateJwtTokenWithSubscriptionAsync(user);
             }
             catch (Exception ex)

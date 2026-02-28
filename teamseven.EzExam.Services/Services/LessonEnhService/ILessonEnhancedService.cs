@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
@@ -17,8 +17,8 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
         int? pageSize = null,
         string? search = null,
         string? sort = null,
-        string? subjectId = null,   // string để khớp query từ controller
-        string? questionId = null,  // string để khớp query từ controller
+        string? subjectId = null,
+        string? questionId = null,
         int isSort = 0,
         bool includeQuestions = false);
     }

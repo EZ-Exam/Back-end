@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -37,21 +37,20 @@ namespace teamseven.EzExam.Repository.Models
         public int? UpdatedBy { get; set; }
 
         [Column("MaxSolutionViews")]
-        public int MaxSolutionViews { get; set; } = 0; // -1 = unlimited
+        public int MaxSolutionViews { get; set; } = 0;
 
         [Column("MaxAIRequests")]
-        public int MaxAIRequests { get; set; } = 0; // -1 = unlimited
+        public int MaxAIRequests { get; set; } = 0;
 
         [Column("IsAIEnabled")]
         public bool IsAIEnabled { get; set; } = false;
 
         [Column("Features")]
-        public string? Features { get; set; } // JSON string for additional features
+        public string? Features { get; set; }
 
         [Column("IsActive")]
         public bool IsActive { get; set; } = true;
 
-        // Navigation properties
         [ForeignKey("UpdatedBy")]
         public virtual User? UpdatedByNavigation { get; set; }
 

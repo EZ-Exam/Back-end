@@ -10,12 +10,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class SolutionReportRepository : GenericRepository<SolutionReport>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public SolutionReportRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public SolutionReportRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<SolutionReport>?> GetAllAsync()
         {
@@ -64,3 +60,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

@@ -45,15 +45,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Textbook not found")]
         public async Task<IActionResult> GetById(int id)
         {
-            try
-            {
-                var result = await _serviceProvider.TextBookService.GetTextBookByIdAsync(id);
-                return Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            var result = await _serviceProvider.TextBookService.GetTextBookByIdAsync(id);
+            return Ok(result);
         }
 
         [HttpPost]
@@ -80,15 +73,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || request.Id != id)
                 return BadRequest(new { Message = "Invalid request." });
 
-            try
-            {
-                await _serviceProvider.TextBookService.UpdateTextBookAsync(request);
-                return Ok(new { Message = "Textbook updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.TextBookService.UpdateTextBookAsync(request);
+            return Ok(new { Message = "Textbook updated successfully." });
         }
 
         [HttpDelete("{id}")]
@@ -98,15 +84,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Textbook not found")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                await _serviceProvider.TextBookService.DeleteTextBookAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.TextBookService.DeleteTextBookAsync(id);
+            return NoContent();
         }
     }
 }

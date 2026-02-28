@@ -13,34 +13,28 @@ namespace teamseven.EzExam.Services.Object.Responses
         public int? GradeId { get; set; }
         public string? GradeName { get; set; }
 
-        // Overall Performance Metrics
         public decimal OverallAverageScore { get; set; }
         public decimal OverallAccuracy { get; set; }
-        public string? CurrentPerformanceLevel { get; set; } // EXCELLENT, GOOD, AVERAGE, NEEDS_IMPROVEMENT, POOR
-        public string? ImprovementTrend { get; set; } // IMPROVING, STABLE, DECLINING
+        public string? CurrentPerformanceLevel { get; set; }
+        public string? ImprovementTrend { get; set; }
         public decimal? TrendPercentage { get; set; }
 
-        // Recent Performance (Last 5 Quizzes)
         public List<RecentQuizPerformance> RecentQuizzes { get; set; } = new List<RecentQuizPerformance>();
         public decimal RecentAverageScore { get; set; }
         public decimal RecentAverageTime { get; set; }
         public decimal ConsistencyScore { get; set; }
         public decimal LearningVelocity { get; set; }
 
-        // Difficulty Analysis
         public DifficultyProfileData? DifficultyProfile { get; set; }
         public string? RecommendedDifficulty { get; set; }
 
-        // Topic Analysis
         public List<TopicPerformanceData> StrongTopics { get; set; } = new List<TopicPerformanceData>();
         public List<TopicPerformanceData> WeakTopics { get; set; } = new List<TopicPerformanceData>();
 
-        // Learning Characteristics
         public decimal ConfidenceLevel { get; set; }
         public decimal TimeManagementScore { get; set; }
         public decimal? PredictedNextScore { get; set; }
 
-        // Recommendations for AI
         public List<string> RecommendedTopics { get; set; } = new List<string>();
         public List<string> AreasForImprovement { get; set; } = new List<string>();
         public string? OptimalQuestionDifficulty { get; set; }

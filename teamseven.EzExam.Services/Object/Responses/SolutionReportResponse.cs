@@ -11,7 +11,6 @@ namespace teamseven.EzExam.Repository.Dtos
         public string Status { get; set; }
         public DateTime ReportDate { get; set; }
 
-        // Related info
         public string ReporterEmail { get; set; }
         public string ReporterFullName { get; set; }
     }

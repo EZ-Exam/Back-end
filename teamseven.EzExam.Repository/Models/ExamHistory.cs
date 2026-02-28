@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -44,11 +44,11 @@ namespace teamseven.EzExam.Repository.Models
 
         [Required]
         [Column("TimeTaken")]
-        public int TimeTaken { get; set; } = 0; // seconds
+        public int TimeTaken { get; set; } = 0;
 
         [Column("Answers")]
         [MaxLength(10000)]
-        public string? Answers { get; set; } // JSON array of answer objects
+        public string? Answers { get; set; }
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -56,7 +56,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("ExamId")]
         public virtual Exam Exam { get; set; } = null!;
 

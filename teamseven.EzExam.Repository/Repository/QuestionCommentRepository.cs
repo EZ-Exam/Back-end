@@ -23,12 +23,9 @@ namespace teamseven.EzExam.Repository.Repository
 
     public class QuestionCommentRepository : GenericRepository<QuestionComment>, IQuestionCommentRepository
     {
-        private readonly teamsevenezexamdbContext _context;
 
         public QuestionCommentRepository(teamsevenezexamdbContext context) : base(context)
-        {
-            _context = context;
-        }
+        { }
 
         public async Task<List<QuestionComment>> GetByQuestionIdAsync(int questionId)
         {
@@ -95,7 +92,6 @@ namespace teamseven.EzExam.Repository.Repository
                 existingComment.DeletedBy = comment.DeletedBy;
                 existingComment.UpdatedAt = DateTime.UtcNow;
                 
-                // Force Entity Framework to detect changes
                 _context.Entry(existingComment).State = EntityState.Modified;
                 return existingComment;
             }
@@ -132,3 +128,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

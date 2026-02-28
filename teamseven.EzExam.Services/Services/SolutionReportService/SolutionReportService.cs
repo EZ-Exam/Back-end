@@ -7,17 +7,21 @@ using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Dtos;
 using teamseven.EzExam.Repository.Models;
 
+using AutoMapper;
+
 namespace teamseven.EzExam.Services.Services.SolutionReportService
 {
     public class SolutionReportService : ISolutionReportService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SolutionReportService> _logger;
+        private readonly IMapper _mapper;
 
-        public SolutionReportService(IUnitOfWork unitOfWork, ILogger<SolutionReportService> logger)
+        public SolutionReportService(IUnitOfWork unitOfWork, ILogger<SolutionReportService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task AddAsync(SolutionReportRequest request)
@@ -49,33 +53,13 @@ namespace teamseven.EzExam.Services.Services.SolutionReportService
             if (entity == null)
                 throw new KeyNotFoundException($"Report ID {id} not found.");
 
-            return new SolutionReportResponse
-            {
-                Id = entity.Id,
-                SolutionId = entity.SolutionId,
-                ReportedByUserId = entity.ReportedByUserId,
-                Reason = entity.Reason,
-                Status = entity.Status,
-                ReportDate = entity.ReportDate,
-                ReporterEmail = entity.ReportedByUser?.Email,
-                ReporterFullName = entity.ReportedByUser?.FullName
-            };
+            return _mapper.Map<SolutionReportResponse>(entity);
         }
 
         public async Task<List<SolutionReportResponse>> GetBySolutionIdAsync(int solutionId)
         {
             var list = await _unitOfWork.SolutionReportRepository.GetBySolutionIdAsync(solutionId);
-            return list.Select(r => new SolutionReportResponse
-            {
-                Id = r.Id,
-                SolutionId = r.SolutionId,
-                ReportedByUserId = r.ReportedByUserId,
-                Reason = r.Reason,
-                Status = r.Status,
-                ReportDate = r.ReportDate,
-                ReporterEmail = r.ReportedByUser?.Email,
-                ReporterFullName = r.ReportedByUser?.FullName
-            }).ToList();
+            return _mapper.Map<List<SolutionReportResponse>>(list);
         }
 
         public async Task UpdateStatusAsync(int id, string newStatus)

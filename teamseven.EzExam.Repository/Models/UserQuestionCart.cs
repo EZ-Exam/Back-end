@@ -30,7 +30,7 @@ namespace teamseven.EzExam.Repository.Models
 
         [Column("DifficultyPreference")]
         [MaxLength(20)]
-        public string? DifficultyPreference { get; set; } // EASY, MEDIUM, HARD
+        public string? DifficultyPreference { get; set; }
 
         [Column("SubjectId")]
         public int? SubjectId { get; set; }
@@ -41,7 +41,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("LessonId")]
         public int? LessonId { get; set; }
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

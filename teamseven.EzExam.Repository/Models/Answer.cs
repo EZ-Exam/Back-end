@@ -43,7 +43,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("QuestionId")]
         public virtual Question Question { get; set; } = null!;
     }

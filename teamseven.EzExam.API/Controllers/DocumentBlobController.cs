@@ -40,104 +40,86 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Upload failed", typeof(object))]
         public async Task<IActionResult> UploadDocument(IFormFile file, [FromQuery] string folder = "uploads")
         {
-            try
+            if (file == null || file.Length == 0)
             {
-                // Validate file
-                if (file == null || file.Length == 0)
-                {
-                    return BadRequest(new { Message = "No file provided." });
-                }
-
-                // Check file type (PDF or Word)
-                var allowedTypes = new[] { 
-                    "application/pdf", 
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-                    "application/msword" // .doc
-                };
-                
-                if (!allowedTypes.Contains(file.ContentType.ToLower()))
-                {
-                    return BadRequest(new { Message = "Only PDF and Word documents are allowed." });
-                }
-
-                // Check file size (max 50MB)
-                if (file.Length > 50 * 1024 * 1024)
-                {
-                    return BadRequest(new { Message = "File size cannot exceed 50MB." });
-                }
-
-                // Get user ID from JWT token
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized(new { Message = "User not authenticated." });
-                }
-
-                // Generate unique filename
-                var fileExtension = Path.GetExtension(file.FileName);
-                var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = $"{folder}/{userId}/{fileName}";
-
-                // Initialize Supabase storage
-                await _supabaseClient.InitializeAsync();
-                var storage = _supabaseClient.Storage;
-                var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
-
-                // Bucket should be created manually in Supabase Dashboard
-
-                // Upload file
-                using var stream = file.OpenReadStream();
-                using var memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                var fileBytes = memoryStream.ToArray();
-
-                var result = await storage
-                    .From(bucketName)
-                    .Upload(fileBytes, filePath, new Supabase.Storage.FileOptions
-                    {
-                        CacheControl = "3600",
-                        Upsert = false
-                    });
-
-                if (result == null)
-                {
-                    return StatusCode(500, new { Message = "Failed to upload file to storage." });
-                }
-
-                // Get public URL
-                var publicUrl = storage
-                    .From(bucketName)
-                    .GetPublicUrl(filePath);
-
-                _logger.LogInformation("Document uploaded successfully: {FilePath} by user {UserId}", filePath, userId);
-
-                var fileType = fileExtension.ToLower() switch
-                {
-                    ".pdf" => "PDF",
-                    ".docx" => "Word Document",
-                    ".doc" => "Word Document",
-                    _ => "Unknown"
-                };
-
-                var response = new DocumentUploadResponse
-                {
-                    FileName = fileName,
-                    FilePath = filePath,
-                    PublicUrl = publicUrl,
-                    FileSize = file.Length,
-                    ContentType = file.ContentType,
-                    UploadedAt = DateTime.UtcNow,
-                    UserId = userId,
-                    FileType = fileType
-                };
-
-                return Ok(response);
+                return BadRequest(new { Message = "No file provided." });
             }
-            catch (Exception ex)
+
+            var allowedTypes = new[] { 
+                "application/pdf", 
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/msword"
+            };
+            
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
             {
-                _logger.LogError(ex, "Error uploading document file");
-                return StatusCode(500, new { Message = "An error occurred while uploading the file." });
+                return BadRequest(new { Message = "Only PDF and Word documents are allowed." });
             }
+
+            if (file.Length > 50 * 1024 * 1024)
+            {
+                return BadRequest(new { Message = "File size cannot exceed 50MB." });
+            }
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User not authenticated." });
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName);
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = $"{folder}/{userId}/{fileName}";
+
+            await _supabaseClient.InitializeAsync();
+            var storage = _supabaseClient.Storage;
+            var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
+
+            using var stream = file.OpenReadStream();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            var result = await storage
+                .From(bucketName)
+                .Upload(fileBytes, filePath, new Supabase.Storage.FileOptions
+                {
+                    CacheControl = "3600",
+                    Upsert = false
+                });
+
+            if (result == null)
+            {
+                return StatusCode(500, new { Message = "Failed to upload file to storage." });
+            }
+
+            var publicUrl = storage
+                .From(bucketName)
+                .GetPublicUrl(filePath);
+
+            _logger.LogInformation("Document uploaded successfully: {FilePath} by user {UserId}", filePath, userId);
+
+            var fileType = fileExtension.ToLower() switch
+            {
+                ".pdf" => "PDF",
+                ".docx" => "Word Document",
+                ".doc" => "Word Document",
+                _ => "Unknown"
+            };
+
+            var response = new DocumentUploadResponse
+            {
+                FileName = fileName,
+                FilePath = filePath,
+                PublicUrl = publicUrl,
+                FileSize = file.Length,
+                ContentType = file.ContentType,
+                UploadedAt = DateTime.UtcNow,
+                UserId = userId,
+                FileType = fileType
+            };
+
+            return Ok(response);
         }
 
         /// <summary>
@@ -152,47 +134,36 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Download failed", typeof(object))]
         public async Task<IActionResult> DownloadDocument([FromQuery] [Required] string filePath)
         {
-            try
+            if (string.IsNullOrEmpty(filePath))
             {
-                if (string.IsNullOrEmpty(filePath))
-                {
-                    return BadRequest(new { Message = "File path is required." });
-                }
-
-                // Initialize Supabase storage
-                await _supabaseClient.InitializeAsync();
-                var storage = _supabaseClient.Storage;
-                var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
-
-                // Download file
-                var fileBytes = await storage
-                    .From(bucketName)
-                    .Download(filePath, null);
-
-                if (fileBytes == null || fileBytes.Length == 0)
-                {
-                    return NotFound(new { Message = "File not found." });
-                }
-
-                var fileName = Path.GetFileName(filePath);
-                var fileExtension = Path.GetExtension(filePath).ToLower();
-                
-                // Determine content type based on file extension
-                string contentType = fileExtension switch
-                {
-                    ".pdf" => "application/pdf",
-                    ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    ".doc" => "application/msword",
-                    _ => "application/octet-stream"
-                };
-                
-                return File(fileBytes, contentType, fileName);
+                return BadRequest(new { Message = "File path is required." });
             }
-            catch (Exception ex)
+
+            await _supabaseClient.InitializeAsync();
+            var storage = _supabaseClient.Storage;
+            var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
+
+            var fileBytes = await storage
+                .From(bucketName)
+                .Download(filePath, null);
+
+            if (fileBytes == null || fileBytes.Length == 0)
             {
-                _logger.LogError(ex, "Error downloading document file: {FilePath}", filePath);
-                return StatusCode(500, new { Message = "An error occurred while downloading the file." });
+                return NotFound(new { Message = "File not found." });
             }
+
+            var fileName = Path.GetFileName(filePath);
+            var fileExtension = Path.GetExtension(filePath).ToLower();
+            
+            string contentType = fileExtension switch
+            {
+                ".pdf" => "application/pdf",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".doc" => "application/msword",
+                _ => "application/octet-stream"
+            };
+            
+            return File(fileBytes, contentType, fileName);
         }
 
         /// <summary>
@@ -206,33 +177,25 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(400, "Invalid file path", typeof(object))]
         public IActionResult GetDocumentUrl([FromQuery] [Required] string filePath)
         {
-            try
+            if (string.IsNullOrEmpty(filePath))
             {
-                if (string.IsNullOrEmpty(filePath))
-                {
-                    return BadRequest(new { Message = "File path is required." });
-                }
-
-                var storage = _supabaseClient.Storage;
-                var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
-
-                var publicUrl = storage
-                    .From(bucketName)
-                    .GetPublicUrl(filePath);
-
-                var response = new DocumentUrlResponse
-                {
-                    FilePath = filePath,
-                    PublicUrl = publicUrl
-                };
-
-                return Ok(response);
+                return BadRequest(new { Message = "File path is required." });
             }
-            catch (Exception ex)
+
+            var storage = _supabaseClient.Storage;
+            var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
+
+            var publicUrl = storage
+                .From(bucketName)
+                .GetPublicUrl(filePath);
+
+            var response = new DocumentUrlResponse
             {
-                _logger.LogError(ex, "Error getting document URL: {FilePath}", filePath);
-                return StatusCode(500, new { Message = "An error occurred while getting the file URL." });
-            }
+                FilePath = filePath,
+                PublicUrl = publicUrl
+            };
+
+            return Ok(response);
         }
 
         /// <summary>
@@ -247,44 +210,33 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Deletion failed", typeof(object))]
         public async Task<IActionResult> DeleteDocument([FromQuery] [Required] string filePath)
         {
-            try
+            if (string.IsNullOrEmpty(filePath))
             {
-                if (string.IsNullOrEmpty(filePath))
-                {
-                    return BadRequest(new { Message = "File path is required." });
-                }
-
-                // Get user ID from JWT token
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized(new { Message = "User not authenticated." });
-                }
-
-                // Initialize Supabase storage
-                await _supabaseClient.InitializeAsync();
-                var storage = _supabaseClient.Storage;
-                var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
-
-                // Delete file
-                var result = await storage
-                    .From(bucketName)
-                    .Remove(filePath);
-
-                if (result == null)
-                {
-                    return NotFound(new { Message = "File not found or could not be deleted." });
-                }
-
-                _logger.LogInformation("Document deleted successfully: {FilePath} by user {UserId}", filePath, userId);
-
-                return Ok(new { Message = "File deleted successfully." });
+                return BadRequest(new { Message = "File path is required." });
             }
-            catch (Exception ex)
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogError(ex, "Error deleting document file: {FilePath}", filePath);
-                return StatusCode(500, new { Message = "An error occurred while deleting the file." });
+                return Unauthorized(new { Message = "User not authenticated." });
             }
+
+            await _supabaseClient.InitializeAsync();
+            var storage = _supabaseClient.Storage;
+            var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
+
+            var result = await storage
+                .From(bucketName)
+                .Remove(filePath);
+
+            if (result == null)
+            {
+                return NotFound(new { Message = "File not found or could not be deleted." });
+            }
+
+            _logger.LogInformation("Document deleted successfully: {FilePath} by user {UserId}", filePath, userId);
+
+            return Ok(new { Message = "File deleted successfully." });
         }
 
         /// <summary>
@@ -298,81 +250,69 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "List operation failed", typeof(object))]
         public async Task<IActionResult> ListDocuments([FromQuery] string folder = "uploads")
         {
-            try
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
-                // Get user ID from JWT token
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { Message = "User not authenticated." });
+            }
+
+            await _supabaseClient.InitializeAsync();
+            var storage = _supabaseClient.Storage;
+            var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
+
+            var userFolder = $"{folder}/{userId}";
+            var files = await storage
+                .From(bucketName)
+                .List(userFolder);
+
+            var documentFiles = files?.Where(f => 
+                f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ||
+                f.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ||
+                f.Name.EndsWith(".doc", StringComparison.OrdinalIgnoreCase))
+                .Select(f => 
                 {
-                    return Unauthorized(new { Message = "User not authenticated." });
-                }
-
-                // Initialize Supabase storage
-                await _supabaseClient.InitializeAsync();
-                var storage = _supabaseClient.Storage;
-                var bucketName = _configuration["Supabase:Storage:BucketName"] ?? "pdf-documents";
-
-                // List files in user's folder
-                var userFolder = $"{folder}/{userId}";
-                var files = await storage
-                    .From(bucketName)
-                    .List(userFolder);
-
-                var documentFiles = files?.Where(f => 
-                    f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ||
-                    f.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ||
-                    f.Name.EndsWith(".doc", StringComparison.OrdinalIgnoreCase))
-                    .Select(f => 
+                    long fileSize = 0;
+                    if (f.MetaData != null && f.MetaData.TryGetValue("size", out var sizeObj))
                     {
-                        long fileSize = 0;
-                        if (f.MetaData != null && f.MetaData.TryGetValue("size", out var sizeObj))
-                        {
-                            if (sizeObj is long size)
-                                fileSize = size;
-                            else if (sizeObj is int intSize)
-                                fileSize = intSize;
-                        }
+                        if (sizeObj is long size)
+                            fileSize = size;
+                        else if (sizeObj is int intSize)
+                            fileSize = intSize;
+                    }
 
-                        var fileExtension = Path.GetExtension(f.Name).ToLower();
-                        var fileType = fileExtension switch
-                        {
-                            ".pdf" => "PDF",
-                            ".docx" => "Word Document",
-                            ".doc" => "Word Document",
-                            _ => "Unknown"
-                        };
+                    var fileExtension = Path.GetExtension(f.Name).ToLower();
+                    var fileType = fileExtension switch
+                    {
+                        ".pdf" => "PDF",
+                        ".docx" => "Word Document",
+                        ".doc" => "Word Document",
+                        _ => "Unknown"
+                    };
 
-                        return new DocumentFileInfo
-                        {
-                            Name = f.Name,
-                            Path = $"{userFolder}/{f.Name}",
-                            Size = fileSize,
-                            LastModified = f.UpdatedAt ?? DateTime.MinValue,
-                            PublicUrl = storage.From(bucketName).GetPublicUrl($"{userFolder}/{f.Name}"),
-                            FileType = fileType,
-                            FileExtension = fileExtension
-                        };
-                    })
-                    .ToList() ?? new List<DocumentFileInfo>();
+                    return new DocumentFileInfo
+                    {
+                        Name = f.Name,
+                        Path = $"{userFolder}/{f.Name}",
+                        Size = fileSize,
+                        LastModified = f.UpdatedAt ?? DateTime.MinValue,
+                        PublicUrl = storage.From(bucketName).GetPublicUrl($"{userFolder}/{f.Name}"),
+                        FileType = fileType,
+                        FileExtension = fileExtension
+                    };
+                })
+                .ToList() ?? new List<DocumentFileInfo>();
 
-                var response = new DocumentListResponse
-                {
-                    Folder = userFolder,
-                    Files = documentFiles,
-                    TotalCount = documentFiles.Count
-                };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
+            var response = new DocumentListResponse
             {
-                _logger.LogError(ex, "Error listing document files in folder: {Folder}", folder);
-                return StatusCode(500, new { Message = "An error occurred while listing files." });
-            }
+                Folder = userFolder,
+                Files = documentFiles,
+                TotalCount = documentFiles.Count
+            };
+
+            return Ok(response);
         }
     }
 
-    // Response models
     public class DocumentUploadResponse
     {
         public string FileName { get; set; } = string.Empty;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using teamseven.EzExam.Repository;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
@@ -30,22 +31,23 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITestSessionIntegrationService _integrationService;
+        private readonly IMapper _mapper;
 
-        public TestSessionService(IUnitOfWork unitOfWork, ITestSessionIntegrationService integrationService = null)
+        public TestSessionService(IUnitOfWork unitOfWork, IMapper mapper, ITestSessionIntegrationService integrationService = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _integrationService = integrationService; // Optional dependency to avoid circular reference
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _integrationService = integrationService;
         }
 
         public async Task<TestSessionResponse?> StartSessionAsync(StartTestSessionRequest request)
         {
             try
             {
-                // Check if user already has an active session for this exam
                 var existingSession = await _unitOfWork.TestSessionRepository.GetActiveSessionByExamAsync(request.UserId, request.ExamId);
                 if (existingSession != null)
                 {
-                    return null; // User already has an active session
+                    return null;
                 }
 
                 var session = new TestSession
@@ -63,7 +65,7 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                 await _unitOfWork.TestSessionRepository.CreateAsync(session);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                return MapToResponse(session);
+                return _mapper.Map<TestSessionResponse>(session);
             }
             catch
             {
@@ -94,7 +96,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                 await _unitOfWork.TestSessionRepository.UpdateAsync(session);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                // Trigger integration to create quiz history
                 if (_integrationService != null)
                 {
                     try
@@ -103,8 +104,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     }
                     catch (Exception ex)
                     {
-                        // Log error but don't fail the session completion
-                        // This will be handled by a background service or manual trigger
                         System.Diagnostics.Debug.WriteLine($"Error in test session integration: {ex.Message}");
                     }
                 }
@@ -166,31 +165,31 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         public async Task<TestSessionResponse?> GetSessionAsync(int sessionId)
         {
             var session = await _unitOfWork.TestSessionRepository.GetByIdAsync(sessionId);
-            return session != null ? MapToResponse(session) : null;
+            return session != null ? _mapper.Map<TestSessionResponse>(session) : null;
         }
 
         public async Task<List<TestSessionResponse>> GetUserSessionsAsync(int userId)
         {
             var sessions = await _unitOfWork.TestSessionRepository.GetByUserIdAsync(userId);
-            return sessions.Select(MapToResponse).ToList();
+            return _mapper.Map<List<TestSessionResponse>>(sessions);
         }
 
         public async Task<List<TestSessionResponse>> GetActiveSessionsAsync(int userId)
         {
             var sessions = await _unitOfWork.TestSessionRepository.GetActiveSessionsAsync(userId);
-            return sessions.Select(MapToResponse).ToList();
+            return _mapper.Map<List<TestSessionResponse>>(sessions);
         }
 
         public async Task<List<TestSessionResponse>> GetCompletedSessionsAsync(int userId)
         {
             var sessions = await _unitOfWork.TestSessionRepository.GetCompletedSessionsAsync(userId);
-            return sessions.Select(MapToResponse).ToList();
+            return _mapper.Map<List<TestSessionResponse>>(sessions);
         }
 
         public async Task<TestSessionResponse?> GetActiveSessionByExamAsync(int userId, int examId)
         {
             var session = await _unitOfWork.TestSessionRepository.GetActiveSessionByExamAsync(userId, examId);
-            return session != null ? MapToResponse(session) : null;
+            return session != null ? _mapper.Map<TestSessionResponse>(session) : null;
         }
 
         public async Task<bool> SubmitAnswerAsync(SubmitAnswerRequest request)
@@ -228,7 +227,7 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         public async Task<List<TestSessionAnswerResponse>> GetSessionAnswersAsync(int sessionId)
         {
             var answers = await _unitOfWork.TestSessionAnswerRepository.GetBySessionIdAsync(sessionId);
-            return answers.Select(MapAnswerToResponse).ToList();
+            return _mapper.Map<List<TestSessionAnswerResponse>>(answers);
         }
 
         public async Task<decimal> GetAverageScoreAsync(int userId)
@@ -240,52 +239,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         {
             return await _unitOfWork.TestSessionRepository.GetTotalSessionsCountAsync(userId);
         }
-
-        private static TestSessionResponse MapToResponse(TestSession session)
-        {
-            return new TestSessionResponse
-            {
-                Id = session.Id,
-                UserId = session.UserId,
-                ExamId = session.ExamId,
-                SessionStatus = session.SessionStatus,
-                StartedAt = (DateTime)session.StartedAt,
-                CompletedAt = session.CompletedAt,
-                TimeSpent = session.TimeSpent,
-                TotalScore = session.TotalScore,
-                CorrectAnswers = session.CorrectAnswers,
-                TotalQuestions = session.TotalQuestions,
-                IsPassed = session.IsPassed,
-                PassingScore = session.PassingScore,
-                SessionData = session.SessionData,
-                DeviceInfo = session.DeviceInfo,
-                IsCheatingDetected = session.IsCheatingDetected,
-                CheatingDetails = session.CheatingDetails,
-                CreatedAt = session.CreatedAt,
-                UpdatedAt = session.UpdatedAt
-            };
-        }
-
-        private static TestSessionAnswerResponse MapAnswerToResponse(TestSessionAnswer answer)
-        {
-            return new TestSessionAnswerResponse
-            {
-                Id = answer.Id,
-                TestSessionId = answer.TestSessionId,
-                QuestionId = answer.QuestionId,
-                SelectedAnswerId = answer.SelectedAnswerId,
-                UserAnswer = answer.UserAnswer,
-                IsCorrect = (bool)answer.IsCorrect,
-                TimeSpent = answer.TimeSpent,
-                AnsweredAt = (DateTime)answer.AnsweredAt,
-                IsMarkedForReview = answer.IsMarkedForReview,
-                ConfidenceLevel = answer.ConfidenceLevel,
-                AnswerSequence = answer.AnswerSequence,
-                IsChanged = answer.IsChanged,
-                ChangeCount = answer.ChangeCount,
-                CreatedAt = answer.CreatedAt,
-                UpdatedAt = answer.UpdatedAt
-            };
-        }
     }
 }
+

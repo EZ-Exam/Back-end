@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -18,11 +19,13 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<QuestionsService> _logger;
+        private readonly IMapper _mapper;
 
-        public QuestionsService(IUnitOfWork unitOfWork, ILogger<QuestionsService> logger)
+        public QuestionsService(IUnitOfWork unitOfWork, ILogger<QuestionsService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<QuestionDataResponse> AddQuestionAsync(QuestionDataRequest questionDataRequest)
@@ -39,49 +42,20 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 throw new NotFoundException($"User with ID {questionDataRequest.CreatedByUserId} not found.");
             }
 
-            var question = new Question
-            {
-                Content = questionDataRequest.Content,
-                QuestionSource = questionDataRequest.QuestionSource,
-                DifficultyLevelId = questionDataRequest.DifficultyLevelId,
-                SubjectId = questionDataRequest.SubjectId,
-                ChapterId = questionDataRequest.ChapterId,
-                LessonId = questionDataRequest.LessonId,
-                TextbookId = questionDataRequest.TextbookId,
-                QuestionType = string.IsNullOrWhiteSpace(questionDataRequest.QuestionType) ? "MULTIPLE_CHOICE" : questionDataRequest.QuestionType!,
-                Image = questionDataRequest.Image,
-                TemplateQuestionId = questionDataRequest.TemplateQuestionId,
-                CreatedByUserId = questionDataRequest.CreatedByUserId,
-                Formula = questionDataRequest.Formula,
-                CorrectAnswer = questionDataRequest.CorrectAnswer,
-                Explanation = questionDataRequest.Explanation,
-                Options = questionDataRequest.Options != null ? JsonSerializer.Serialize(questionDataRequest.Options) : null,
-                CreatedAt = DateTime.UtcNow
-            };
+            var question = _mapper.Map<Question>(questionDataRequest);
+            question.QuestionType = string.IsNullOrWhiteSpace(questionDataRequest.QuestionType) ? "MULTIPLE_CHOICE" : questionDataRequest.QuestionType!;
+            question.Options = questionDataRequest.Options != null ? JsonSerializer.Serialize(questionDataRequest.Options) : null;
+            question.CreatedAt = DateTime.UtcNow;
 
             try
             {
                 await _unitOfWork.QuestionRepository.CreateAsync(question);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
-                var response = new QuestionDataResponse
-                {
-                    Id = question.Id,
-                    Content = question.Content,
-                    QuestionSource = question.QuestionSource,
-                    DifficultyLevelId = question.DifficultyLevelId,
-                    LessonId = question.LessonId,
-                    TextbookId = question.TextbookId,
-                    ChapterId = question.ChapterId,
-                    CreatedByUserId = question.CreatedByUserId,
-                    CreatedAt = question.CreatedAt,
-                    UpdatedAt = question.UpdatedAt,
-                    Formula = question.Formula,
-                    CorrectAnswer = question.CorrectAnswer,
-                    Explanation = question.Explanation,
-                    Type = question.QuestionType?.ToLower() ?? "multiple-choice",
-                    Options = question.Options != null ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>() : (questionDataRequest.Options ?? new List<string>())
-                };
 
+                var response = _mapper.Map<QuestionDataResponse>(question);
+                response.Options = question.Options != null
+                    ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>()
+                    : (questionDataRequest.Options ?? new List<string>());
                 return response;
             }
 
@@ -111,31 +85,13 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             if (question == null)
                 throw new NotFoundException($"Question with ID {id} not found.");
 
-            // Get answers for options
             var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(id);
 
-            return new QuestionDataResponse
-            {
-                Id = question.Id,
-                Content = question.Content,
-                QuestionSource = question.QuestionSource,
-                DifficultyLevelId = question.DifficultyLevelId,
-                Image = question.Image,
-                LessonId = question.LessonId,
-                ChapterId = question.ChapterId,
-                CreatedByUserId = question.CreatedByUserId,
-                CreatedAt = question.CreatedAt,
-                UpdatedAt = question.UpdatedAt,
-                LessonName = question.Lesson?.Name,
-                ChapterName = question.Chapter?.Name,
-                CreatedByUserName = question.CreatedByUser?.Email,
-                // New fields from Question model
-                Formula = question.Formula,
-                CorrectAnswer = question.CorrectAnswer,
-                Explanation = question.Explanation,
-                Type = question.QuestionType?.ToLower() ?? "multiple-choice",
-                Options = question.Options != null ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>() : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
-            };
+            var response = _mapper.Map<QuestionDataResponse>(question);
+            response.Options = question.Options != null
+                ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>()
+                : (answers?.Select(a => a.Content).ToList() ?? new List<string>());
+            return response;
         }
 
         public async Task<QuestionDataResponse> ModifyQuestionAsync(UpdateQuestionRequest questionDataRequest)
@@ -174,24 +130,11 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 await _unitOfWork.QuestionRepository.UpdateAsync(existingQuestion);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                // Return updated data
-                return new QuestionDataResponse
-                {
-                    Id = existingQuestion.Id,
-                    Content = existingQuestion.Content,
-                    QuestionSource = existingQuestion.QuestionSource,
-                    DifficultyLevelId = existingQuestion.DifficultyLevelId,
-                    Image = existingQuestion.Image,
-                    LessonId = existingQuestion.LessonId,
-                    ChapterId = existingQuestion.ChapterId,
-                    CreatedAt = existingQuestion.CreatedAt,
-                    UpdatedAt = existingQuestion.UpdatedAt,
-                    Formula = existingQuestion.Formula,
-                    CorrectAnswer = existingQuestion.CorrectAnswer,
-                    Explanation = existingQuestion.Explanation,
-                    Type = existingQuestion.QuestionType?.ToLower() ?? "multiple-choice",
-                    Options = existingQuestion.Options != null ? JsonSerializer.Deserialize<List<string>>(existingQuestion.Options) ?? new List<string>() : (questionDataRequest.Options ?? new List<string>())
-                };
+                var response = _mapper.Map<QuestionDataResponse>(existingQuestion);
+                response.Options = existingQuestion.Options != null
+                    ? JsonSerializer.Deserialize<List<string>>(existingQuestion.Options) ?? new List<string>()
+                    : (questionDataRequest.Options ?? new List<string>());
+                return response;
             }
             catch (Exception ex)
             {
@@ -199,9 +142,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 throw new ApplicationException($"Error updating question with ID {existingQuestion.Id}", ex);
             }
         }
-
-
-
 
         public async Task<PagedResponse<QuestionDataResponse>> GetQuestionsAsync(
     int? pageNumber = null,
@@ -213,7 +153,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
     int? chapterId = null,
     int isSort = 0,
     int? createdByUserId = null,
-    int? textbookId = null) // Th�m l?c theo user
+    int? textbookId = null)
         {
             try
             {
@@ -222,7 +162,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
 
                 if (pageNumber.HasValue && pageSize.HasValue && pageNumber > 0 && pageSize > 0)
                 {
-                    // N?u b?n c� s?a GetPagedAsync d? truy?n th�m createdByUserId th� truy?n v�o d�y
                     (questions, totalItems) = await _unitOfWork.QuestionRepository.GetPagedAsync(
                         pageNumber.Value,
                         pageSize.Value,
@@ -233,19 +172,17 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         chapterId,
                         isSort,
                         createdByUserId ?? 0,
-                        textbookId); // c?n th�m n?u repo c� x? l�
+                        textbookId);
                 }
                 else
                 {
                     questions = await _unitOfWork.QuestionRepository.GetAllAsync() ?? new List<Question>();
 
-                    // L?c theo user t?o
                     if (createdByUserId.HasValue)
                     {
                         questions = questions.Where(q => q.CreatedByUserId == createdByUserId.Value).ToList();
                     }
 
-                    // L?c theo search
                     if (!string.IsNullOrEmpty(search))
                     {
                         var searchNormalized = search.RemoveDiacritics().ToLower();
@@ -351,7 +288,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             int? lessonId = null,
             int? difficultyLevelId = null)
         {
-            // Basic validation / normalize paging
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 20;
             var skip = (page - 1) * pageSize;
@@ -360,7 +296,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             {
                 var ctx = _unitOfWork.Context;
 
-                // Base query: only active questions
                 var baseQuery = ctx.Questions.AsQueryable().Where(q => q.IsActive == true);
 
                 if (!string.IsNullOrWhiteSpace(search))
@@ -395,11 +330,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
                         Type = q.QuestionType != null ? q.QuestionType.ToLower() : "multiple-choice",
 
-                        // metadata counts are translated to subqueries in SQL by EF Core
                         AnswerCount = ctx.Answers.Count(a => a.QuestionId == q.Id),
                         CommentCount = ctx.QuestionComments.Count(c => c.QuestionId == q.Id && (c.IsDeleted == false || c.IsDeleted == null)),
 
-                        // whether the current user has any recorded attempt / answered this question
                         IsAnsweredByCurrentUser = ctx.UserQuestionAttempts.Any(uqa => uqa.QuestionId == q.Id && uqa.UserId == currentUserId)
                     })
                     .AsNoTracking()
@@ -477,7 +410,7 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 
                 if (questions == null)
                 {
-                    _logger.LogWarning("⚠️ [QuestionsService] Repository returned NULL!");
+                    _logger.LogWarning("️ [QuestionsService] Repository returned NULL!");
                     return new List<QuestionSimpleResponse>();
                 }
 
@@ -486,7 +419,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                 var query = questions.AsQueryable();
                 var initialCount = query.Count();
 
-                // Apply search filters if provided
                 if (searchRequest != null)
                 {
                     
@@ -497,14 +429,12 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         
                     }
 
-                    // Lọc theo ID độ khó
                     if (searchRequest.DifficultyLevelId.HasValue)
                     {
                         query = query.Where(q => q.DifficultyLevelId == searchRequest.DifficultyLevelId.Value);
                         
                     }
 
-                    // Lọc theo nhiều khối lớp
                     if (searchRequest.GradeIds != null && searchRequest.GradeIds.Any())
                     {
                         var beforeCount = query.Count();
@@ -512,11 +442,9 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         
                     }
 
-                    // Lọc theo nhiều môn học (thông qua Lesson → Chapter → Subject)
                     if (searchRequest.SubjectIds != null && searchRequest.SubjectIds.Any())
                     {
                         var beforeCount = query.Count();
-                        // Đếm bao nhiêu questions có Lesson và Chapter
                         var questionsWithLessonAndChapter = query.Count(q => q.Lesson != null && q.Lesson.Chapter != null);
                         
                         
@@ -526,7 +454,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         
                     }
 
-                    // Lọc theo nhiều chương (thông qua Lesson → Chapter)
                     if (searchRequest.ChapterIds != null && searchRequest.ChapterIds.Any())
                     {
                         var beforeCount = query.Count();
@@ -535,7 +462,6 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
                         
                     }
 
-                    // Lọc theo nhiều bài học
                     if (searchRequest.LessonIds != null && searchRequest.LessonIds.Any())
                     {
                         var beforeCount = query.Count();
@@ -561,11 +487,10 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [QuestionsService] CRITICAL ERROR retrieving simple questions: {Message}", ex.Message);
-                _logger.LogError(ex, "❌ [QuestionsService] Exception Type: {ExceptionType}", ex.GetType().Name);
-                _logger.LogError(ex, "❌ [QuestionsService] Stack Trace: {StackTrace}", ex.StackTrace);
+                _logger.LogError(ex, " [QuestionsService] CRITICAL ERROR retrieving simple questions: {Message}", ex.Message);
+                _logger.LogError(ex, " [QuestionsService] Exception Type: {ExceptionType}", ex.GetType().Name);
+                _logger.LogError(ex, " [QuestionsService] Stack Trace: {StackTrace}", ex.StackTrace);
                 
-                // Return empty list instead of throwing to prevent cascading failures
                 return new List<QuestionSimpleResponse>();
             }
         }

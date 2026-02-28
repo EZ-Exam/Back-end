@@ -16,14 +16,11 @@ namespace teamseven.EzExam.Repository.Dtos
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        // User information
         public string UserName { get; set; } = string.Empty;
         public string UserEmail { get; set; } = string.Empty;
 
-        // Reply count for main comments
         public int ReplyCount { get; set; } = 0;
 
-        // Replies for main comments (flat structure)
         public List<QuestionCommentResponse> Replies { get; set; } = new List<QuestionCommentResponse>();
     }
 }

@@ -28,37 +28,25 @@ namespace teamseven.EzExam.API.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get all chapters")]
+        [SwaggerOperation(Summary = "Get chapters (filtered)", Description = "Optional filters: semesterId, subjectId.")]
         [SwaggerResponse(200, "Chapters retrieved successfully.", typeof(IEnumerable<ChapterDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
-        public async Task<IActionResult> GetAllChapters()
+        public async Task<IActionResult> GetAllChapters(
+            [FromQuery] int? semesterId = null,
+            [FromQuery] int? subjectId = null)
         {
-            var chapters = await _serviceProvider.ChapterService.GetAllChaptersAsync();
-            return Ok(chapters);
+            if (semesterId.HasValue && subjectId.HasValue)
+            {
+                var result = await _serviceProvider.ChapterService.GetChaptersBySemesterAndSubjectAsync(semesterId.Value, subjectId.Value);
+                return Ok(result);
+            }
+            if (semesterId.HasValue)
+            {
+                var chapters = await _serviceProvider.ChapterService.GetChaptersBySemesterIdAsync(semesterId.Value);
+                return Ok(chapters);
+            }
+            var all = await _serviceProvider.ChapterService.GetAllChaptersAsync();
+            return Ok(all);
         }
-
-        [HttpGet("by-semester/{semesterId}")]
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get chapters by semester ID")]
-        [SwaggerResponse(200, "Chapters retrieved successfully.", typeof(IEnumerable<ChapterDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
-        public async Task<IActionResult> GetChaptersBySemesterId(int semesterId)
-        {
-            var chapters = await _serviceProvider.ChapterService.GetChaptersBySemesterIdAsync(semesterId);
-            return Ok(chapters);
-        }
-
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Get chapters by semester and subject ID")]
-        [SwaggerResponse(200, "Chapters retrieved successfully.", typeof(IEnumerable<ChapterDataResponse>))]
-        [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
-        [HttpGet("semester/{semesterId}/subject/{subjectId}")]
-        public async Task<IActionResult> GetChaptersBySemesterAndSubject(int semesterId, int subjectId)
-        {
-            var result = await _serviceProvider.ChapterService.GetChaptersBySemesterAndSubjectAsync(semesterId, subjectId);
-            return Ok(result);
-        }
-
 
         [HttpGet("{id}")]
         [AllowAnonymous]
@@ -67,16 +55,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(404, "Chapter not found.")]
         public async Task<IActionResult> GetChapterById(int id)
         {
-            try
-            {
-                var chapter = await _serviceProvider.ChapterService.GetChapterByIdAsync(id);
-                return Ok(chapter);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var chapter = await _serviceProvider.ChapterService.GetChapterByIdAsync(id);
+            return Ok(chapter);
         }
 
         [HttpPost]
@@ -94,21 +74,8 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
-                await _serviceProvider.ChapterService.CreateChapterAsync(request);
-                return StatusCode(201, new { Message = "Chapter created successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while creating the chapter." });
-            }
+            await _serviceProvider.ChapterService.CreateChapterAsync(request);
+            return StatusCode(201, new { Message = "Chapter created successfully." });
         }
 
         [HttpPut("{id}")]
@@ -123,20 +90,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || id != request.Id)
                 return BadRequest(new { Message = "Invalid data or ID mismatch." });
 
-            try
-            {
-                await _serviceProvider.ChapterService.UpdateChapterAsync(request);
-                return Ok(new { Message = "Chapter updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating chapter.");
-                return StatusCode(500, new { Message = "Internal server error." });
-            }
+            await _serviceProvider.ChapterService.UpdateChapterAsync(request);
+            return Ok(new { Message = "Chapter updated successfully." });
         }
 
         [HttpDelete("{id}")]
@@ -147,21 +102,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(ProblemDetails))]
         public async Task<IActionResult> DeleteChapter(int id)
         {
-            try
-            {
-                await _serviceProvider.ChapterService.DeleteChapterAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while deleting the chapter." });
-            }
+            await _serviceProvider.ChapterService.DeleteChapterAsync(id);
+            return NoContent();
         }
     }
 }

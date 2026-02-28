@@ -10,12 +10,9 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class UserSocialProviderRepository : GenericRepository<UserSocialProvider>, IUserSocialProviderRepository
     {
-        private readonly teamsevenezexamdbContext _context;
 
         public UserSocialProviderRepository(teamsevenezexamdbContext context) : base(context)
-        {
-            _context = context;
-        }
+        { }
 
         public async Task<List<UserSocialProvider>?> GetAllAsync()
         {
@@ -56,3 +53,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

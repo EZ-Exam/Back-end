@@ -1,3 +1,4 @@
+using AutoMapper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,10 +30,12 @@ namespace teamseven.EzExam.Services.Services.UserService
     public class UserService : IUserService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public UserService(IUnitOfWork unitOfWork)
+        public UserService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<UserResponse> GetUserByIdAsync(int id)
@@ -40,21 +43,7 @@ namespace teamseven.EzExam.Services.Services.UserService
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException("User not found");
 
-            return new UserResponse
-            {
-                Id = user.Id,
-                Balance = user.Balance,
-                Email = user.Email,
-                FullName = user.FullName,
-                AvatarUrl = user.AvatarUrl ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                RoleId = user.RoleId,
-                IsActive = user.IsActive,
-                EmailVerifiedAt = user.EmailVerifiedAt,
-                LastLoginAt = user.LastLoginAt,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+            return _mapper.Map<UserResponse>(user);
         }
 
         public async Task<TotalUserResponse> GetTotalUserAsync()
@@ -76,21 +65,7 @@ namespace teamseven.EzExam.Services.Services.UserService
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId)
                 ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
-            return new UserResponse
-            {
-                Id = user.Id,
-                Balance = user.Balance,
-                Email = user.Email,
-                FullName = user.FullName,
-                AvatarUrl = user.AvatarUrl ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                RoleId = user.RoleId,
-                IsActive = user.IsActive,
-                EmailVerifiedAt = user.EmailVerifiedAt,
-                LastLoginAt = user.LastLoginAt,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+            return _mapper.Map<UserResponse>(user);
         }
 
         public async Task<UserResponse> SoftDeleteUserAsync(int id)
@@ -107,20 +82,7 @@ namespace teamseven.EzExam.Services.Services.UserService
                 throw new InvalidOperationException("Failed to update user status in database");
             }
 
-            return new UserResponse
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                AvatarUrl = user.AvatarUrl ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                RoleId = user.RoleId,
-                IsActive = user.IsActive,
-                EmailVerifiedAt = user.EmailVerifiedAt,
-                LastLoginAt = user.LastLoginAt,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+            return _mapper.Map<UserResponse>(user);
         }
 
         public async Task<UserResponse> RestoreUserAsync(int id)
@@ -134,20 +96,7 @@ namespace teamseven.EzExam.Services.Services.UserService
                 throw new InvalidOperationException("Failed to update user status in database");
             }
 
-            return new UserResponse
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                AvatarUrl = user.AvatarUrl ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                RoleId = user.RoleId,
-                IsActive = user.IsActive,
-                EmailVerifiedAt = user.EmailVerifiedAt,
-                LastLoginAt = user.LastLoginAt,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+            return _mapper.Map<UserResponse>(user);
         }
 
         public async Task<(bool IsSuccess, string ResultOrError)> UpdateUserProfileAsync(int id, UpdateUserProfileRequest request)
@@ -163,7 +112,6 @@ namespace teamseven.EzExam.Services.Services.UserService
                 return (false, $"User with ID {id} not found");
             }
 
-            // Update only fields that have values from request
             if (!string.IsNullOrEmpty(request.FullName))
             {
                 user.FullName = request.FullName;
@@ -229,10 +177,10 @@ namespace teamseven.EzExam.Services.Services.UserService
                 throw new ArgumentException("User not found");
 
             if (user.IsPremium == true)
-                return false; // Already premium
+                return false;
 
             if (user.Balance < 10000)
-                return false; // Insufficient balance
+                return false;
 
             user.Balance -= 10000;
             user.IsPremium = true;

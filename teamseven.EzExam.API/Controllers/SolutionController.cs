@@ -41,16 +41,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerOperation(Summary = "Get solution by ID", Description = "Retrieves a solution by ID.")]
         public async Task<IActionResult> GetById(int id)
         {
-            try
-            {
-                var data = await _serviceProvider.SolutionService.GetSolutionByIdAsync(id);
-                return Ok(data);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
-            }
+            var data = await _serviceProvider.SolutionService.GetSolutionByIdAsync(id);
+            return Ok(data);
         }
 
         [HttpPost]
@@ -73,15 +65,8 @@ namespace teamseven.EzExam.API.Controllers
             if (!ModelState.IsValid || request.Id != id)
                 return BadRequest(new { Message = "Invalid request data." });
 
-            try
-            {
-                await _serviceProvider.SolutionService.UpdateSolutionAsync(request);
-                return Ok(new { Message = "Solution updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.SolutionService.UpdateSolutionAsync(request);
+            return Ok(new { Message = "Solution updated successfully." });
         }
 
         [HttpDelete("{id}")]
@@ -89,15 +74,8 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerOperation(Summary = "Delete a solution", Description = "Deletes a solution.")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                await _serviceProvider.SolutionService.DeleteSolutionAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Message = ex.Message });
-            }
+            await _serviceProvider.SolutionService.DeleteSolutionAsync(id);
+            return NoContent();
         }
         [HttpPost("add-with-video")]
         [AllowAnonymous]
@@ -112,22 +90,14 @@ namespace teamseven.EzExam.API.Controllers
         [SwaggerOperation(Summary = "Get video by solution ID", Description = "Returns the video file associated with the solution.")]
         public async Task<IActionResult> GetSolutionVideo(int id)
         {
-            try
-            {
-                var solution = await _serviceProvider.SolutionService.GetSolutionByIdAsync(id);
+            var solution = await _serviceProvider.SolutionService.GetSolutionByIdAsync(id);
 
-                if (solution.VideoData == null || string.IsNullOrEmpty(solution.VideoContentType))
-                {
-                    return NotFound(new { Message = "Video not found for this solution." });
-                }
-
-                return File(solution.VideoData, solution.VideoContentType);
-            }
-            catch (NotFoundException ex)
+            if (solution.VideoData == null || string.IsNullOrEmpty(solution.VideoContentType))
             {
-                _logger.LogWarning(ex.Message);
-                return NotFound(new { Message = ex.Message });
+                return NotFound(new { Message = "Video not found for this solution." });
             }
+
+            return File(solution.VideoData, solution.VideoContentType);
         }
 
     }

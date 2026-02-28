@@ -9,12 +9,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class ExamTypeRepository : GenericRepository<ExamType>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public ExamTypeRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public ExamTypeRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<List<ExamType>?> GetAllAsync()
         {
@@ -48,3 +44,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

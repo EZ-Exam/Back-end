@@ -33,40 +33,39 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(50)]
         [Column("ActivityType")]
-        public string ActivityType { get; set; } = string.Empty; // STUDY, PRACTICE, EXAM, REVIEW
+        public string ActivityType { get; set; } = string.Empty;
 
         [Column("TimeSpent")]
-        public int TimeSpent { get; set; } = 0; // seconds
+        public int TimeSpent { get; set; } = 0;
 
         [Column("Score")]
-        public decimal? Score { get; set; } // percentage score if applicable
+        public decimal? Score { get; set; }
 
         [Column("IsCorrect")]
-        public bool? IsCorrect { get; set; } // for individual questions
+        public bool? IsCorrect { get; set; }
 
         [Column("DifficultyLevel")]
         [MaxLength(20)]
-        public string? DifficultyLevel { get; set; } // EASY, MEDIUM, HARD
+        public string? DifficultyLevel { get; set; }
 
         [Column("TopicTags")]
         [MaxLength(500)]
-        public string? TopicTags { get; set; } // JSON array of topic tags
+        public string? TopicTags { get; set; }
 
         [Column("WeakAreas")]
         [MaxLength(1000)]
-        public string? WeakAreas { get; set; } // JSON array of identified weak areas
+        public string? WeakAreas { get; set; }
 
         [Column("Strengths")]
         [MaxLength(1000)]
-        public string? Strengths { get; set; } // JSON array of identified strengths
+        public string? Strengths { get; set; }
 
         [Column("LearningProgress")]
-        public decimal LearningProgress { get; set; } = 0.0m; // 0.0 to 1.0
+        public decimal LearningProgress { get; set; } = 0.0m;
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

@@ -4,6 +4,7 @@ using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 using teamseven.EzExam.Services.Extensions;
+using AutoMapper;
 
 namespace teamseven.EzExam.Services.Services.SolutionService
 {
@@ -11,11 +12,13 @@ namespace teamseven.EzExam.Services.Services.SolutionService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SolutionService> _logger;
+        private readonly IMapper _mapper;
 
-        public SolutionService(IUnitOfWork unitOfWork, ILogger<SolutionService> logger)
+        public SolutionService(IUnitOfWork unitOfWork, ILogger<SolutionService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<SolutionDataResponse>> GetAllSolutionsAsync()
@@ -103,7 +106,7 @@ namespace teamseven.EzExam.Services.Services.SolutionService
                 using var ms = new MemoryStream();
                 await request.VideoFile.CopyToAsync(ms);
                 videoBytes = ms.ToArray();
-                contentType = request.VideoFile.ContentType; // ví d?: "video/mp4"
+                contentType = request.VideoFile.ContentType; // v d?: "video/mp4"
             }
 
             var solution = new Solution

@@ -16,24 +16,19 @@ namespace teamseven.EzExam.Services.Services.ChapterService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<ChapterService> _logger;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public ChapterService(IUnitOfWork unitOfWork, ILogger<ChapterService> logger)
+        public ChapterService(IUnitOfWork unitOfWork, ILogger<ChapterService> logger, AutoMapper.IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<IEnumerable<ChapterDataResponse>> GetAllChaptersAsync()
         {
             var chapters = await _unitOfWork.ChapterRepository.GetAllAsync();
-            return chapters.Select(c => new ChapterDataResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                SemesterId = c.SemesterId,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<ChapterDataResponse>>(chapters);
         }
 
         public async Task<ChapterDataResponse> GetChapterByIdAsync(int id)
@@ -42,27 +37,13 @@ namespace teamseven.EzExam.Services.Services.ChapterService
             if (chapter == null)
                 throw new NotFoundException($"Chapter with ID {id} not found.");
 
-            return new ChapterDataResponse
-            {
-                Id = chapter.Id,
-                Name = chapter.Name,
-                SemesterId = chapter.SemesterId,
-                CreatedAt = chapter.CreatedAt,
-                UpdatedAt = chapter.UpdatedAt
-            };
+            return _mapper.Map<ChapterDataResponse>(chapter);
         }
 
         public async Task<IEnumerable<ChapterDataResponse>> GetChaptersBySemesterIdAsync(int semesterId)
         {
             var chapters = await _unitOfWork.ChapterRepository.GetBySemesterIdAsync(semesterId) ?? new List<Chapter>();
-            return chapters.Select(c => new ChapterDataResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                SemesterId = c.SemesterId,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<ChapterDataResponse>>(chapters);
         }
 
         public async Task<IEnumerable<ChapterDataResponse>> GetChaptersBySemesterAndSubjectAsync(int semesterId, int subjectId)
@@ -70,17 +51,8 @@ namespace teamseven.EzExam.Services.Services.ChapterService
             var chapters = await _unitOfWork.ChapterRepository.GetBySemesterAndSubjectAsync(semesterId, subjectId)
                             ?? new List<Chapter>();
 
-            return chapters.Select(c => new ChapterDataResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                SemesterId = c.SemesterId,
-                SubjectId = c.SubjectId,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            });
+            return _mapper.Map<IEnumerable<ChapterDataResponse>>(chapters);
         }
-
 
         public async Task CreateChapterAsync(CreateChapterRequest request)
         {
@@ -118,7 +90,6 @@ namespace teamseven.EzExam.Services.Services.ChapterService
                 throw new NotFoundException("Chapter not found");
 
             chapter.Name = request.Name;
-            //chapter.SemesterId = request.SemesterId;
             chapter.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.ChapterRepository.UpdateAsync(chapter);

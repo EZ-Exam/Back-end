@@ -35,7 +35,7 @@ namespace teamseven.EzExam.Services.Object.Requests
 
         [Required]
         [Range(0, int.MaxValue)]
-        public int TimeTaken { get; set; } // seconds
+        public int TimeTaken { get; set; }
 
         public List<AnswerDetail>? Answers { get; set; }
     }
@@ -54,6 +54,6 @@ namespace teamseven.EzExam.Services.Object.Requests
         public bool IsCorrect { get; set; }
 
         [Range(0, int.MaxValue)]
-        public int TimeSpent { get; set; } // seconds
+        public int TimeSpent { get; set; }
     }
 }

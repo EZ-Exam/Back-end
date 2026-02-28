@@ -34,18 +34,18 @@ namespace teamseven.EzExam.Repository.Models
         public int? LessonId { get; set; }
 
         [Column("RecommendedDuration")]
-        public int? RecommendedDuration { get; set; } // minutes - AI suggestion, user can override
+        public int? RecommendedDuration { get; set; }
 
         [Column("RecommendedQuestionCount")]
-        public int? RecommendedQuestionCount { get; set; } // AI suggestion, user can override
+        public int? RecommendedQuestionCount { get; set; }
 
         [Column("DifficultyDistribution")]
         [MaxLength(500)]
-        public string? DifficultyDistribution { get; set; } // JSON: {"EASY": 5, "MEDIUM": 10, "HARD": 5}
+        public string? DifficultyDistribution { get; set; }
 
         [Column("TopicDistribution")]
         [MaxLength(1000)]
-        public string? TopicDistribution { get; set; } // JSON: {"Mechanics": 8, "Thermodynamics": 7, "Optics": 5}
+        public string? TopicDistribution { get; set; }
 
         [Column("BasedOnHistory")]
         public bool BasedOnHistory { get; set; } = true;
@@ -57,10 +57,10 @@ namespace teamseven.EzExam.Repository.Models
         public bool BasedOnProgress { get; set; } = true;
 
         [Column("ConfidenceScore")]
-        public decimal ConfidenceScore { get; set; } = 0.0m; // 0.0 to 1.0
+        public decimal ConfidenceScore { get; set; } = 0.0m;
 
         [Column("IsAccepted")]
-        public bool? IsAccepted { get; set; } // null = pending, true = accepted, false = rejected
+        public bool? IsAccepted { get; set; }
 
         [Column("IsGenerated")]
         public bool IsGenerated { get; set; } = false;
@@ -75,9 +75,8 @@ namespace teamseven.EzExam.Repository.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         [Column("ExpiresAt")]
-        public DateTime? ExpiresAt { get; set; } // Recommendation expires after certain time
+        public DateTime? ExpiresAt { get; set; }
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 
@@ -90,7 +89,5 @@ namespace teamseven.EzExam.Repository.Models
         [ForeignKey("LessonId")]
         public virtual Lesson? Lesson { get; set; }
 
-        // Navigation property removed to avoid circular reference
-        // Use Exam.AITestRecommendation instead
     }
 }

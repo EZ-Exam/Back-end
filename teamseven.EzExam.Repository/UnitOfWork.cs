@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using teamseven.EzExam.Repository.Models;
@@ -32,7 +32,6 @@ namespace teamseven.EzExam.Repository
         UserUsageTrackingRepository UserUsageTrackingRepository { get; }
         UserUsageHistoryRepository UserUsageHistoryRepository { get; }
         
-        // Test System Repositories
         UserQuestionCartRepository UserQuestionCartRepository { get; }
         AITestRecommendationRepository AITestRecommendationRepository { get; }
         TestSessionRepository TestSessionRepository { get; }
@@ -40,12 +39,10 @@ namespace teamseven.EzExam.Repository
         UserCompetencyAssessmentRepository UserCompetencyAssessmentRepository { get; }
         UserQuestionAttemptRepository UserQuestionAttemptRepository { get; }
         
-        // Student History and Performance Repositories
         IStudentQuizHistoryRepository StudentQuizHistoryRepository { get; }
         IStudentPerformanceSummaryRepository StudentPerformanceSummaryRepository { get; }
         IStudentQuestionAttemptRepository StudentQuestionAttemptRepository { get; }
         
-        // Exam History Repository
         IExamHistoryRepository ExamHistoryRepository { get; }
 
         int SaveChangesWithTransaction();
@@ -78,7 +75,6 @@ namespace teamseven.EzExam.Repository
         private UserUsageTrackingRepository _userUsageTrackingRepository;
         private UserUsageHistoryRepository _userUsageHistoryRepository;
         
-        // Test System Repositories
         private UserQuestionCartRepository _userQuestionCartRepository;
         private AITestRecommendationRepository _aiTestRecommendationRepository;
         private TestSessionRepository _testSessionRepository;
@@ -86,12 +82,10 @@ namespace teamseven.EzExam.Repository
         private UserCompetencyAssessmentRepository _userCompetencyAssessmentRepository;
         private UserQuestionAttemptRepository _userQuestionAttemptRepository;
         
-        // Student History and Performance Repositories
         private StudentQuizHistoryRepository _studentQuizHistoryRepository;
         private StudentPerformanceSummaryRepository _studentPerformanceSummaryRepository;
         private StudentQuestionAttemptRepository _studentQuestionAttemptRepository;
         
-        // Exam History Repository
         private ExamHistoryRepository _examHistoryRepository;
 
         private bool _disposed = false;
@@ -125,7 +119,6 @@ namespace teamseven.EzExam.Repository
         public UserUsageTrackingRepository UserUsageTrackingRepository => _userUsageTrackingRepository ??= new UserUsageTrackingRepository(_context);
         public UserUsageHistoryRepository UserUsageHistoryRepository => _userUsageHistoryRepository ??= new UserUsageHistoryRepository(_context);
         
-        // Test System Repositories
         public UserQuestionCartRepository UserQuestionCartRepository => _userQuestionCartRepository ??= new UserQuestionCartRepository(_context);
         public AITestRecommendationRepository AITestRecommendationRepository => _aiTestRecommendationRepository ??= new AITestRecommendationRepository(_context);
         public TestSessionRepository TestSessionRepository => _testSessionRepository ??= new TestSessionRepository(_context);
@@ -133,16 +126,19 @@ namespace teamseven.EzExam.Repository
         public UserCompetencyAssessmentRepository UserCompetencyAssessmentRepository => _userCompetencyAssessmentRepository ??= new UserCompetencyAssessmentRepository(_context);
         public UserQuestionAttemptRepository UserQuestionAttemptRepository => _userQuestionAttemptRepository ??= new UserQuestionAttemptRepository(_context);
         
-        // Student History and Performance Repositories
         public IStudentQuizHistoryRepository StudentQuizHistoryRepository => _studentQuizHistoryRepository ??= new StudentQuizHistoryRepository(_context);
         public IStudentPerformanceSummaryRepository StudentPerformanceSummaryRepository => _studentPerformanceSummaryRepository ??= new StudentPerformanceSummaryRepository(_context);
         public IStudentQuestionAttemptRepository StudentQuestionAttemptRepository => _studentQuestionAttemptRepository ??= new StudentQuestionAttemptRepository(_context);
         
-        // Exam History Repository
         public IExamHistoryRepository ExamHistoryRepository => _examHistoryRepository ??= new ExamHistoryRepository(_context);
 
         public int SaveChangesWithTransaction()
         {
+            if (_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                return _context.SaveChanges();
+            }
+
             var strategy = _context.Database.CreateExecutionStrategy();
             int result = 0;
             strategy.Execute(() =>
@@ -164,6 +160,11 @@ namespace teamseven.EzExam.Repository
 
         public async Task<int> SaveChangesWithTransactionAsync()
         {
+            if (_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                return await _context.SaveChangesAsync();
+            }
+
             var strategy = _context.Database.CreateExecutionStrategy();
             int result = 0;
             await strategy.ExecuteAsync(async () =>
@@ -182,7 +183,6 @@ namespace teamseven.EzExam.Repository
                     }
                     catch (Exception rollbackEx)
                     {
-                        // Log rollback error but don't throw to avoid masking original error
                         Console.WriteLine($"Rollback failed: {rollbackEx.Message}");
                     }
                     throw;

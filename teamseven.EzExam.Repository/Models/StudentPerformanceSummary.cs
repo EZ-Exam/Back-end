@@ -26,64 +26,64 @@ namespace teamseven.EzExam.Repository.Models
 
         [Required]
         [Column("RecentQuizzesCount")]
-        public int RecentQuizzesCount { get; set; } = 5; // Always track last 5 quizzes
+        public int RecentQuizzesCount { get; set; } = 5;
 
         [Column("RecentQuizIds")]
         [MaxLength(200)]
-        public string? RecentQuizIds { get; set; } // JSON array of last 5 quiz history IDs
+        public string? RecentQuizIds { get; set; }
 
         [Required]
         [Column("AverageScore")]
-        public decimal AverageScore { get; set; } = 0.0m; // Average of last 5 quizzes
+        public decimal AverageScore { get; set; } = 0.0m;
 
         [Required]
         [Column("AverageTimePerQuiz")]
-        public decimal AverageTimePerQuiz { get; set; } = 0.0m; // seconds
+        public decimal AverageTimePerQuiz { get; set; } = 0.0m;
 
         [Required]
         [Column("AverageTimePerQuestion")]
-        public decimal AverageTimePerQuestion { get; set; } = 0.0m; // seconds
+        public decimal AverageTimePerQuestion { get; set; } = 0.0m;
 
         [Column("OverallAccuracy")]
-        public decimal OverallAccuracy { get; set; } = 0.0m; // percentage
+        public decimal OverallAccuracy { get; set; } = 0.0m;
 
         [Column("ImprovementTrend")]
         [MaxLength(20)]
-        public string? ImprovementTrend { get; set; } // IMPROVING, STABLE, DECLINING
+        public string? ImprovementTrend { get; set; }
 
         [Column("TrendPercentage")]
-        public decimal? TrendPercentage { get; set; } // percentage change over last 5 quizzes
+        public decimal? TrendPercentage { get; set; }
 
         [Column("StrongTopics")]
         [MaxLength(1000)]
-        public string? StrongTopics { get; set; } // JSON array of topics with >80% accuracy
+        public string? StrongTopics { get; set; }
 
         [Column("WeakTopics")]
         [MaxLength(1000)]
-        public string? WeakTopics { get; set; } // JSON array of topics with <60% accuracy
+        public string? WeakTopics { get; set; }
 
         [Column("DifficultyProfile")]
         [MaxLength(500)]
-        public string? DifficultyProfile { get; set; } // JSON: {"EASY": 85.5, "MEDIUM": 72.3, "HARD": 45.2}
+        public string? DifficultyProfile { get; set; }
 
         [Column("RecommendedDifficulty")]
         [MaxLength(20)]
-        public string? RecommendedDifficulty { get; set; } // EASY, MEDIUM, HARD based on performance
+        public string? RecommendedDifficulty { get; set; }
 
         [Column("LearningVelocity")]
-        public decimal LearningVelocity { get; set; } = 0.0m; // Rate of improvement (score increase per quiz)
+        public decimal LearningVelocity { get; set; } = 0.0m;
 
         [Column("ConsistencyScore")]
-        public decimal ConsistencyScore { get; set; } = 0.0m; // How consistent performance is (0-100)
+        public decimal ConsistencyScore { get; set; } = 0.0m;
 
         [Column("PredictedNextScore")]
-        public decimal? PredictedNextScore { get; set; } // AI prediction for next quiz score
+        public decimal? PredictedNextScore { get; set; }
 
         [Column("ConfidenceLevel")]
-        public decimal ConfidenceLevel { get; set; } = 0.0m; // Student's average confidence level
+        public decimal ConfidenceLevel { get; set; } = 0.0m;
 
         [Column("TimeManagementScore")]
-        public decimal TimeManagementScore { get; set; } = 0.0m; // How well student manages time (0-100)
+        public decimal TimeManagementScore { get; set; } = 0.0m;
 
         [Column("LastQuizDate")]
         public DateTime? LastQuizDate { get; set; }
@@ -97,7 +97,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

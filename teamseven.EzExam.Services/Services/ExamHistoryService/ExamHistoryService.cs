@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using teamseven.EzExam.Repository;
@@ -12,11 +13,13 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<ExamHistoryService> _logger;
+        private readonly IMapper _mapper;
 
-        public ExamHistoryService(IUnitOfWork unitOfWork, ILogger<ExamHistoryService> logger)
+        public ExamHistoryService(IUnitOfWork unitOfWork, ILogger<ExamHistoryService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<int> CreateExamHistoryAsync(CreateExamHistoryRequest request)
@@ -70,100 +73,36 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
 
         public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByUserIdAsync(int userId)
         {
-            try
-            {
-                var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdAsync(userId);
-                
-                var responses = new List<ExamHistoryResponse>();
-                foreach (var history in examHistories)
-                {
-                    responses.Add(await MapToResponseAsync(history));
-                }
-                return responses;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error retrieving exam histories for user {userId}");
-                throw;
-            }
+            var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdAsync(userId);
+            var responses = new List<ExamHistoryResponse>();
+            foreach (var history in examHistories)
+                responses.Add(await MapToResponseAsync(history));
+            return responses;
         }
 
         public async Task<IEnumerable<ExamHistoryMinimalResponse>> GetExamHistoriesMinimalByUserIdAsync(int userId)
         {
-            try
-            {
-                // Lấy exam histories với Exam information để có SubjectId, GradeId, LessonId
-                var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdWithExamAsync(userId);
-                
-                var responses = new List<ExamHistoryMinimalResponse>();
-                foreach (var history in examHistories)
-                {
-                    responses.Add(new ExamHistoryMinimalResponse
-                    {
-                        ExamId = history.ExamId,
-                        UserId = history.UserId,
-                        Score = history.Score,
-                        CorrectCount = history.CorrectCount,
-                        TotalQuestions = history.TotalQuestions,
-                        SubmittedAt = history.SubmittedAt,
-                        TimeTaken = history.TimeTaken,
-                        SubjectId = history.Exam?.SubjectId ?? 0,
-                        SubjectName = history.Exam?.Subject?.Name ?? "Unknown",
-                        GradeId = history.Exam?.GradeId,
-                        GradeName = history.Exam?.Grade?.Name ?? "Unknown",
-                        ChapterId = history.Exam?.Lesson?.ChapterId,
-                        ChapterName = history.Exam?.Lesson?.Chapter?.Name ?? "Unknown",
-                        LessonId = history.Exam?.LessonId,
-                        LessonName = history.Exam?.Lesson?.Name ?? "Unknown"
-                    });
-                }
-                return responses;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error retrieving minimal exam histories for user {userId}");
-                throw;
-            }
+            var examHistories = await _unitOfWork.ExamHistoryRepository.GetHistoryByUserIdWithExamAsync(userId);
+            return _mapper.Map<IEnumerable<ExamHistoryMinimalResponse>>(examHistories);
         }
 
         public async Task<IEnumerable<ExamHistoryResponse>> GetExamHistoriesByExamIdAsync(int examId)
         {
-            try
-            {
-                var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
-                var examSpecificHistories = examHistories.Where(h => h.ExamId == examId).OrderByDescending(h => h.SubmittedAt);
-                
-                var responses = new List<ExamHistoryResponse>();
-                foreach (var history in examSpecificHistories)
-                {
-                    responses.Add(await MapToResponseAsync(history));
-                }
-                return responses;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error retrieving exam histories for exam {examId}");
-                throw;
-            }
+            var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
+            var examSpecificHistories = examHistories.Where(h => h.ExamId == examId).OrderByDescending(h => h.SubmittedAt);
+            var responses = new List<ExamHistoryResponse>();
+            foreach (var history in examSpecificHistories)
+                responses.Add(await MapToResponseAsync(history));
+            return responses;
         }
 
         public async Task<IEnumerable<ExamHistoryResponse>> GetAllExamHistoriesAsync()
         {
-            try
-            {
-                var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
-                var responses = new List<ExamHistoryResponse>();
-                foreach (var history in examHistories.OrderByDescending(h => h.SubmittedAt))
-                {
-                    responses.Add(await MapToResponseAsync(history));
-                }
-                return responses;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving all exam histories");
-                throw;
-            }
+            var examHistories = await _unitOfWork.ExamHistoryRepository.GetAllAsync();
+            var responses = new List<ExamHistoryResponse>();
+            foreach (var history in examHistories.OrderByDescending(h => h.SubmittedAt))
+                responses.Add(await MapToResponseAsync(history));
+            return responses;
         }
 
         public async Task UpdateExamHistoryAsync(int id, CreateExamHistoryRequest request)
@@ -218,45 +157,20 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
 
         public async Task<IEnumerable<ExamQuestionDetailResponse>> GetExamQuestionsDetailAsync(int examId)
         {
-            try
-            {
-                var examQuestions = await _unitOfWork.ExamQuestionRepository.GetAllAsync();
-                var examSpecificQuestions = examQuestions.Where(eq => eq.ExamId == examId).ToList();
-                
-                if (!examSpecificQuestions.Any())
-                {
-                    _logger.LogWarning($"No questions found for exam {examId}");
-                    return new List<ExamQuestionDetailResponse>();
-                }
-              
-                var questionIds = examSpecificQuestions.Select(eq => eq.QuestionId).ToList();                         
-                var questions = await _unitOfWork.QuestionRepository.GetByIdsAsync(questionIds);
-                var responses = new List<ExamQuestionDetailResponse>();
-                
-                foreach (var question in questions)
-                {
-                    var response = new ExamQuestionDetailResponse
-                    {
-                        Id = question.Id,
-                        ContentQuestion = question.Content,
-                        CorrectAnswer = question.CorrectAnswer,
-                        Options = ParseOptions(question.Options),
-                        Explanation = question.Explanation,
-                        ImageUrl = question.Image,
-                        Formula = question.Formula
-                    };
-                    
-                    responses.Add(response);
-                }
+            var examQuestions = await _unitOfWork.ExamQuestionRepository.GetAllAsync();
+            var examSpecificQuestions = examQuestions.Where(eq => eq.ExamId == examId).ToList();
 
-                _logger.LogInformation($"Retrieved {responses.Count} questions for exam {examId}");
-                return responses;
-            }
-            catch (Exception ex)
+            if (!examSpecificQuestions.Any())
             {
-                _logger.LogError(ex, $"Error retrieving exam questions for exam {examId}");
-                throw;
+                _logger.LogWarning($"No questions found for exam {examId}");
+                return new List<ExamQuestionDetailResponse>();
             }
+
+            var questionIds = examSpecificQuestions.Select(eq => eq.QuestionId).ToList();
+            var questions = await _unitOfWork.QuestionRepository.GetByIdsAsync(questionIds);
+
+            _logger.LogInformation($"Retrieved {questions.Count()} questions for exam {examId}");
+            return _mapper.Map<IEnumerable<ExamQuestionDetailResponse>>(questions);
         }
 
         private async Task<ExamHistoryResponse> MapToResponseAsync(ExamHistory examHistory)
@@ -331,12 +245,10 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
 
             try
             {
-                // Thử parse JSON array
                 var jsonArray = JsonConvert.DeserializeObject<List<string>>(optionsJson);
                 if (jsonArray != null)
                     return jsonArray;
 
-                // Thử parse JSON object (key-value pairs)
                 var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(optionsJson);
                 if (jsonObject != null)
                     return jsonObject.Values.ToList();
@@ -345,7 +257,6 @@ namespace teamseven.EzExam.Services.Services.ExamHistoryService
             }
             catch
             {
-                // Nếu không parse được JSON, trả về empty list
                 return new List<string>();
             }
         }

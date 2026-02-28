@@ -21,7 +21,7 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(50)]
         [Column("SessionStatus")]
-        public string SessionStatus { get; set; } = "NOT_STARTED"; // NOT_STARTED, IN_PROGRESS, COMPLETED, ABANDONED, TIMEOUT
+        public string SessionStatus { get; set; } = "NOT_STARTED";
 
         [Column("StartedAt")]
         public DateTime? StartedAt { get; set; }
@@ -30,10 +30,10 @@ namespace teamseven.EzExam.Repository.Models
         public DateTime? CompletedAt { get; set; }
 
         [Column("TimeSpent")]
-        public int TimeSpent { get; set; } = 0; // seconds
+        public int TimeSpent { get; set; } = 0;
 
         [Column("TotalScore")]
-        public decimal? TotalScore { get; set; } // percentage
+        public decimal? TotalScore { get; set; }
 
         [Column("CorrectAnswers")]
         public int CorrectAnswers { get; set; } = 0;
@@ -42,25 +42,25 @@ namespace teamseven.EzExam.Repository.Models
         public int TotalQuestions { get; set; } = 0;
 
         [Column("IsPassed")]
-        public bool? IsPassed { get; set; } // null = not evaluated, true = passed, false = failed
+        public bool? IsPassed { get; set; }
 
         [Column("PassingScore")]
-        public decimal? PassingScore { get; set; } // percentage - optional passing score
+        public decimal? PassingScore { get; set; }
 
         [Column("SessionData")]
         [MaxLength(10000)]
-        public string? SessionData { get; set; } // JSON: answers, time per question, etc.
+        public string? SessionData { get; set; }
 
         [Column("DeviceInfo")]
         [MaxLength(500)]
-        public string? DeviceInfo { get; set; } // JSON: browser, OS, IP, etc.
+        public string? DeviceInfo { get; set; }
 
         [Column("IsCheatingDetected")]
         public bool IsCheatingDetected { get; set; } = false;
 
         [Column("CheatingDetails")]
         [MaxLength(1000)]
-        public string? CheatingDetails { get; set; } // JSON: details of cheating detection
+        public string? CheatingDetails { get; set; }
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -68,7 +68,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

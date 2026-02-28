@@ -34,7 +34,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
             try
             {
                 
-                // Create quiz history from test session
                 await CreateQuizHistoryFromCompletedSessionAsync(testSessionId);
                 
                 
@@ -63,7 +62,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     return;
                 }
 
-                // Check if quiz history already exists for this session
                 var allHistories = await _unitOfWork.StudentQuizHistoryRepository.GetAllAsync();
                 var existingHistory = allHistories.FirstOrDefault(h => h.TestSessionId == testSessionId);
                 if (existingHistory != null)
@@ -71,20 +69,16 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     return;
                 }
 
-                // Get session answers for detailed analysis
                 var sessionAnswers = await _unitOfWork.TestSessionAnswerRepository.GetBySessionIdAsync(testSessionId);
                 
-                // Calculate performance metrics
                 var totalQuestions = testSession.TotalQuestions;
                 var correctAnswers = testSession.CorrectAnswers;
                 var incorrectAnswers = totalQuestions - correctAnswers;
                 var skippedQuestions = totalQuestions - sessionAnswers.Count();
                 
-                // Determine performance rating
                 var score = testSession.TotalScore ?? 0;
                 var performanceRating = DeterminePerformanceRating(score);
 
-                // Create quiz history request
                 var request = new CreateStudentQuizHistoryRequest
                 {
                     UserId = testSession.UserId,
@@ -108,13 +102,11 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     CheatingDetails = testSession.CheatingDetails
                 };
 
-                // Analyze session answers for detailed insights
                 if (sessionAnswers.Any())
                 {
                     await AnalyzeSessionAnswersAsync(request, sessionAnswers, testSession.ExamId);
                 }
 
-                // Create the quiz history
                 var historyId = await _studentHistoryService.CreateQuizHistoryAsync(request);
                 
                 
@@ -130,13 +122,11 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         {
             try
             {
-                // Get exam questions with their topics and difficulty levels
                 var examQuestions = await _unitOfWork.ExamQuestionRepository.GetByExamIdAsync(examId);
                 var questionIds = examQuestions.Select(eq => eq.QuestionId).ToList();
                 var allQuestions = await _unitOfWork.QuestionRepository.GetAllAsync();
                 var questions = allQuestions.Where(q => questionIds.Contains(q.Id)).ToList();
 
-                // Analyze difficulty performance
                 var difficultyPerformance = new Dictionary<string, (int correct, int total)>();
                 var topicPerformance = new Dictionary<string, (int correct, int total, int timeSpent)>();
                 var weakAreas = new List<string>();
@@ -148,9 +138,8 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     if (question == null) continue;
 
                     var difficulty = question.DifficultyLevel?.Name ?? "MEDIUM";
-                    var topic = "General"; // Question model doesn't have Topic field
+                    var topic = "General";
 
-                    // Track difficulty performance
                     if (!difficultyPerformance.ContainsKey(difficulty))
                         difficultyPerformance[difficulty] = (0, 0);
                     
@@ -160,7 +149,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                         total + 1
                     );
 
-                    // Track topic performance
                     if (!topicPerformance.ContainsKey(topic))
                         topicPerformance[topic] = (0, 0, 0);
                     
@@ -172,7 +160,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                     );
                 }
 
-                // Identify weak and strong areas
                 foreach (var (topic, (correct, total, timeSpent)) in topicPerformance)
                 {
                     var accuracy = total > 0 ? (decimal)correct / total * 100 : 0;
@@ -182,19 +169,17 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
                         strongAreas.Add(topic);
                 }
 
-                // Set analysis results
                 request.DifficultyBreakdown = System.Text.Json.JsonSerializer.Serialize(difficultyPerformance);
                 request.TopicPerformance = System.Text.Json.JsonSerializer.Serialize(topicPerformance);
                 request.WeakAreas = System.Text.Json.JsonSerializer.Serialize(weakAreas);
                 request.StrongAreas = System.Text.Json.JsonSerializer.Serialize(strongAreas);
 
-                // Generate improvement suggestions
                 var improvementAreas = new List<string>();
                 if (weakAreas.Any())
                     improvementAreas.Add($"Focus on improving: {string.Join(", ", weakAreas.Take(3))}");
                 
                 var avgTimePerQuestion = sessionAnswers.Any() ? sessionAnswers.Average(a => a.TimeSpent) : 0;
-                if (avgTimePerQuestion > 120) // More than 2 minutes per question
+                if (avgTimePerQuestion > 120)
                     improvementAreas.Add("Work on time management skills");
 
                 request.ImprovementAreas = System.Text.Json.JsonSerializer.Serialize(improvementAreas);
@@ -202,7 +187,6 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error analyzing session answers");
-                // Don't throw - this is supplementary analysis
             }
         }
 

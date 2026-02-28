@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using teamseven.EzExam.Repository.Models;
@@ -16,12 +16,10 @@ namespace teamseven.EzExam.Repository.Context
         {
         }
 
-        // Core tables
         public virtual DbSet<Role> Roles { get; set; }
         public virtual DbSet<Grade> Grades { get; set; }
         public virtual DbSet<Semester> Semesters { get; set; }
 
-        // Subject and curriculum tables
         public virtual DbSet<Subject> Subjects { get; set; }
         public virtual DbSet<DifficultyLevel> DifficultyLevels { get; set; }
         public virtual DbSet<TextBook> TextBooks { get; set; }
@@ -31,37 +29,29 @@ namespace teamseven.EzExam.Repository.Context
         public virtual DbSet<LessonEnhanced> LessonsEnhanced { get; set; }
         public virtual DbSet<LessonEnhancedQuestion> LessonsEnhancedQuestions { get; set; }
 
-
-        // User management tables
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserSocialProvider> UserSocialProviders { get; set; }
 
-        // Question system tables
         public virtual DbSet<Question> Questions { get; set; }
         public virtual DbSet<Answer> Answers { get; set; }
         public virtual DbSet<QuestionComment> QuestionComments { get; set; }
         public virtual DbSet<QuestionReport> QuestionReports { get; set; }
 
-        // Exam system tables
         public virtual DbSet<ExamType> ExamTypes { get; set; }
         public virtual DbSet<Exam> Exams { get; set; }
         public virtual DbSet<ExamQuestion> ExamQuestions { get; set; }
         public virtual DbSet<ExamHistory> ExamHistories { get; set; }
 
-        // Solution system tables
         public virtual DbSet<Solution> Solutions { get; set; }
         public virtual DbSet<SolutionReport> SolutionReports { get; set; }
 
-        // Chatbot system tables
         public virtual DbSet<Chatbot> Chatbots { get; set; }
 
-        // Subscription system tables
         public virtual DbSet<SubscriptionType> SubscriptionTypes { get; set; }
         public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
         public virtual DbSet<UserUsageTracking> UserUsageTrackings { get; set; }
         public virtual DbSet<UserUsageHistory> UserUsageHistories { get; set; }
 
-        // Test system tables
         public virtual DbSet<UserQuestionCart> UserQuestionCarts { get; set; }
         public virtual DbSet<AITestRecommendation> AITestRecommendations { get; set; }
         public virtual DbSet<UserLearningHistory> UserLearningHistories { get; set; }
@@ -71,31 +61,12 @@ namespace teamseven.EzExam.Repository.Context
         public virtual DbSet<UserQuestionAttempt> UserQuestionAttempts { get; set; }
         public virtual DbSet<UserOverallCompetency> UserOverallCompetencies { get; set; }
 
-        // Student History and Performance Tracking
         public virtual DbSet<StudentQuizHistory> StudentQuizHistories { get; set; }
         public virtual DbSet<StudentPerformanceSummary> StudentPerformanceSummaries { get; set; }
         public virtual DbSet<StudentQuestionAttempt> StudentQuestionAttempts { get; set; }
 
-        public static string GetConnectionString(string connectionStringName)
-        {
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                .Build();
-
-            string connectionString = config.GetConnectionString(connectionStringName);
-            return connectionString ?? throw new InvalidOperationException("Connection string not found.");
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseNpgsql(GetConnectionString("DefaultConnection"),
-                options => options.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), null)
-                                 .CommandTimeout(30))
-                             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Roles
             modelBuilder.Entity<Role>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_roles");
@@ -107,7 +78,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // Grades
             modelBuilder.Entity<Grade>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_grades");
@@ -119,7 +89,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // Semesters
             modelBuilder.Entity<Semester>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_semesters");
@@ -135,7 +104,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_semesters_grade_id");
             });
 
-            // Subjects
             modelBuilder.Entity<Subject>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_subjects");
@@ -150,7 +118,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // Difficulty Levels
             modelBuilder.Entity<DifficultyLevel>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_difficulty_levels");
@@ -166,7 +133,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // TextBooks
             modelBuilder.Entity<TextBook>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_textbooks");
@@ -185,7 +151,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_textbooks_grade_id");
             });
 
-            // Chapters
             modelBuilder.Entity<Chapter>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_chapters");
@@ -208,7 +173,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_chapters_semester_id");
             });
 
-            // Lessons
             modelBuilder.Entity<Lesson>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_lessons");
@@ -230,7 +194,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasForeignKey(d => d.GradeId)
                     .HasConstraintName("fk_lessons_grade_id");
             });
-            // ===== Lessons Enhanced (bảng chính) =====
             modelBuilder.Entity<LessonEnhanced>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_lessons_enhanced");
@@ -246,14 +209,12 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // 1 - n tới bảng nối (EF-side; DB không cần FK vẫn map được)
                 entity.HasMany(e => e.LessonQuestions)
                       .WithOne(lq => lq.Lesson)
                       .HasForeignKey(lq => lq.LessonId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ===== Lessons Enhanced Questions (bảng nối) =====
             modelBuilder.Entity<LessonEnhancedQuestion>(entity =>
             {
                 entity.HasKey(e => new { e.LessonId, e.QuestionId }).HasName("pk_lessons_enhanced_questions");
@@ -267,14 +228,12 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.Position).HasColumnName("Position");
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // n - 1 tới Question (không cần thêm nav collection ở Question)
                 entity.HasOne(e => e.Question)
                       .WithMany()
                       .HasForeignKey(e => e.QuestionId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Users
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_users");
@@ -305,7 +264,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_users_updated_by");
             });
 
-            // User Social Providers
             modelBuilder.Entity<UserSocialProvider>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_social_providers");
@@ -325,7 +283,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_social_providers_user_id");
             });
 
-            // Questions
             modelBuilder.Entity<Question>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_questions");
@@ -387,7 +344,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_questions_template_question_id");
             });
 
-            // Answers
             modelBuilder.Entity<Answer>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_answers");
@@ -409,7 +365,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_answers_question_id");
             });
 
-            // Question Comments
             modelBuilder.Entity<QuestionComment>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_question_comments");
@@ -443,7 +398,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_question_comments_parent_comment_id");
             });
 
-            // Question Reports
             modelBuilder.Entity<QuestionReport>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_question_reports");
@@ -464,7 +418,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_question_reports_reported_by_user_id");
             });
 
-            // Exam Types
             modelBuilder.Entity<ExamType>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_exam_types");
@@ -482,7 +435,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // Exams
             modelBuilder.Entity<Exam>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_exams");
@@ -538,7 +490,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_exams_ai_test_recommendation_id");
             });
 
-            // Exam Questions
             modelBuilder.Entity<ExamQuestion>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_exam_questions");
@@ -558,7 +509,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_exam_questions_question_id");
             });
 
-            // Exam Histories
             modelBuilder.Entity<ExamHistory>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_exam_histories");
@@ -583,7 +533,6 @@ namespace teamseven.EzExam.Repository.Context
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt").HasDefaultValueSql("NOW()");
             });
 
-            // Solutions
             modelBuilder.Entity<Solution>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_solutions");
@@ -618,7 +567,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_solutions_original_solution_id");
             });
 
-            // Solution Reports
             modelBuilder.Entity<SolutionReport>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_solution_reports");
@@ -639,7 +587,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_solution_reports_reported_by_user_id");
             });
 
-            // Chatbots
             modelBuilder.Entity<Chatbot>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_chatbots");
@@ -669,7 +616,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_chatbots_subject_id");
             });
 
-            // Subscription Types
             modelBuilder.Entity<SubscriptionType>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_subscription_types");
@@ -695,7 +641,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_subscription_types_updated_by");
             });
 
-            // User Subscriptions
             modelBuilder.Entity<UserSubscription>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_subscriptions");
@@ -721,7 +666,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_subscriptions_subscription_type_id");
             });
 
-            // User Usage Tracking
             modelBuilder.Entity<UserUsageTracking>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_usage_tracking");
@@ -746,7 +690,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_usage_tracking_subscription_type_id");
             });
 
-            // User Usage History
             modelBuilder.Entity<UserUsageHistory>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_usage_history");
@@ -766,7 +709,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_usage_history_user_id");
             });
 
-            // Test System Models Configuration
             ConfigureTestSystemModels(modelBuilder);
 
             OnModelCreatingPartial(modelBuilder);
@@ -774,7 +716,6 @@ namespace teamseven.EzExam.Repository.Context
 
         private void ConfigureTestSystemModels(ModelBuilder modelBuilder)
         {
-            // User Question Cart
             modelBuilder.Entity<UserQuestionCart>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_question_carts");
@@ -808,7 +749,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_question_carts_lesson_id");
             });
 
-            // AI Test Recommendation
             modelBuilder.Entity<AITestRecommendation>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_ai_test_recommendations");
@@ -848,11 +788,8 @@ namespace teamseven.EzExam.Repository.Context
                 entity.HasOne(d => d.Lesson).WithMany()
                     .HasForeignKey(d => d.LessonId)
                     .HasConstraintName("fk_ai_test_recommendations_lesson_id");
-                // Foreign key to Exam removed to avoid circular reference
-                // Use Exam.AITestRecommendation navigation instead
             });
 
-            // User Learning History
             modelBuilder.Entity<UserLearningHistory>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_learning_histories");
@@ -896,7 +833,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_learning_histories_exam_id");
             });
 
-            // Test Session
             modelBuilder.Entity<TestSession>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_test_sessions");
@@ -929,7 +865,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_test_sessions_exam_id");
             });
 
-            // Test Session Answer
             modelBuilder.Entity<TestSessionAnswer>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_test_session_answers");
@@ -961,7 +896,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_test_session_answers_selected_answer_id");
             });
 
-            // User Competency Assessment
             modelBuilder.Entity<UserCompetencyAssessment>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_competency_assessments");
@@ -1007,7 +941,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_competency_assessments_lesson_id");
             });
 
-            // User Question Attempt
             modelBuilder.Entity<UserQuestionAttempt>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_question_attempts");
@@ -1066,7 +999,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_question_attempts_lesson_id");
             });
 
-            // User Overall Competency
             modelBuilder.Entity<UserOverallCompetency>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_user_overall_competencies");
@@ -1105,7 +1037,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_user_overall_competencies_subject_id");
             });
 
-            // Student Quiz History
             modelBuilder.Entity<StudentQuizHistory>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_student_quiz_histories");
@@ -1156,7 +1087,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_student_quiz_histories_test_session_id");
             });
 
-            // Student Performance Summary
             modelBuilder.Entity<StudentPerformanceSummary>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_student_performance_summaries");
@@ -1203,7 +1133,6 @@ namespace teamseven.EzExam.Repository.Context
                     .HasConstraintName("fk_student_performance_summaries_grade_id");
             });
 
-            // Student Question Attempts
             modelBuilder.Entity<StudentQuestionAttempt>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("pk_student_question_attempts");

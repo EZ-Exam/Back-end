@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace teamseven.EzExam.Repository.Models
@@ -31,7 +31,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Nav to join rows
         public ICollection<LessonEnhancedQuestion> LessonQuestions { get; set; } = new List<LessonEnhancedQuestion>();
     }
 
@@ -50,9 +49,7 @@ namespace teamseven.EzExam.Repository.Models
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navs
         public LessonEnhanced Lesson { get; set; } = null!;
-        // (Không cần nav Question entity nếu bạn chỉ lưu id; thêm cũng được nếu bạn có model Question)
         public Question? Question { get; set; } = null!;
     }
 }

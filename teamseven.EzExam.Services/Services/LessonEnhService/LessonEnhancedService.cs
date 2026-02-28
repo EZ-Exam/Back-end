@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Repository.Repository;
@@ -14,28 +15,27 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
     {
         private readonly LessonEnhancedRepository _repo;
         private readonly ILogger<LessonEnhancedService> _logger;
+        private readonly IMapper _mapper;
 
-        public LessonEnhancedService(LessonEnhancedRepository repo, ILogger<LessonEnhancedService> logger)
+        public LessonEnhancedService(LessonEnhancedRepository repo, ILogger<LessonEnhancedService> logger, IMapper mapper)
         {
             _repo = repo;
             _logger = logger;
+            _mapper = mapper;
         }
         public async Task<LessonEnhancedResponse> CreateAsync(LessonEnhancedUpsertRequest req)
         {
             if (!int.TryParse(req.subjectId, out var sid))
                 throw new ArgumentException("Invalid subjectId");
 
-            // Parse các questionId từ string -> int (bỏ qua id parse lỗi)
             var parsedQids = (req.questions ?? Enumerable.Empty<string>())
                 .Select(s => int.TryParse(s, out var id) ? (int?)id : null)
                 .Where(id => id.HasValue)
                 .Select(id => id!.Value)
                 .ToList();
 
-            // Lọc chỉ giữ QuestionId có tồn tại trong DB
             var existingQids = await _repo.FilterExistingQuestionIdsAsync(parsedQids);
 
-            // Tao lesson
             var entity = new LessonEnhanced
             {
                 Title = req.title,
@@ -49,51 +49,31 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
             var newId = await _repo.AddAsync(entity);
 
             await _repo.AppendLessonQuestionsAsync(newId, existingQids);
-            // await _repo.ReplaceLessonQuestionsAsync(newId, existingQids);
 
             return await GetByIdAsync(newId);
         }
 
-        // LessonEnhancedService.cs
         public async Task<List<LessonEnhancedResponse>> GetAllAsync(string? subjectId = null, bool includeQuestions = false)
         {
-            // repo đã có GetAllAsync(string? subjectId)
             var lessons = await _repo.GetAllAsync(subjectId);
+            var result = _mapper.Map<List<LessonEnhancedResponse>>(lessons);
 
-            var result = lessons.Select(l => new LessonEnhancedResponse
-            {
-                id = l.Id.ToString(),
-                title = l.Title,
-                description = l.Description,
-                subjectId = l.SubjectId.ToString(),
-                pdfUrl = l.PdfUrl,
-                createdAt = l.CreatedAt,
-                updatedAt = l.UpdatedAt,
-                questions = new List<string>() // sẽ fill bên dưới nếu includeQuestions
-            }).ToList();
+            // Initialize questions lists to empty by default
+            foreach (var r in result)
+                r.questions = new List<string>();
 
             if (includeQuestions && result.Count > 0)
             {
-                // repo trả về map<int, List<int>> theo lessonId (int)
-                var map = await _repo.GetQuestionsForLessonsAsync(result.Select(r => r.id)); // IEnumerable<string>
-
+                var map = await _repo.GetQuestionsForLessonsAsync(result.Select(r => r.id));
                 foreach (var r in result)
                 {
                     if (int.TryParse(r.id, out var lid) && map.TryGetValue(lid, out var qids))
-                    {
                         r.questions = qids.Select(q => q.ToString()).ToList();
-                    }
-                    else
-                    {
-                        r.questions = new List<string>();
-                    }
                 }
             }
 
             return result;
         }
-
-
 
         public async Task<LessonEnhancedResponse> GetByIdAsync(int id)
         {
@@ -105,18 +85,9 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
             }
 
             var q = await _repo.GetQuestionIdsAsync(id);
-
-            return new LessonEnhancedResponse
-            {
-                id = l.Id.ToString(),
-                title = l.Title,
-                description = l.Description,
-                subjectId = l.SubjectId.ToString(),
-                pdfUrl = l.PdfUrl,
-                questions = q.Select(x => x.ToString()).ToList(),
-                createdAt = l.CreatedAt,
-                updatedAt = l.UpdatedAt
-            };
+            var response = _mapper.Map<LessonEnhancedResponse>(l);
+            response.questions = q.Select(x => x.ToString()).ToList();
+            return response;
         }
 
         public async Task<List<LessonEnhancedResponse>> GetByQuestionIdAsync(int questionId)
@@ -127,17 +98,9 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
             foreach (var l in lessons)
             {
                 var q = await _repo.GetQuestionIdsAsync(l.Id);
-                result.Add(new LessonEnhancedResponse
-                {
-                    id = l.Id.ToString(),
-                    title = l.Title,
-                    description = l.Description,
-                    subjectId = l.SubjectId.ToString(),
-                    pdfUrl = l.PdfUrl,
-                    questions = q.Select(x => x.ToString()).ToList(),
-                    createdAt = l.CreatedAt,
-                    updatedAt = l.UpdatedAt
-                });
+                var mapped = _mapper.Map<LessonEnhancedResponse>(l);
+                mapped.questions = q.Select(x => x.ToString()).ToList();
+                result.Add(mapped);
             }
             return result;
         }
@@ -177,21 +140,12 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
                 pageNumber ??= 1; pageSize ??= total;
             }
 
-            var responses = items.Select(l => new LessonEnhancedResponse
-            {
-                id = l.Id.ToString(),
-                title = l.Title,
-                description = l.Description,
-                subjectId = l.SubjectId.ToString(),
-                pdfUrl = l.PdfUrl,
-                createdAt = l.CreatedAt,
-                updatedAt = l.UpdatedAt,
-                questions = new List<string>() // fill sau nếu includeQuestions
-            }).ToList();
+            var responses = _mapper.Map<List<LessonEnhancedResponse>>(items);
+            foreach (var r in responses)
+                r.questions = new List<string>();
 
             if (includeQuestions && responses.Count > 0)
             {
-                // Thu thập ID hợp lệ vào 1 List<int> chắc chắn non-null
                 var lessonIds = new List<int>();
                 foreach (var r in responses)
                 {
@@ -201,7 +155,7 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
 
                 if (lessonIds.Count > 0)
                 {
-                    var map = await _repo.GetQuestionsForLessonsAsync(lessonIds); // <- giờ không còn cảnh báo
+                    var map = await _repo.GetQuestionsForLessonsAsync(lessonIds);
                     foreach (var r in responses)
                     {
                         if (int.TryParse(r.id, out var lid) && map.TryGetValue(lid, out var qlist))
@@ -209,7 +163,6 @@ namespace teamseven.EzExam.Services.Services.LessonEnhancedService
                     }
                 }
             }
-
 
             return new PagedResponse<LessonEnhancedResponse>(responses, pageNumber!.Value, pageSize!.Value, total);
         }

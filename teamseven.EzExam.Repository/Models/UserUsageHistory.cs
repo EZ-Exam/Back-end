@@ -17,14 +17,14 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(50)]
         [Column("UsageType")]
-        public string UsageType { get; set; } = string.Empty; // 'SOLUTION_VIEW', 'AI_CHAT'
+        public string UsageType { get; set; } = string.Empty;
 
         [Column("ResourceId")]
-        public int? ResourceId { get; set; } // ID của solution hoặc AI request
+        public int? ResourceId { get; set; }
 
         [MaxLength(50)]
         [Column("ResourceType")]
-        public string? ResourceType { get; set; } // 'SOLUTION', 'AI_CHAT'
+        public string? ResourceType { get; set; }
 
         [MaxLength(500)]
         [Column("Description")]
@@ -33,7 +33,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
     }

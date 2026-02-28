@@ -16,26 +16,25 @@ namespace teamseven.EzExam.Services.Services.SemesterService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SemesterService> _logger;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public SemesterService(IUnitOfWork unitOfWork, ILogger<SemesterService> logger)
+        public SemesterService(IUnitOfWork unitOfWork, ILogger<SemesterService> logger, AutoMapper.IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<IEnumerable<SemesterDataResponse>> GetAllSemesterAsync()
         {
             var semesters = await _unitOfWork.SemesterRepository.GetAllAsync();
             var grades = await _unitOfWork.GradeRepository.GetAllAsync();
-            return semesters.Select(s => new SemesterDataResponse
+            var responses = _mapper.Map<IEnumerable<SemesterDataResponse>>(semesters);
+            foreach(var response in responses)
             {
-                Id = s.Id,
-                Name = s.Name,
-                GradeId = s.GradeId,
-                GradeName = grades.FirstOrDefault(g => g.Id == s.GradeId)?.Name,
-                CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt
-            });
+                response.GradeName = grades.FirstOrDefault(g => g.Id == response.GradeId)?.Name;
+            }
+            return responses;
         }
 
         public async Task<SemesterDataResponse> GetSemesterByIdAsync(int id)
@@ -46,15 +45,9 @@ namespace teamseven.EzExam.Services.Services.SemesterService
 
             var grade = await _unitOfWork.GradeRepository.GetByIdAsync(semester.GradeId);
 
-            return new SemesterDataResponse
-            {
-                Id = semester.Id,
-                Name = semester.Name,
-                GradeId = semester.GradeId,
-                GradeName = grade?.Name,
-                CreatedAt = semester.CreatedAt,
-                UpdatedAt = semester.UpdatedAt
-            };
+            var response = _mapper.Map<SemesterDataResponse>(semester);
+            response.GradeName = grade?.Name;
+            return response;
         }
 
         public async Task<IEnumerable<SemesterDataResponse>> GetSemesterByGradeIdAsync(int gradeId)
@@ -67,18 +60,14 @@ namespace teamseven.EzExam.Services.Services.SemesterService
             }
 
             var semesters = await _unitOfWork.SemesterRepository.GetAllAsync();
-
-            return semesters
-                .Where(s => s.GradeId == gradeId)
-                .Select(s => new SemesterDataResponse
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    GradeId = s.GradeId,
-                    GradeName = grade.Name,
-                    CreatedAt = s.CreatedAt,
-                    UpdatedAt = s.UpdatedAt
-                });
+            var filteredSemesters = semesters.Where(s => s.GradeId == gradeId);
+            
+            var responses = _mapper.Map<IEnumerable<SemesterDataResponse>>(filteredSemesters);
+            foreach(var response in responses)
+            {
+                response.GradeName = grade.Name;
+            }
+            return responses;
         }
 
         public async Task CreateSemesterAsync(CreateSemesterRequest request)

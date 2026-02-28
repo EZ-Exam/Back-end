@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using teamseven.EzExam.Repository;
@@ -13,15 +14,18 @@ namespace teamseven.EzExam.Services.Services.BalanceService
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<BalanceService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
 
         public BalanceService(
             IUnitOfWork unitOfWork, 
             ILogger<BalanceService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
             _configuration = configuration;
+            _mapper = mapper;
         }
 
         public async Task<BalanceResponse> AddBalanceAsync(int userId, AddBalanceRequest request)
@@ -34,7 +38,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
 
             try
             {
-                // Validate super secret key
                 var validSuperSecretKey = _configuration["Security:SuperSecretKey"];
                 if (string.IsNullOrEmpty(validSuperSecretKey))
                 {
@@ -48,7 +51,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                     throw new UnauthorizedAccessException("Invalid super secret key.");
                 }
 
-                // Get user
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
                 if (user == null)
                 {
@@ -59,7 +61,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                 var previousBalance = user.Balance ?? 0;
                 var newBalance = previousBalance + request.Amount;
 
-                // Update user balance
                 user.Balance = newBalance;
                 user.UpdatedAt = DateTime.UtcNow;
 
@@ -69,17 +70,12 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                 _logger.LogInformation("Added {Amount} to balance for user {UserId}. Previous: {PreviousBalance}, New: {NewBalance}", 
                     request.Amount, userId, previousBalance, newBalance);
 
-                return new BalanceResponse
-                {
-                    UserId = userId,
-                    UserEmail = user.Email,
-                    UserName = user.FullName ?? "Unknown",
-                    PreviousBalance = previousBalance,
-                    AddedAmount = request.Amount,
-                    NewBalance = newBalance,
-                    Description = request.Description,
-                    UpdatedAt = user.UpdatedAt
-                };
+                var response = _mapper.Map<BalanceResponse>(user);
+                response.PreviousBalance = previousBalance;
+                response.AddedAmount = request.Amount;
+                response.NewBalance = newBalance;
+                response.Description = request.Description;
+                return response;
             }
             catch (UnauthorizedAccessException)
             {
@@ -106,7 +102,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
 
             try
             {
-                // Validate super secret key
                 var validSuperSecretKey = _configuration["Security:SuperSecretKey"];
                 if (string.IsNullOrEmpty(validSuperSecretKey))
                 {
@@ -120,7 +115,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                     throw new UnauthorizedAccessException("Invalid super secret key.");
                 }
 
-                // Get user
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(request.UserId);
                 if (user == null)
                 {
@@ -131,7 +125,6 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                 var previousBalance = user.Balance ?? 0;
                 var newBalance = previousBalance + request.Amount;
 
-                // Update user balance
                 user.Balance = newBalance;
                 user.UpdatedAt = DateTime.UtcNow;
 
@@ -141,17 +134,12 @@ namespace teamseven.EzExam.Services.Services.BalanceService
                 _logger.LogInformation("Master deposit: Added {Amount} to balance for user {UserId}. Previous: {PreviousBalance}, New: {NewBalance}", 
                     request.Amount, request.UserId, previousBalance, newBalance);
 
-                return new BalanceResponse
-                {
-                    UserId = request.UserId,
-                    UserEmail = user.Email,
-                    UserName = user.FullName ?? "Unknown",
-                    PreviousBalance = previousBalance,
-                    AddedAmount = request.Amount,
-                    NewBalance = newBalance,
-                    Description = request.Description ?? "Master deposit",
-                    UpdatedAt = user.UpdatedAt
-                };
+                var response = _mapper.Map<BalanceResponse>(user);
+                response.PreviousBalance = previousBalance;
+                response.AddedAmount = request.Amount;
+                response.NewBalance = newBalance;
+                response.Description = request.Description ?? "Master deposit";
+                return response;
             }
             catch (UnauthorizedAccessException)
             {
@@ -205,17 +193,12 @@ namespace teamseven.EzExam.Services.Services.BalanceService
 
                 var currentBalance = user.Balance ?? 0;
 
-                return new BalanceResponse
-                {
-                    UserId = userId,
-                    UserEmail = user.Email,
-                    UserName = user.FullName ?? "Unknown",
-                    PreviousBalance = currentBalance,
-                    AddedAmount = 0,
-                    NewBalance = currentBalance,
-                    Description = "Current balance",
-                    UpdatedAt = user.UpdatedAt
-                };
+                var response = _mapper.Map<BalanceResponse>(user);
+                response.PreviousBalance = currentBalance;
+                response.AddedAmount = 0;
+                response.NewBalance = currentBalance;
+                response.Description = "Current balance";
+                return response;
             }
             catch (NotFoundException)
             {

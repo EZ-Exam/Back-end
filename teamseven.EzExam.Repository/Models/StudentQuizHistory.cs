@@ -30,7 +30,7 @@ namespace teamseven.EzExam.Repository.Models
 
         [Required]
         [Column("TimeSpent")]
-        public int TimeSpent { get; set; } = 0; // seconds
+        public int TimeSpent { get; set; } = 0;
 
         [Required]
         [Column("TotalQuestions")]
@@ -49,7 +49,7 @@ namespace teamseven.EzExam.Repository.Models
 
         [Required]
         [Column("TotalScore")]
-        public decimal TotalScore { get; set; } = 0.0m; // percentage (0-100)
+        public decimal TotalScore { get; set; } = 0.0m;
 
         [Column("PassingScore")]
         public decimal? PassingScore { get; set; }
@@ -60,45 +60,45 @@ namespace teamseven.EzExam.Repository.Models
         [Required]
         [MaxLength(50)]
         [Column("QuizStatus")]
-        public string QuizStatus { get; set; } = "COMPLETED"; // COMPLETED, ABANDONED, TIMEOUT
+        public string QuizStatus { get; set; } = "COMPLETED";
 
         [Column("AverageTimePerQuestion")]
-        public decimal AverageTimePerQuestion { get; set; } = 0.0m; // seconds
+        public decimal AverageTimePerQuestion { get; set; } = 0.0m;
 
         [Column("DifficultyBreakdown")]
         [MaxLength(1000)]
-        public string? DifficultyBreakdown { get; set; } // JSON: {"EASY": {"correct": 5, "total": 8}, "MEDIUM": {"correct": 3, "total": 7}}
+        public string? DifficultyBreakdown { get; set; }
 
         [Column("TopicPerformance")]
         [MaxLength(2000)]
-        public string? TopicPerformance { get; set; } // JSON: {"Mechanics": {"correct": 4, "total": 6, "time": 180}}
+        public string? TopicPerformance { get; set; }
 
         [Column("WeakAreas")]
         [MaxLength(1000)]
-        public string? WeakAreas { get; set; } // JSON array of topics where performance was poor
+        public string? WeakAreas { get; set; }
 
         [Column("StrongAreas")]
         [MaxLength(1000)]
-        public string? StrongAreas { get; set; } // JSON array of topics where performance was good
+        public string? StrongAreas { get; set; }
 
         [Column("ImprovementAreas")]
         [MaxLength(1000)]
-        public string? ImprovementAreas { get; set; } // JSON array of suggested improvement areas
+        public string? ImprovementAreas { get; set; }
 
         [Column("PerformanceRating")]
         [MaxLength(20)]
-        public string? PerformanceRating { get; set; } // EXCELLENT, GOOD, AVERAGE, NEEDS_IMPROVEMENT, POOR
+        public string? PerformanceRating { get; set; }
 
         [Column("ComparedToPrevious")]
-        public decimal? ComparedToPrevious { get; set; } // percentage change from previous attempt
+        public decimal? ComparedToPrevious { get; set; }
 
         [Column("DeviceInfo")]
         [MaxLength(500)]
-        public string? DeviceInfo { get; set; } // JSON: browser, OS, etc.
+        public string? DeviceInfo { get; set; }
 
         [Column("SessionData")]
         [MaxLength(10000)]
-        public string? SessionData { get; set; } // JSON: detailed answers, time per question, etc.
+        public string? SessionData { get; set; }
 
         [Column("IsCheatingDetected")]
         public bool IsCheatingDetected { get; set; } = false;
@@ -113,7 +113,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

@@ -10,21 +10,18 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class UserSubscriptionRepository : GenericRepository<UserSubscription>
     {
-        private readonly teamsevenezexamdbContext _context;
-        
-        // HARDCODED USER SUBSCRIPTION DATA - NO DATABASE QUERIES
-        // BASIC subscription is now free (same as FREE)
+
         private static readonly Dictionary<int, UserSubscription> _hardcodedUserSubscriptions = new()
         {
             { 1, new UserSubscription 
                 { 
                     Id = 1, 
                     UserId = 1, 
-                    SubscriptionTypeId = 2, // BASIC subscription
+                    SubscriptionTypeId = 2,
                     StartDate = DateTime.UtcNow.AddDays(-1), 
                     EndDate = DateTime.UtcNow.AddMonths(1), 
                     IsActive = true, 
-                    Amount = 0, // BASIC is now free
+                    Amount = 0,
                     PaymentStatus = "COMPLETED", 
                     PaymentGatewayTransactionId = "FREE_BASIC_TXN", 
                     CreatedAt = DateTime.UtcNow.AddDays(-1), 
@@ -33,10 +30,7 @@ namespace teamseven.EzExam.Repository.Repository
             }
         };
 
-        public UserSubscriptionRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public UserSubscriptionRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<IEnumerable<UserSubscription>?> GetAllSubscriptionsAsync()
         {
@@ -48,12 +42,6 @@ namespace teamseven.EzExam.Repository.Repository
             return await base.GetByIdAsync(id);
         }
 
-        //public new async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
-        //{
-        //    // Use hardcoded data instead of database query
-        //    var subscriptions = _hardcodedUserSubscriptions.Values.Where(x => x.UserId == userId).ToList();
-        //    return subscriptions.Any() ? subscriptions : null;
-        //}
         public async Task<List<UserSubscription>?> GetByUserIdAsync(long userId)
         {
             return await _context.UserSubscriptions
@@ -73,7 +61,6 @@ namespace teamseven.EzExam.Repository.Repository
         }
         public new async Task<List<UserSubscription>?> GetActiveSubscriptionsAsync(long userId)
         {
-            // Use data 
             return await _context.UserSubscriptions
                 .Where(x => x.UserId == userId && x.IsActive == true)
                 .OrderByDescending(x => x.CreatedAt)
@@ -82,13 +69,11 @@ namespace teamseven.EzExam.Repository.Repository
 
         public new async Task<UserSubscription?> GetActiveSubscriptionByUserIdAsync(int userId)
         {
-            // Sử dụng database thực tế thay vì hardcoded data
             return await _context.UserSubscriptions
                 .Where(x => x.UserId == userId && x.IsActive == true)
                 .OrderByDescending(x => x.CreatedAt)
                 .FirstOrDefaultAsync();
         }
-        // UserSubscriptionRepository.cs (EF Core)
         public async Task<decimal> SumCompletedAmountAsync(DateTime? fromUtc, DateTime? toUtc)
         {
             var q = _context.UserSubscriptions.AsQueryable()
@@ -97,7 +82,6 @@ namespace teamseven.EzExam.Repository.Repository
             if (fromUtc.HasValue) q = q.Where(x => x.CreatedAt >= fromUtc.Value);
             if (toUtc.HasValue) q = q.Where(x => x.CreatedAt < toUtc.Value);
 
-            // phòng null
             var sum = await q.SumAsync(x => (decimal?)x.Amount) ?? 0m;
             return sum;
         }
@@ -124,7 +108,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<List<UserSubscription>?> GetExpiredSubscriptionsAsync()
         {
             return await _context.UserSubscriptions
-                .AsNoTracking() // Read-only query
+                .AsNoTracking()
                 .Where(x => x.IsActive && x.EndDate.HasValue && x.EndDate.Value < DateTime.UtcNow)
                 .ToListAsync();
         }
@@ -145,14 +129,12 @@ namespace teamseven.EzExam.Repository.Repository
                 throw new KeyNotFoundException($"Subscription with ID {subscription.Id} not found.");
             }
 
-            // Update fields
             existingSubscription.IsActive = subscription.IsActive;
             existingSubscription.UpdatedAt = subscription.UpdatedAt;
             existingSubscription.PaymentStatus = subscription.PaymentStatus;
             existingSubscription.Amount = subscription.Amount;
             existingSubscription.EndDate = subscription.EndDate;
 
-            // Attach và mark as modified
             _context.UserSubscriptions.Attach(existingSubscription);
             _context.Entry(existingSubscription).State = EntityState.Modified;
 
@@ -165,3 +147,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

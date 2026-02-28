@@ -6,17 +6,21 @@ using teamseven.EzExam.Repository.Models;
 using teamseven.EzExam.Services.Object.Requests;
 using teamseven.EzExam.Services.Object.Responses;
 
+using AutoMapper;
+
 namespace teamseven.EzExam.Services.Services.StudentHistoryService
 {
     public class StudentHistoryService : IStudentHistoryService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<StudentHistoryService> _logger;
+        private readonly IMapper _mapper;
 
-        public StudentHistoryService(IUnitOfWork unitOfWork, ILogger<StudentHistoryService> logger)
+        public StudentHistoryService(IUnitOfWork unitOfWork, ILogger<StudentHistoryService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         #region Student Quiz History Management
@@ -56,7 +60,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                // Calculate comparison to previous attempt
                 var previousHistory = await _unitOfWork.StudentQuizHistoryRepository.GetLatestHistoryByUserAsync(request.UserId);
                 if (previousHistory != null)
                 {
@@ -66,13 +69,11 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 await _unitOfWork.StudentQuizHistoryRepository.CreateAsync(history);
                 await _unitOfWork.SaveChangesWithTransactionAsync();
 
-                // Create question attempts if provided
                 if (request.QuestionAttempts.Any())
                 {
                     await CreateQuestionAttemptsAsync(history.Id, request.QuestionAttempts);
                 }
 
-                // Update performance summary
                 await UpdatePerformanceSummaryAsync(request.UserId, null);
 
                 _logger.LogInformation($"Created quiz history {history.Id} with {request.QuestionAttempts.Count} question attempts for user {request.UserId}");
@@ -123,7 +124,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
             if (history == null)
                 throw new ArgumentException("Quiz history not found");
 
-            // Update properties
             history.TimeSpent = request.TimeSpent;
             history.TotalQuestions = request.TotalQuestions;
             history.CorrectAnswers = request.CorrectAnswers;
@@ -145,7 +145,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
             await _unitOfWork.StudentQuizHistoryRepository.UpdateAsync(history);
             await _unitOfWork.SaveChangesWithTransactionAsync();
 
-            // Update performance summary
             await UpdatePerformanceSummaryAsync(history.UserId, null);
         }
 
@@ -159,7 +158,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
             await _unitOfWork.StudentQuizHistoryRepository.DeleteAsync(history);
             await _unitOfWork.SaveChangesWithTransactionAsync();
 
-            // Update performance summary
             await UpdatePerformanceSummaryAsync(userId, null);
         }
 
@@ -174,7 +172,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
             var response = MapToSummaryResponse(summary);
 
-            // Get recent quizzes
             var recentQuizzes = await GetRecentQuizHistoriesByUserIdAsync(userId, 5);
             response.RecentQuizzes = recentQuizzes.ToList();
 
@@ -194,7 +191,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 var summary = await _unitOfWork.StudentPerformanceSummaryRepository.GetOrCreateAsync(userId, subjectId);
                 if (summary == null) return;
 
-                // Get recent quiz histories
                 var recentQuizzes = subjectId.HasValue
                     ? await _unitOfWork.StudentQuizHistoryRepository.GetHistoryByUserAndSubjectAsync(userId, subjectId.Value)
                     : await _unitOfWork.StudentQuizHistoryRepository.GetRecentHistoryByUserIdAsync(userId, 5);
@@ -203,7 +199,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
                 if (!completedQuizzes.Any()) return;
 
-                // Update basic metrics
                 summary.TotalQuizzesCompleted = await _unitOfWork.StudentQuizHistoryRepository.GetTotalQuizzesCompletedByUserAsync(userId, subjectId);
                 summary.RecentQuizIds = JsonConvert.SerializeObject(completedQuizzes.Select(q => q.Id).ToList());
                 summary.AverageScore = completedQuizzes.Average(q => q.TotalScore);
@@ -211,7 +206,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 summary.AverageTimePerQuestion = completedQuizzes.Average(q => q.AverageTimePerQuestion);
                 summary.OverallAccuracy = completedQuizzes.Average(q => (decimal)q.CorrectAnswers / q.TotalQuestions * 100);
 
-                // Calculate improvement trend
                 if (completedQuizzes.Count >= 3)
                 {
                     var firstHalf = completedQuizzes.Skip(completedQuizzes.Count / 2).Average(q => q.TotalScore);
@@ -222,7 +216,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                     summary.ImprovementTrend = trendChange > 5 ? "IMPROVING" : trendChange < -5 ? "DECLINING" : "STABLE";
                 }
 
-                // Calculate learning velocity (improvement per quiz)
                 if (completedQuizzes.Count >= 2)
                 {
                     var scores = completedQuizzes.OrderBy(q => q.CompletedAt).Select(q => q.TotalScore).ToList();
@@ -234,17 +227,15 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                     summary.LearningVelocity = improvements.Average();
                 }
 
-                // Calculate consistency score (inverse of standard deviation)
                 if (completedQuizzes.Count >= 3)
                 {
                     var scores = completedQuizzes.Select(q => q.TotalScore).ToList();
                     var mean = scores.Average();
                     var variance = scores.Sum(s => (s - mean) * (s - mean)) / scores.Count;
                     var stdDev = (decimal)Math.Sqrt((double)variance);
-                    summary.ConsistencyScore = Math.Max(0, 100 - (decimal)stdDev * 2); // Higher score = more consistent
+                    summary.ConsistencyScore = Math.Max(0, 100 - (decimal)stdDev * 2);
                 }
 
-                // Set other calculated fields
                 summary.LastQuizDate = completedQuizzes.First().CompletedAt;
                 summary.LastAnalysisDate = DateTime.UtcNow;
                 summary.UpdatedAt = DateTime.UtcNow;
@@ -263,7 +254,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
         public async Task RecalculatePerformanceSummaryAsync(int userId, int? subjectId = null)
         {
-            // Force recalculation by updating
             await UpdatePerformanceSummaryAsync(userId, subjectId);
         }
 
@@ -296,7 +286,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 LastQuizDate = summary?.LastQuizDate
             };
 
-            // Map recent quizzes
             response.RecentQuizzes = recentQuizzes.Select(q => new RecentQuizPerformance
             {
                 QuizHistoryId = q.Id,
@@ -310,7 +299,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 PerformanceRating = q.PerformanceRating
             }).ToList();
 
-            // Generate recommendations
             response.RecommendedTopics = GenerateTopicRecommendations(summary, recentQuizzes);
             response.AreasForImprovement = GenerateImprovementAreas(summary, recentQuizzes);
             response.OptimalQuestionDifficulty = DetermineOptimalDifficulty(summary?.AverageScore ?? 0);
@@ -341,7 +329,6 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
             if (testSession == null || testSession.SessionStatus != "COMPLETED")
                 return;
 
-            // Check if history already exists
             var allHistories = await _unitOfWork.StudentQuizHistoryRepository.GetAllAsync();
             var existingHistory = allHistories.FirstOrDefault(h => h.TestSessionId == testSessionId);
             if (existingHistory != null)
@@ -358,7 +345,7 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
                 TotalQuestions = testSession.TotalQuestions,
                 CorrectAnswers = testSession.CorrectAnswers,
                 IncorrectAnswers = testSession.TotalQuestions - testSession.CorrectAnswers,
-                SkippedQuestions = 0, // Calculate from session data if available
+                SkippedQuestions = 0,
                 TotalScore = testSession.TotalScore ?? 0,
                 PassingScore = testSession.PassingScore,
                 IsPassed = testSession.IsPassed,
@@ -495,79 +482,12 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
         private StudentQuizHistoryResponse MapToResponse(StudentQuizHistory history)
         {
-            return new StudentQuizHistoryResponse
-            {
-                Id = history.Id,
-                UserId = history.UserId,
-                ExamId = history.ExamId,
-                TestSessionId = history.TestSessionId,
-                StartedAt = history.StartedAt,
-                CompletedAt = history.CompletedAt,
-                TimeSpent = history.TimeSpent,
-                TotalQuestions = history.TotalQuestions,
-                CorrectAnswers = history.CorrectAnswers,
-                IncorrectAnswers = history.IncorrectAnswers,
-                SkippedQuestions = history.SkippedQuestions,
-                TotalScore = history.TotalScore,
-                PassingScore = history.PassingScore,
-                IsPassed = history.IsPassed,
-                QuizStatus = history.QuizStatus,
-                AverageTimePerQuestion = history.AverageTimePerQuestion,
-                DifficultyBreakdown = history.DifficultyBreakdown,
-                TopicPerformance = history.TopicPerformance,
-                WeakAreas = history.WeakAreas,
-                StrongAreas = history.StrongAreas,
-                ImprovementAreas = history.ImprovementAreas,
-                PerformanceRating = history.PerformanceRating,
-                ComparedToPrevious = history.ComparedToPrevious,
-                DeviceInfo = history.DeviceInfo,
-                IsCheatingDetected = history.IsCheatingDetected,
-                CheatingDetails = history.CheatingDetails,
-                CreatedAt = history.CreatedAt,
-                UpdatedAt = history.UpdatedAt,
-                UserName = history.User?.Email, // User model doesn't have FirstName/LastName
-                UserEmail = history.User?.Email,
-                ExamName = history.Exam?.Name,
-                SubjectName = history.Exam?.Subject?.Name,
-                ExamTypeName = history.Exam?.ExamType?.Name
-            };
+            return _mapper.Map<StudentQuizHistoryResponse>(history);
         }
 
         private StudentPerformanceSummaryResponse MapToSummaryResponse(StudentPerformanceSummary summary)
         {
-            return new StudentPerformanceSummaryResponse
-            {
-                Id = summary.Id,
-                UserId = summary.UserId,
-                SubjectId = summary.SubjectId,
-                GradeId = summary.GradeId,
-                TotalQuizzesCompleted = summary.TotalQuizzesCompleted,
-                RecentQuizzesCount = summary.RecentQuizzesCount,
-                RecentQuizIds = summary.RecentQuizIds,
-                AverageScore = summary.AverageScore,
-                AverageTimePerQuiz = summary.AverageTimePerQuiz,
-                AverageTimePerQuestion = summary.AverageTimePerQuestion,
-                OverallAccuracy = summary.OverallAccuracy,
-                ImprovementTrend = summary.ImprovementTrend,
-                TrendPercentage = summary.TrendPercentage,
-                StrongTopics = summary.StrongTopics,
-                WeakTopics = summary.WeakTopics,
-                DifficultyProfile = summary.DifficultyProfile,
-                RecommendedDifficulty = summary.RecommendedDifficulty,
-                LearningVelocity = summary.LearningVelocity,
-                ConsistencyScore = summary.ConsistencyScore,
-                PredictedNextScore = summary.PredictedNextScore,
-                ConfidenceLevel = summary.ConfidenceLevel,
-                TimeManagementScore = summary.TimeManagementScore,
-                LastQuizDate = summary.LastQuizDate,
-                LastAnalysisDate = summary.LastAnalysisDate,
-                CreatedAt = summary.CreatedAt,
-                UpdatedAt = summary.UpdatedAt,
-                UserName = summary.User?.Email, // User model doesn't have FirstName/LastName
-                UserEmail = summary.User?.Email,
-                SubjectName = summary.Subject?.Name,
-                GradeName = summary.Grade?.Name
-            };
+            return _mapper.Map<StudentPerformanceSummaryResponse>(summary);
         }
 
         private string DeterminePerformanceLevel(decimal averageScore)
@@ -618,32 +538,7 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
         private StudentQuestionAttemptResponse MapToQuestionAttemptResponse(StudentQuestionAttempt attempt)
         {
-            return new StudentQuestionAttemptResponse
-            {
-                Id = attempt.Id,
-                StudentQuizHistoryId = attempt.StudentQuizHistoryId,
-                QuestionId = attempt.QuestionId,
-                UserId = attempt.UserId,
-                SelectedAnswerId = attempt.SelectedAnswerId,
-                UserAnswer = attempt.UserAnswer,
-                IsCorrect = attempt.IsCorrect,
-                DifficultyLevel = attempt.DifficultyLevel,
-                TimeSpent = attempt.TimeSpent,
-                Topic = attempt.Topic,
-                ChapterId = attempt.ChapterId,
-                LessonId = attempt.LessonId,
-                QuestionOrder = attempt.QuestionOrder,
-                ConfidenceLevel = attempt.ConfidenceLevel,
-                IsMarkedForReview = attempt.IsMarkedForReview,
-                IsSkipped = attempt.IsSkipped,
-                AnswerChangeCount = attempt.AnswerChangeCount,
-                CreatedAt = attempt.CreatedAt,
-                QuestionContent = attempt.Question?.Content,
-                QuestionType = "Multiple Choice", // Question model doesn't have Type field
-                SelectedAnswerContent = attempt.SelectedAnswer?.Content,
-                ChapterName = attempt.Chapter?.Name,
-                LessonName = attempt.Lesson?.Name
-            };
+            return _mapper.Map<StudentQuestionAttemptResponse>(attempt);
         }
 
         private string DetermineOptimalDifficulty(decimal averageScore)
@@ -658,12 +553,11 @@ namespace teamseven.EzExam.Services.Services.StudentHistoryService
 
         private int DetermineOptimalQuestionCount(decimal averageTimePerQuestion)
         {
-            // Base on average time per question to suggest optimal count
             return averageTimePerQuestion switch
             {
-                <= 30 => 20, // Fast answering - can handle more questions
-                <= 60 => 15, // Average speed
-                _ => 10      // Slower - fewer questions
+                <= 30 => 20,
+                <= 60 => 15,
+                _ => 10
             };
         }
 

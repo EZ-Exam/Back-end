@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "teamseven.EzExam.Services",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "teamseven.EzExam.API", "teamseven.EzExam.API\teamseven.EzExam.API.csproj", "{1C771F7B-A493-4C2C-9992-6C9BCB574622}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "teamseven.EzExam.Tests", "teamseven.EzExam.Tests\teamseven.EzExam.Tests.csproj", "{6ECE411C-F405-4929-945C-D7A43ADC3B2A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{1C771F7B-A493-4C2C-9992-6C9BCB574622}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C771F7B-A493-4C2C-9992-6C9BCB574622}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C771F7B-A493-4C2C-9992-6C9BCB574622}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6ECE411C-F405-4929-945C-D7A43ADC3B2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6ECE411C-F405-4929-945C-D7A43ADC3B2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6ECE411C-F405-4929-945C-D7A43ADC3B2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6ECE411C-F405-4929-945C-D7A43ADC3B2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -12,12 +12,8 @@ namespace teamseven.EzExam.Repository.Repository
 {
     public class UserRepository: GenericRepository<User>
     {
-        private readonly teamsevenezexamdbContext _context;
 
-        public UserRepository(teamsevenezexamdbContext context)
-        {
-            _context = context;
-        }
+        public UserRepository(teamsevenezexamdbContext context) : base(context) { }
 
         public async Task<User?> GetUserByIdAsync(int id)
         {
@@ -27,7 +23,7 @@ namespace teamseven.EzExam.Repository.Repository
         public async Task<User?> GetByEmailAsync(string email) 
         { 
             return await _context.Users
-                .AsNoTracking() // Optimize performance for read-only query
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == email); 
         }
 
@@ -120,27 +116,23 @@ namespace teamseven.EzExam.Repository.Repository
 
         public async Task<(bool IsSuccess, string ResultOrError)> ChangeUserRoleAsync(int userId, string role)
         {
-            // Check validity
             if (string.IsNullOrEmpty(role) || !ValidRoles.ContainsKey(role.ToLower()))
             {
                 return (false, $"Invalid role. Role must be one of: {string.Join(", ", ValidRoles.Keys)}");
             }
 
-            // Get user
             var user = await GetByIdAsync(userId);
             if (user == null)
             {
                 return (false, $"User with ID {userId} not found");
             }
 
-            // Check user role
             int newRoleId = ValidRoles[role.ToLower()];
             if (user.RoleId == newRoleId)
             {
                 return (true, "User already has this role");
             }
 
-            // update new role
             user.RoleId = newRoleId;
             user.UpdatedAt = DateTime.UtcNow;
             int affectedRows = await UpdateAsync(user);
@@ -158,3 +150,4 @@ namespace teamseven.EzExam.Repository.Repository
         }
     }
 }
+

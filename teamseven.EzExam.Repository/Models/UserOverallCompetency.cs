@@ -19,10 +19,10 @@ namespace teamseven.EzExam.Repository.Models
         public int SubjectId { get; set; }
 
         [Column("OverallScore")]
-        public decimal OverallScore { get; set; } = 0.0m; // 0.0 to 1.0
+        public decimal OverallScore { get; set; } = 0.0m;
 
         [Column("OverallAccuracy")]
-        public decimal OverallAccuracy { get; set; } = 0.0m; // percentage
+        public decimal OverallAccuracy { get; set; } = 0.0m;
 
         [Column("TotalQuestionsAttempted")]
         public int TotalQuestionsAttempted { get; set; } = 0;
@@ -34,49 +34,49 @@ namespace teamseven.EzExam.Repository.Models
         public int TotalIncorrectAnswers { get; set; } = 0;
 
         [Column("TotalTimeSpent")]
-        public int TotalTimeSpent { get; set; } = 0; // seconds
+        public int TotalTimeSpent { get; set; } = 0;
 
         [Column("AverageTimePerQuestion")]
-        public decimal AverageTimePerQuestion { get; set; } = 0.0m; // seconds
+        public decimal AverageTimePerQuestion { get; set; } = 0.0m;
 
         [Column("CompetencyLevel")]
         [MaxLength(20)]
-        public string CompetencyLevel { get; set; } = "BEGINNER"; // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+        public string CompetencyLevel { get; set; } = "BEGINNER";
 
         [Column("ConfidenceScore")]
-        public decimal ConfidenceScore { get; set; } = 0.0m; // 0.0 to 1.0
+        public decimal ConfidenceScore { get; set; } = 0.0m;
 
         [Column("ConsistencyScore")]
-        public decimal ConsistencyScore { get; set; } = 0.0m; // 0.0 to 1.0
+        public decimal ConsistencyScore { get; set; } = 0.0m;
 
         [Column("ImprovementRate")]
-        public decimal ImprovementRate { get; set; } = 0.0m; // percentage improvement over time
+        public decimal ImprovementRate { get; set; } = 0.0m;
 
         [Column("Strengths")]
         [MaxLength(2000)]
-        public string? Strengths { get; set; } // JSON array of strong areas
+        public string? Strengths { get; set; }
 
         [Column("Weaknesses")]
         [MaxLength(2000)]
-        public string? Weaknesses { get; set; } // JSON array of weak areas
+        public string? Weaknesses { get; set; }
 
         [Column("RecommendedFocusAreas")]
         [MaxLength(2000)]
-        public string? RecommendedFocusAreas { get; set; } // JSON array of areas to focus on
+        public string? RecommendedFocusAreas { get; set; }
 
         [Column("DifficultyBreakdown")]
         [MaxLength(1000)]
-        public string? DifficultyBreakdown { get; set; } // JSON: {"EASY": 0.9, "MEDIUM": 0.7, "HARD": 0.4}
+        public string? DifficultyBreakdown { get; set; }
 
         [Column("TopicBreakdown")]
         [MaxLength(2000)]
-        public string? TopicBreakdown { get; set; } // JSON: {"Kinematics": 0.8, "Dynamics": 0.6, "Energy": 0.9}
+        public string? TopicBreakdown { get; set; }
 
         [Column("LearningVelocity")]
-        public decimal LearningVelocity { get; set; } = 0.0m; // rate of improvement
+        public decimal LearningVelocity { get; set; } = 0.0m;
 
         [Column("RetentionRate")]
-        public decimal RetentionRate { get; set; } = 0.0m; // how well user retains knowledge
+        public decimal RetentionRate { get; set; } = 0.0m;
 
         [Column("LastUpdated")]
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
@@ -87,7 +87,6 @@ namespace teamseven.EzExam.Repository.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 

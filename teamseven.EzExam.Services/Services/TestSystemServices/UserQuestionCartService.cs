@@ -49,11 +49,10 @@ namespace teamseven.EzExam.Services.Services.TestSystemServices
         {
             try
             {
-                // Check if item already exists in cart
                 var existingItem = await _unitOfWork.UserQuestionCartRepository.GetByUserAndQuestionAsync(request.UserId, request.QuestionId);
                 if (existingItem != null)
                 {
-                    return false; // Item already in cart
+                    return false;
                 }
 
                 var cartItem = new UserQuestionCart

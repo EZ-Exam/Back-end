@@ -67,15 +67,8 @@ namespace teamseven.EzExam.API.Controllers
                 return BadRequest(new { message = "Invalid Google token request. Credential is required." });
             }
 
-            try
-            {
-                var token = await _serviceProvider.AuthService.GoogleLoginAsync(request.credential);
-                return Ok(new { token, message = "Google login successful" });
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized(new { message = "Google authentication failed.", error = ex.Message });
-            }
+            var token = await _serviceProvider.AuthService.GoogleLoginAsync(request.credential);
+            return Ok(new { token, message = "Google login successful" });
         }
     }
 }

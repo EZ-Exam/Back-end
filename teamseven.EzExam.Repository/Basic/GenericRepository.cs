@@ -1,4 +1,4 @@
-﻿ using Microsoft.EntityFrameworkCore;
+ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using teamseven.EzExam.Repository;
@@ -28,25 +28,19 @@ namespace teamseven.EzExam.Repository.Basic
         {
             try
             {
-                // Check entity null
                 if (entity == null)
                     throw new ArgumentNullException(nameof(entity));
 
-                // Add entity to DbSet
                 await _context.Set<T>().AddAsync(entity);
 
-                // Save changes to database
                 await _context.SaveChangesAsync();
 
-                // Get primary key metadata
                 var keyProperty = _context.Entry(entity).Metadata.FindPrimaryKey()?.Properties[0];
                 if (keyProperty == null)
                     throw new InvalidOperationException($"Entity {typeof(T).Name} does not have a primary key defined.");
 
-                // Get primary key value
                 var keyValue = _context.Entry(entity).Property(keyProperty.Name).CurrentValue;
 
-                // Cast to TKey
                 return (TKey)Convert.ChangeType(keyValue, typeof(TKey));
             }
             catch (Exception ex)
@@ -68,28 +62,23 @@ namespace teamseven.EzExam.Repository.Basic
             _context.SaveChanges();
         }
 
-
         public async Task<int> CreateAsync(T entity)
         {
             _context.Add(entity);
             return await _context.SaveChangesAsync();
         }
 
-
         public async Task<int> CreateAsyncWithCheckExist(T entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            // Get the primary key property
             var keyProperty = _context.Entry(entity).Metadata.FindPrimaryKey()?.Properties[0];
             if (keyProperty == null)
                 throw new InvalidOperationException($"Entity {typeof(T).Name} does not have a primary key defined.");
 
-            // Get the key value
             var keyValue = _context.Entry(entity).Property(keyProperty.Name).CurrentValue;
 
-            // Check if entity already exists
             var existingEntity = await _context.Set<T>().FindAsync(keyValue);
             if (existingEntity != null)
                 throw new InvalidOperationException($"Entity {typeof(T).Name} with key {keyValue} already exists.");
@@ -97,7 +86,6 @@ namespace teamseven.EzExam.Repository.Basic
             await _context.Set<T>().AddAsync(entity);
             return await _context.SaveChangesAsync();
         }
-
 
         public void Update(T entity)
         {
@@ -151,10 +139,7 @@ namespace teamseven.EzExam.Repository.Basic
             return await _context.Set<T>().FindAsync(code);
         }
 
-        /*
-        https://guidgenerator.com/
-        daacb4fb-ff73-46ef-98f1-4af9aab2a30a
-         */
+        
         public T GetById(Guid code)
         {
             return _context.Set<T>().Find(code);
@@ -195,7 +180,6 @@ namespace teamseven.EzExam.Repository.Basic
 
         #endregion Separating asign entity and save operators
 
-        // Additional methods required by interface
         public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> predicate)
         {
             return await _context.Set<T>().Where(predicate).ToListAsync();

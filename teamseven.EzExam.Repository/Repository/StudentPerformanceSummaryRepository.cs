@@ -106,7 +106,7 @@ namespace teamseven.EzExam.Repository.Repository
             }
 
             return await query
-                .Where(s => s.TotalQuizzesCompleted >= 3) // At least 3 quizzes completed
+                .Where(s => s.TotalQuizzesCompleted >= 3)
                 .Include(s => s.User)
                 .Include(s => s.Subject)
                 .Include(s => s.Grade)

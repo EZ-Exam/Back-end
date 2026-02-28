@@ -10,13 +10,13 @@ namespace teamseven.EzExam.Services.Object.Requests
 
         [Required(ErrorMessage = "Usage type is required")]
         [StringLength(50, ErrorMessage = "Usage type cannot exceed 50 characters")]
-        public string UsageType { get; set; } = string.Empty; // 'SOLUTION_VIEW', 'AI_REQUEST'
+        public string UsageType { get; set; } = string.Empty;
 
         [Range(1, int.MaxValue, ErrorMessage = "Resource ID must be a positive integer")]
         public int? ResourceId { get; set; }
 
         [StringLength(50, ErrorMessage = "Resource type cannot exceed 50 characters")]
-        public string? ResourceType { get; set; } // 'SOLUTION', 'AI_CHAT'
+        public string? ResourceType { get; set; }
 
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string? Description { get; set; }

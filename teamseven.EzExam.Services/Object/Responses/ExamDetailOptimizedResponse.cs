@@ -16,7 +16,6 @@ namespace teamseven.EzExam.Services.Object.Responses
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        // Metadata
         public int TotalQuestions { get; set; }
         public List<int> QuestionIds { get; set; } = new List<int>();
         public int AttemptCount { get; set; }

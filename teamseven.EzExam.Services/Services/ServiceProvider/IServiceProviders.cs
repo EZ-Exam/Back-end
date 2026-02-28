@@ -52,15 +52,11 @@ namespace teamseven.EzExam.Services.Services.ServiceProvider
         ILessonEnhancedService LessonEnhancedService { get; }
         IQuestionCommentService QuestionCommentService { get; }
 
-
-        // Test System Services
         IUserQuestionCartService UserQuestionCartService { get; }
         ITestSessionService TestSessionService { get; }
         
-        // Student History Services
         IStudentHistoryService StudentHistoryService { get; }
         
-        // Exam History Services
         IExamHistoryService ExamHistoryService { get; }
     }
 }
