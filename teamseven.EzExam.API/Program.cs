@@ -47,8 +47,6 @@ using teamseven.EzExam.Services.Services.AIExamGenerationService;
 using teamseven.EzExam.API.Middleware;
 using teamseven.EzExam.API.Services;
 using teamseven.EzExam.Services.Services.LessonEnhancedService;
-using teamseven.EzExam.Services.Interfaces;
-using teamseven.EzExam.Services.Services;
 using teamseven.EzExam.Services.Services.QuestionCommentService;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -198,25 +196,6 @@ builder.Services.AddMemoryCache(options =>
     options.SizeLimit = 1000;
     options.CompactionPercentage = 0.25;
 });
-
-// Redis distributed cache (graceful fallback if Redis unavailable)
-var redisConnStr = builder.Configuration["Redis:ConnectionString"];
-if (!string.IsNullOrEmpty(redisConnStr))
-{
-    builder.Services.AddStackExchangeRedisCache(options =>
-    {
-        options.Configuration = redisConnStr;
-        options.InstanceName   = "EzExam:";
-    });
-    Console.WriteLine($"Redis cache registered: {redisConnStr}");
-}
-else
-{
-    // Fallback: in-process distributed cache (no Redis needed in dev)
-    builder.Services.AddDistributedMemoryCache();
-    Console.WriteLine("Redis not configured — using in-memory distributed cache.");
-}
-builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();

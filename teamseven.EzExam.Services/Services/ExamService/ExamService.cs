@@ -127,13 +127,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
 
         public async Task<IEnumerable<ExamResponse>> GetAllExamAsync()
         {
-            // ProjectTo: EF Core generates lean SQL (only ExamResponse columns)
-            return await _unitOfWork.Context.Exams
-                .AsNoTracking()
-                .Where(e => e.IsDeleted == false)
-                .OrderByDescending(e => e.CreatedAt)
-                .ProjectTo<ExamResponse>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            var exams = await _unitOfWork.ExamRepository.GetAllAsync();
+            return _mapper.Map<IEnumerable<ExamResponse>>(exams);
         }
 
         public async Task<ExamResponse> GetExamAsync(int id)
@@ -184,12 +179,8 @@ namespace teamseven.EzExam.Services.Services.ExamService
         }
         public async Task<IEnumerable<ExamResponse>> GetExamsByUserIdAsync(int userId)
         {
-            return await _unitOfWork.Context.Exams
-                .AsNoTracking()
-                .Where(e => e.CreatedByUserId == userId && e.IsDeleted == false)
-                .OrderByDescending(e => e.CreatedAt)
-                .ProjectTo<ExamResponse>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            var exams = await _unitOfWork.ExamRepository.GetByCreatorAsync(userId);
+            return _mapper.Map<IEnumerable<ExamResponse>>(exams);
         }
 
         public async Task RemoveExamQuestion(ExamQuestionRequest examQuestionRequest)
@@ -222,17 +213,11 @@ namespace teamseven.EzExam.Services.Services.ExamService
             var pn = pageNumber.GetValueOrDefault(1);
             var ps = pageSize.GetValueOrDefault(20);
 
-            // Delegate filtering + paging to repository, then ProjectTo avoids Select *
             var (items, total) = await _unitOfWork.ExamRepository.GetPagedAsync(
                 pn, ps, search, sort,
                 subjectId, lessonId, examTypeId, createdByUserId, isSort);
 
-            var ids = items.Select(e => e.Id).ToList();
-            var list = await _unitOfWork.Context.Exams
-                .AsNoTracking()
-                .Where(e => ids.Contains(e.Id))
-                .ProjectTo<ExamResponse>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            var list = _mapper.Map<List<ExamResponse>>(items);
 
             return new PagedResponse<ExamResponse>(list, pn, ps, total);
         }
