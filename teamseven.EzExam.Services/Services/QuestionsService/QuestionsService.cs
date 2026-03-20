@@ -232,36 +232,40 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
 
                     totalItems = questions.Count;
                 }
-                var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
-                var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
-                var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
-                
-                var questionResponses = new List<QuestionDataResponse>();
-                foreach (var q in questions)
-                {
-                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
-                    questionResponses.Add(new QuestionDataResponse
+                // 2-step: EF projects OptionsJson as a raw string → deserialise in-process
+                var ctx = _unitOfWork.Context;
+                var questionIds = questions.Select(q => q.Id).ToList();
+
+                var questionResponses = (await ctx.Questions
+                    .AsNoTracking()
+                    .Where(q => questionIds.Contains(q.Id))
+                    .Select(q => new
                     {
-                        Id = q.Id,
-                        Content = q.Content,
-                        QuestionSource = q.QuestionSource,
-                        DifficultyLevelId = q.DifficultyLevelId,
-                        LessonId = q.LessonId,
-                        ChapterId = q.ChapterId,
-                        TextbookId = q.TextbookId,
-                        CreatedByUserId = q.CreatedByUserId,
-                        CreatedAt = q.CreatedAt,
-                        UpdatedAt = q.UpdatedAt,
-                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
-                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
-                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
-                        Formula = q.Formula,
-                        CorrectAnswer = q.CorrectAnswer,
-                        Explanation = q.Explanation,
-                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
-                        Options = q.Options != null ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>() : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
-                    });
-                }
+                        q.Id, q.Content, q.QuestionSource,
+                        q.DifficultyLevelId, q.LessonId, q.ChapterId, q.TextbookId,
+                        q.CreatedByUserId, q.CreatedAt, q.UpdatedAt,
+                        LessonName        = q.Lesson != null ? q.Lesson.Name : string.Empty,
+                        ChapterName       = q.Chapter != null ? q.Chapter.Name : string.Empty,
+                        CreatedByUserName = q.CreatedByUser != null ? q.CreatedByUser.Email : string.Empty,
+                        q.Formula, q.CorrectAnswer, q.Explanation,
+                        Type              = q.QuestionType != null ? q.QuestionType.ToLower() : "multiple-choice",
+                        OptionsJson       = q.Options  // raw JSON string, safe for EF
+                    })
+                    .ToListAsync())
+                    .Select(q => new QuestionDataResponse
+                    {
+                        Id = q.Id, Content = q.Content, QuestionSource = q.QuestionSource,
+                        DifficultyLevelId = q.DifficultyLevelId, LessonId = q.LessonId,
+                        ChapterId = q.ChapterId, TextbookId = q.TextbookId,
+                        CreatedByUserId = q.CreatedByUserId, CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt, LessonName = q.LessonName,
+                        ChapterName = q.ChapterName, CreatedByUserName = q.CreatedByUserName,
+                        Formula = q.Formula, CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation, Type = q.Type,
+                        Options = q.OptionsJson != null
+                            ? JsonSerializer.Deserialize<List<string>>(q.OptionsJson) ?? new List<string>()
+                            : new List<string>()
+                    }).ToList();
 
                 return new PagedResponse<QuestionDataResponse>(
                     questionResponses,
@@ -351,46 +355,42 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
         {
             try
             {
-                var questions = await _unitOfWork.QuestionRepository.GetBySubjectIdAsync(subjectId);
-                if (questions == null || !questions.Any())
-                {
-                    _logger.LogWarning("No questions found for SubjectId {SubjectId}", subjectId);
-                    return new List<QuestionDataResponse>();
-                }
+                // 2-step: EF projects OptionsJson as raw string → deserialise in-process
+                var ctx = _unitOfWork.Context;
 
-                var allLessons = await _unitOfWork.LessonRepository.GetAllAsync();
-                var allUsers = await _unitOfWork.UserRepository.GetAllAsync();
-                var allChapters = await _unitOfWork.ChapterRepository.GetAllAsync();
-
-                var responses = new List<QuestionDataResponse>();
-
-                foreach (var q in questions)
-                {
-                    var answers = await _unitOfWork.AnswerRepository.GetByQuestionIdAsync(q.Id);
-
-                    responses.Add(new QuestionDataResponse
+                var responses = (await ctx.Questions
+                    .AsNoTracking()
+                    .Where(q => q.SubjectId == subjectId && q.IsActive == true)
+                    .Select(q => new
                     {
-                        Id = q.Id,
-                        Content = q.Content,
-                        QuestionSource = q.QuestionSource,
-                        DifficultyLevelId = q.DifficultyLevelId,
-                        LessonId = q.LessonId,
-                        ChapterId = q.ChapterId,
-                        CreatedByUserId = q.CreatedByUserId,
-                        CreatedAt = q.CreatedAt,
-                        UpdatedAt = q.UpdatedAt,
-                        LessonName = allLessons.FirstOrDefault(l => l.Id == q.LessonId)?.Name ?? string.Empty,
-                        ChapterName = allChapters.FirstOrDefault(c => c.Id == q.ChapterId)?.Name ?? string.Empty,
-                        CreatedByUserName = allUsers.FirstOrDefault(u => u.Id == q.CreatedByUserId)?.Email ?? string.Empty,
-                        Formula = q.Formula,
-                        CorrectAnswer = q.CorrectAnswer,
-                        Explanation = q.Explanation,
-                        Type = q.QuestionType?.ToLower() ?? "multiple-choice",
-                        Options = q.Options != null
-                            ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>()
-                            : (answers?.Select(a => a.Content).ToList() ?? new List<string>())
-                    });
-                }
+                        q.Id, q.Content, q.QuestionSource,
+                        q.DifficultyLevelId, q.LessonId, q.ChapterId, q.TextbookId,
+                        q.CreatedByUserId, q.CreatedAt, q.UpdatedAt,
+                        LessonName        = q.Lesson != null ? q.Lesson.Name : string.Empty,
+                        ChapterName       = q.Chapter != null ? q.Chapter.Name : string.Empty,
+                        CreatedByUserName = q.CreatedByUser != null ? q.CreatedByUser.Email : string.Empty,
+                        q.Formula, q.CorrectAnswer, q.Explanation,
+                        Type              = q.QuestionType != null ? q.QuestionType.ToLower() : "multiple-choice",
+                        OptionsJson       = q.Options
+                    })
+                    .ToListAsync())
+                    .Select(q => new QuestionDataResponse
+                    {
+                        Id = q.Id, Content = q.Content, QuestionSource = q.QuestionSource,
+                        DifficultyLevelId = q.DifficultyLevelId, LessonId = q.LessonId,
+                        ChapterId = q.ChapterId, TextbookId = q.TextbookId,
+                        CreatedByUserId = q.CreatedByUserId, CreatedAt = q.CreatedAt,
+                        UpdatedAt = q.UpdatedAt, LessonName = q.LessonName,
+                        ChapterName = q.ChapterName, CreatedByUserName = q.CreatedByUserName,
+                        Formula = q.Formula, CorrectAnswer = q.CorrectAnswer,
+                        Explanation = q.Explanation, Type = q.Type,
+                        Options = q.OptionsJson != null
+                            ? JsonSerializer.Deserialize<List<string>>(q.OptionsJson) ?? new List<string>()
+                            : new List<string>()
+                    }).ToList();
+
+                if (!responses.Any())
+                    _logger.LogWarning("No questions found for SubjectId {SubjectId}", subjectId);
 
                 return responses;
             }
@@ -405,92 +405,52 @@ namespace teamseven.EzExam.Services.Services.QuestionsService
         {
             try
             {
-                
-                var questions = await _unitOfWork.QuestionRepository.GetAllAsync();
-                
-                if (questions == null)
-                {
-                    _logger.LogWarning("️ [QuestionsService] Repository returned NULL!");
-                    return new List<QuestionSimpleResponse>();
-                }
-
-                
-
-                var query = questions.AsQueryable();
-                var initialCount = query.Count();
+                // ── Query DB directly — never load all into memory first ────────────
+                var ctx = _unitOfWork.Context;
+                var query = ctx.Questions.AsNoTracking().AsQueryable();
 
                 if (searchRequest != null)
                 {
-                    
-
                     if (!string.IsNullOrEmpty(searchRequest.Content))
-                    {
-                        query = query.Where(q => q.Content.Contains(searchRequest.Content, StringComparison.OrdinalIgnoreCase));
-                        
-                    }
+                        query = query.Where(q => q.Content.Contains(searchRequest.Content));
 
                     if (searchRequest.DifficultyLevelId.HasValue)
-                    {
                         query = query.Where(q => q.DifficultyLevelId == searchRequest.DifficultyLevelId.Value);
-                        
-                    }
 
                     if (searchRequest.GradeIds != null && searchRequest.GradeIds.Any())
-                    {
-                        var beforeCount = query.Count();
                         query = query.Where(q => q.GradeId.HasValue && searchRequest.GradeIds.Contains(q.GradeId.Value));
-                        
-                    }
 
                     if (searchRequest.SubjectIds != null && searchRequest.SubjectIds.Any())
-                    {
-                        var beforeCount = query.Count();
-                        var questionsWithLessonAndChapter = query.Count(q => q.Lesson != null && q.Lesson.Chapter != null);
-                        
-                        
-                        query = query.Where(q => q.Lesson != null && 
-                            q.Lesson.Chapter != null && 
+                        query = query.Where(q =>
+                            q.Lesson != null &&
+                            q.Lesson.Chapter != null &&
                             searchRequest.SubjectIds.Contains(q.Lesson.Chapter.SubjectId));
-                        
-                    }
 
                     if (searchRequest.ChapterIds != null && searchRequest.ChapterIds.Any())
-                    {
-                        var beforeCount = query.Count();
-                        query = query.Where(q => q.Lesson != null && 
+                        query = query.Where(q =>
+                            q.Lesson != null &&
                             searchRequest.ChapterIds.Contains(q.Lesson.ChapterId));
-                        
-                    }
 
                     if (searchRequest.LessonIds != null && searchRequest.LessonIds.Any())
-                    {
-                        var beforeCount = query.Count();
                         query = query.Where(q => q.LessonId.HasValue && searchRequest.LessonIds.Contains(q.LessonId.Value));
-                        
-                    }
                 }
 
-                var result = query.Select(q => new QuestionSimpleResponse
-                {
-                    Id = q.Id,
-                    Content = q.Content,
-                    DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
-                    GradeId = q.GradeId,
-                    GradeName = q.Grade != null ? q.Grade.Name : null,
-                    LessonId = q.LessonId,
-                    LessonName = q.Lesson != null ? q.Lesson.Name : null
-                }).ToList();
-
-                
-                
-                return result;
+                return await query
+                    .Select(q => new QuestionSimpleResponse
+                    {
+                        Id             = q.Id,
+                        Content        = q.Content,
+                        DifficultyLevel = q.DifficultyLevel != null ? q.DifficultyLevel.Name : null,
+                        GradeId        = q.GradeId,
+                        GradeName      = q.Grade != null ? q.Grade.Name : null,
+                        LessonId       = q.LessonId,
+                        LessonName     = q.Lesson != null ? q.Lesson.Name : null
+                    })
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, " [QuestionsService] CRITICAL ERROR retrieving simple questions: {Message}", ex.Message);
-                _logger.LogError(ex, " [QuestionsService] Exception Type: {ExceptionType}", ex.GetType().Name);
-                _logger.LogError(ex, " [QuestionsService] Stack Trace: {StackTrace}", ex.StackTrace);
-                
+                _logger.LogError(ex, "[QuestionsService] Error in GetAllQuestionsSimpleAsync: {Message}", ex.Message);
                 return new List<QuestionSimpleResponse>();
             }
         }
